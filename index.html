@@ -145,7 +145,7 @@ function switchTab(m){
   q.focus();
 }
 applyLang();
-document.getElementById('t-ver').textContent='v2026-10-11-76d4845738';
+document.getElementById('t-ver').textContent='v2026-10-11-41d316be12';
 function digits(s){ return s.replace(/\D/g,''); }
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function doSearch(){
@@ -189,6 +189,14 @@ if ('serviceWorker' in navigator) {
   var swReloaded = false;
   navigator.serviceWorker.addEventListener('controllerchange', function () {
     if (!swReloaded) { swReloaded = true; location.reload(); }
+  });
+  // iOS Safari 從背景切回分頁時不會觸發導航，主動檢查 SW 更新
+  function checkSwUpdate(){
+    navigator.serviceWorker.getRegistration().then(function(reg){ if(reg) reg.update(); }).catch(function(){});
+  }
+  window.addEventListener('pageshow', function(e){ if(e.persisted) checkSwUpdate(); });
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState==='visible') checkSwUpdate();
   });
 }
 </script>
