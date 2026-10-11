@@ -129,7 +129,6 @@ function toggleLang(){
   lang = lang==="zh"?"en":"zh";
   try{ localStorage.setItem("kdq-lang",lang); }catch(e){}
   applyLang();
-document.getElementById('t-ver').textContent='v2026-10-11-5bc1ab331b';
   document.getElementById("q").value="";
   document.getElementById("results").innerHTML="";
   document.getElementById("count").textContent="";
@@ -146,6 +145,7 @@ function switchTab(m){
   q.focus();
 }
 applyLang();
+document.getElementById('t-ver').textContent='v2026-10-11-76d4845738';
 function digits(s){ return s.replace(/\D/g,''); }
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function doSearch(){
