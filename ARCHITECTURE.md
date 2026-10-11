@@ -34,6 +34,19 @@
 - 執行 `weekly_update.sh`；資料無變化則不推送；失敗時保留舊版並回報。
 - GitHub 認證：`gh` CLI（`~/.config/gh/hosts.yml`），OAuth token 長期有效。
 
+
+## 離線快取（Service Worker）
+
+- `sw.js`：由 `build_index.py` 從 `sw-template.js` 產生，版號為資料基準日
+ （`CACHE_NAME = 'korea-drug-check-YYYY-MM-DD'`）。
+- 策略：install 時快取 `./` 與 `./index.html` 並 `skipWaiting`；
+  activate 時刪除舊版快取並 `clients.claim()`；fetch 採 cache-first，
+  未命中才走網路；非 GET 請求不攔截。
+- 效果：首次開啟後可離線使用（飛機上、無網路時也能查）；
+  每週更新推送新版 `sw.js`（版號變更）即自動換新快取。
+- 驗證：`node /tmp/sw_sim_test.js`（8 項：install/activate/fetch 行為）
+  需全數 PASS 才可推送。
+
 ## 手動重跑
 ```bash
 cd ~/workspace/drug-license-query
