@@ -61,3 +61,11 @@ cd ~/workspace/drug-license-query
 python3 build_index.py --out index.html   # 重建（含下載最新資料集）
 bash weekly_update.sh                     # 重建＋有變化才推送
 ```
+
+## Service Worker
+
+### 2026-10-11 教訓：SW 版號必須隨每次部署變更
+- 事件：當日連續部署 4 次（英文分頁→自動重整→雙語→排版修正），iPhone 重新整理始終顯示舊版。
+- 根因：版號只用資料基準日（2026-10-11），4 次部署 sw.js 位元組完全相同 → 瀏覽器偵測不到更新 → 舊 SW 以 cache-first 永遠餵舊 index.html。
+- 修復：版號改為 `{資料日期}-{index.html sha1 前10碼}`；註冊加上 `updateViaCache:'none'`；build_index.py 已註記此陷阱。
+- 注意：每週 cron 重建時若內容無變化，雜湊相同 → 版號不變 → 不觸發用戶端更新（符合預期）。
