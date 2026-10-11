@@ -9,11 +9,14 @@
    下載：`https://data.fda.gov.tw/data/opendata/export/36/csv`（ZIP 壓縮）
 2. 駐韓國台北代表部釜山辦事處公告〈攜帶管制藥品入出境韓國請先申報許可（附管制清單）〉
    `https://www.taiwanembassy.org/krpus/post/10577.html`（481 種成分，附表 1～7之2）
-3. 韓國關稅廳公告〈마약성분 함유 의약품 주의사항〉（第二來源，確保最新）
-   `https://www.customs.go.kr/kcs/cm/cntnts/cntntsView.do?mi=13807&cntntsId=7640`
-   （21 種成分：마약 5、향정신성의약품 13、대마 3；與來源 2 交叉覆核）
-   雙來源合併於 `build_index.py::load_controlled_keys`：釜山來源優先，
-   海關獨有鍵（如 Tetrahydrocannabinol 別名）補上並標註「海關公告・分類」。
+3. 韓國關稅廳〈법률에서 정하는 마약류 성분〉（第二來源，確保最新）
+   `https://www.customs.go.kr/kcs/cm/cntnts/cntntsView.do?mi=13806&cntntsId=7641`
+   （481 種：與來源 2 同為施行令別表 1～7의2，實質相同；交叉驗證確認無實質差異，
+   僅 6 處拼寫/空格變體，已補為比對鍵）
+   另監控〈마약성분 함유 의약품 주의사항〉（mi=13807&cntntsId=7640，21 種宣導摘要）
+   雙來源合併於 `build_index.py::load_controlled_keys`：釜山來源優先（setdefault），
+   海關獨有變體鍵（如 tetrahydrocannabinol、psilocyn、dexoxy-d2pm）補上；
+   逗號別名切分時排除括號內逗號與數字逗號，希臘字母單詞不成鍵（防 gamma 誤殺）。
 
 ## 管線（`~/workspace/drug-license-query/`）
 | 檔案 | 說明 |
