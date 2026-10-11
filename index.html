@@ -180,7 +180,7 @@ function doSearch(){
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('sw.js').catch(function () {});
+    navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(function () {});
   });
   // 新版 SW 接管時自動重整，避免舊快取造成內容過期
   var swReloaded = false;
