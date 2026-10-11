@@ -48,6 +48,7 @@ footer p{margin-bottom:6px}
 <div class="tabs">
 <div class="tab active" id="tabLic" onclick="switchTab('lic')">許可證字號</div>
 <div class="tab" id="tabName" onclick="switchTab('name')">中文品名關鍵字</div>
+<div class="tab" id="tabEn" onclick="switchTab('en')">英文品名關鍵字</div>
 </div>
 <form class="searchbox" onsubmit="doSearch();return false;">
 <input id="q" placeholder="只輸入字號中的數字即可，例如 024677" enterkeyhint="search" autocomplete="off">
@@ -68,9 +69,11 @@ function switchTab(m){
   mode = m;
   document.getElementById('tabLic').classList.toggle('active', m==='lic');
   document.getElementById('tabName').classList.toggle('active', m==='name');
+  document.getElementById('tabEn').classList.toggle('active', m==='en');
   const q = document.getElementById('q'), h = document.getElementById('hint');
   if(m==='lic'){ q.placeholder='只輸入字號中的數字即可，例如 024677'; h.textContent='輸入許可證字號中的數字即可查詢，不需輸入「衛署藥製字第」等文字。'; }
-  else { q.placeholder='例如：使蒂諾斯、贊安諾、普拿疼'; h.textContent='輸入中文品名中的關鍵字，例如藥盒上的中文名稱。'; }
+  else if(m==='name'){ q.placeholder='例如：使蒂諾斯、贊安諾、普拿疼'; h.textContent='輸入中文品名中的關鍵字，例如藥盒上的中文名稱。'; }
+  else { q.placeholder='例如：STILNOX、XANAX、TYLENOL'; h.textContent='輸入英文品名中的關鍵字（不分大小寫），例如藥盒上的英文名稱。'; }
   q.value=''; document.getElementById('results').innerHTML=''; document.getElementById('count').textContent='';
   q.focus();
 }
@@ -85,8 +88,11 @@ function doSearch(){
     const q = digits(raw);
     if(!q){ box.innerHTML='<div class="noresult">請輸入字號中的數字</div>'; cnt.textContent=''; return; }
     hits = DATA.filter(r => digits(r[0]).includes(q));
-  } else {
+  } else if(mode==='name'){
     hits = DATA.filter(r => r[1].includes(raw));
+  } else {
+    const q = raw.toLowerCase();
+    hits = DATA.filter(r => (r[2]||'').toLowerCase().includes(q));
   }
   cnt.textContent = '共找到 ' + hits.length + ' 筆';
   if(!hits.length){
