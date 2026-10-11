@@ -8,8 +8,9 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;background:#f4f6f8;color:#222;line-height:1.6;padding:16px;max-width:860px;margin:0 auto}
 header{background:#123a5c;color:#fff;border-radius:12px;padding:20px;margin-bottom:14px}
-header{position:relative}
-.langbtn{position:absolute;top:14px;right:14px;background:#fff;border:2px solid #123a5c;color:#123a5c;border-radius:8px;padding:6px 12px;font-size:14px;font-weight:700;cursor:pointer}
+.hrow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hrow h1{flex:1;min-width:0}
+.langbtn{flex-shrink:0;background:#fff;border:2px solid #123a5c;color:#123a5c;border-radius:8px;padding:6px 12px;font-size:14px;font-weight:700;cursor:pointer;touch-action:manipulation}
 header h1{font-size:20px;margin-bottom:6px}
 header p{font-size:13px;opacity:.85}
 .src{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:12px 14px;font-size:12.5px;color:#555;margin-bottom:14px}
@@ -40,8 +41,7 @@ footer p{margin-bottom:6px}
 </head>
 <body>
 <header>
-<button class="langbtn" id="langBtn" onclick="toggleLang()">EN</button>
-<h1 id="t-title">💊 韓國入境管制藥品查詢</h1>
+<div class="hrow"><h1 id="t-title">💊 韓國入境管制藥品查詢</h1><button class="langbtn" id="langBtn" onclick="toggleLang()">EN</button></div>
 <p id="t-sub">查臺灣藥品許可證是否有效・是否含韓國《麻醉藥品管理法》管制成分（入境韓國須事先申請許可）</p>
 </header>
 <div class="src" id="t-src">
@@ -58,7 +58,7 @@ footer p{margin-bottom:6px}
 <div class="hint" id="hint">輸入許可證字號中的數字即可查詢，不需輸入「衛署藥製字第」等文字。</div>
 <button class="go" type="submit" id="t-go">查詢</button>
 </form>
-<noscript><div class="src">⚠️ 本頁需要 JavaScript 才能查詢，請用 Safari 或 Chrome 瀏覽器開啟（附件預覽模式無法執行查詢）。</div></noscript>
+<noscript><div class="src">⚠️ 本頁需要 JavaScript 才能查詢，請用 Safari 或 Chrome 瀏覽器開啟（附件預覽模式無法執行查詢）。<br>JavaScript is required for search. Please open in Safari or Chrome (attachment preview mode cannot run searches).</div></noscript>
 <div class="count" id="count"></div>
 <div id="results"></div>
 <footer>
