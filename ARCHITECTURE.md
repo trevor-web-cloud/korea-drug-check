@@ -9,6 +9,11 @@
    下載：`https://data.fda.gov.tw/data/opendata/export/36/csv`（ZIP 壓縮）
 2. 駐韓國台北代表部釜山辦事處公告〈攜帶管制藥品入出境韓國請先申報許可（附管制清單）〉
    `https://www.taiwanembassy.org/krpus/post/10577.html`（481 種成分，附表 1～7之2）
+3. 韓國關稅廳公告〈마약성분 함유 의약품 주의사항〉（第二來源，確保最新）
+   `https://www.customs.go.kr/kcs/cm/cntnts/cntntsView.do?mi=13807&cntntsId=7640`
+   （21 種成分：마약 5、향정신성의약품 13、대마 3；與來源 2 交叉覆核）
+   雙來源合併於 `build_index.py::load_controlled_keys`：釜山來源優先，
+   海關獨有鍵（如 Tetrahydrocannabinol 別名）補上並標註「海關公告・分類」。
 
 ## 管線（`~/workspace/drug-license-query/`）
 | 檔案 | 說明 |
