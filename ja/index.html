@@ -137,8 +137,7 @@ function switchTab(m){
     : '薬品名を入力してください。英語（例：Xanax）または市販薬のブランド名（例：DHC）でも検索できます。';
   const q = document.getElementById('q');
   q.value=''; document.getElementById('conv').innerHTML='';
-  if(m==='sub'){ showAllSubstances(); }
-  else { document.getElementById('results').innerHTML='<div class="noresult">キーワードを入力して検索してください</div>'; document.getElementById('count').textContent=''; }
+  document.getElementById('results').innerHTML='<div class="noresult">キーワードを入力して検索してください</div>'; document.getElementById('count').textContent='';
   q.placeholder = m==='sub' ? '例：kodein / コデイン / Codeine' : '例：Xanax / DHC';
   q.focus();
 }
@@ -147,7 +146,11 @@ function doSearch(){
   const raw = document.getElementById('q').value.trim();
   const box = document.getElementById('results');
   const cnt = document.getElementById('count');
-  if(!raw){ box.innerHTML='<div class="noresult">キーワードを入力してください</div>'; cnt.textContent=''; return; }
+  if(!raw){
+    if(mode==='sub'){ showAllSubstances(); }
+    else { box.innerHTML='<div class="noresult">キーワードを入力してください</div>'; cnt.textContent=''; }
+    return;
+  }
 
   let hits = [];
   if(mode === 'sub'){
@@ -275,14 +278,13 @@ document.getElementById('q').addEventListener('input', function(){
   const v = this.value.trim();
   document.getElementById('conv').innerHTML = v && mode === 'sub'
     ? 'カタカナ変換：<b>' + esc(hiraToKata(romajiToKatakana(v))) + '</b>' : '';
-  if(!v && mode === 'sub') showAllSubstances();
+  if(!v){ document.getElementById('results').innerHTML='<div class="noresult">キーワードを入力して検索してください</div>'; document.getElementById('count').textContent=''; }
 });
 document.getElementById('q').addEventListener('keydown', function(e){
   if(e.key === 'Enter') doSearch();
 });
-document.getElementById('t-ver').textContent = 'v2026-10-12-681743f6a0';
+document.getElementById('t-ver').textContent = 'v2026-10-12-867a87f1e4';
 document.getElementById('t-update-date').textContent = META.date;
-showAllSubstances();
 document.getElementById('t-src').textContent =
   '韓国の規制成分リスト（481成分）および KEGG 医薬品データ（日本で承認・販売されている医薬品を含む）を基に作成｜2か月ごとに更新';
 
