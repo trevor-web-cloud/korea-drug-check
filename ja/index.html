@@ -159,14 +159,16 @@ function doSearch(){
              (s.zh && s.zh.includes(raw));
     });
     cnt.textContent = '「' + kata + '」' + hits.length + ' 件ヒット';
-    box.innerHTML = hits.length ? hits.map(s => {
-      const drugs = DATA.drugs.filter(d => d.ctrl.some(c => c.en === s.en));
+    box.innerHTML = hits.length ? hits.map(function(s, si){
+      var drugs = DATA.drugs.filter(function(d){ return d.ctrl.some(function(c){ return c.en === s.en; }); });
+      var drugList = drugs.map(function(d){ return '<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">' + esc(d.names[0]) + '</div>'; }).join('');
       return '<div class="card"><div class="name">' + esc(s.ja || s.en) +
         '<span class="sched">' + esc(s.sched) + '</span></div>' +
         '<div class="sub2">' + esc(s.en) + (s.zh ? ' / ' + esc(s.zh) : '') + '</div>' +
         '<div class="ctrl">⚠ 韓国では規制成分です</div>' +
-        (drugs.length ? '<div class="drugs">含む薬品例：' + drugs.slice(0,5).map(d => esc(d.names[0])).join('、') +
-          (drugs.length > 5 ? ' 他' + (drugs.length - 5) + '件' : '') + '</div>' : '') +
+        (drugs.length ? '<div class="drugs"><b>この成分を含む医薬品（' + drugs.length + '件）：</b>' +
+          '<div id="dl' + si + '" style="display:none;max-height:200px;overflow-y:auto;margin-top:6px">' + drugList + '</div>' +
+          '<button onclick="var e=document.getElementById(\'dl' + si + '\');var h=e.style.display===\'none\';e.style.display=h?\'block\':\'none\';this.textContent=h?\'閉じる\':\'一覧を見る\';" style="margin-top:6px;font-size:13px;color:#1a73e8;background:none;border:1px solid #1a73e8;border-radius:6px;padding:6px 12px;cursor:pointer">一覧を見る</button></div>' : '') +
         '</div>';
     }).join('') : '<div class="noresult">ヒットしませんでした。<br>規制成分リストに含まれていない可能性があります。</div>';
   } else {
@@ -195,7 +197,7 @@ document.getElementById('q').addEventListener('input', function(){
 document.getElementById('q').addEventListener('keydown', function(e){
   if(e.key === 'Enter') doSearch();
 });
-document.getElementById('t-ver').textContent = 'v2026-10-12-36ebfed68f';
+document.getElementById('t-ver').textContent = 'v2026-10-12-e4494d439e';
 document.getElementById('t-src').textContent =
   'データ基準日：' + META.date + '｜韓国の規制成分リスト（481成分）および KEGG 医薬品データ（日本で承認・販売されている医薬品を含む）を基に作成';
 
