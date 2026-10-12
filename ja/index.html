@@ -134,11 +134,11 @@ function switchTab(m){
   document.getElementById('tabDrug').classList.toggle('active', m==='drug');
   document.getElementById('hh').textContent = m==='sub'
     ? '成分名を入力してください。ローマ字は自動でカタカナに変換されます（例：kodein → コデイン）。'
-    : '薬品名を英語で入力してください（例：Xanax）。';
+    : '薬品名を入力してください。英語（例：Xanax）または市販薬のブランド名（例：DHC）でも検索できます。';
   const q = document.getElementById('q');
   q.value=''; document.getElementById('results').innerHTML='<div class="noresult">キーワードを入力して検索してください</div>';
   document.getElementById('count').textContent=''; document.getElementById('conv').innerHTML='';
-  q.placeholder = m==='sub' ? '例：kodein / コデイン / Codeine' : '例：Xanax';
+  q.placeholder = m==='sub' ? '例：kodein / コデイン / Codeine' : '例：Xanax / DHC';
   q.focus();
 }
 
@@ -188,16 +188,43 @@ function doSearch(){
     const ql = raw.toLowerCase();
     const nq = normRoma(raw);
     const kata = hiraToKata(romajiToKatakana(raw));
+    const kataFlat = kata.replace(/ー/g, '');
     hits = DATA.drugs.filter(d =>
       d.names.some(n => n.toLowerCase().includes(ql) || normRoma(n).includes(nq))
     );
-    cnt.textContent = hits.length + ' 件ヒット';
-    box.innerHTML = hits.length ? hits.map(d =>
-      '<div class="card"><div class="name">' + esc(d.names[0]) + '</div>' +
+    // OTCブランド検索
+    var otcHits = [];
+    Object.keys(OTC).forEach(function(en){
+      var o = OTC[en];
+      // 找對應的物質資訊（附表）
+      var sub = null;
+      for(var i = 0; i < DATA.substances.length; i++){
+        if(DATA.substances[i].en === en){ sub = DATA.substances[i]; break; }
+      }
+      o.products.forEach(function(p){
+        var b = p.brand;
+        var bf = b.replace(/ー/g, '');
+        if(b.toLowerCase().indexOf(ql) >= 0 || bf.indexOf(kata) >= 0 || bf.indexOf(kataFlat) >= 0){
+          otcHits.push({brand: b, sub: sub, ja: o.ja});
+        }
+      });
+    });
+    var total = hits.length + otcHits.length;
+    cnt.textContent = total + ' 件ヒット';
+    var html = '';
+    html += hits.map(d =>
+      '<div class="card"><div class="name">' + esc(d.names[0]) + ' <span style="color:#888;font-size:12px">(処方薬)</span></div>' +
       (d.names[1] ? '<div class="sub2">' + esc(d.names.slice(1).join(' / ')) + '</div>' : '') +
       '<div class="ctrl">⚠ 規制成分を含む：' + d.ctrl.map(c =>
         esc(c.ja || c.en) + '<span class="sched">' + esc(c.sched) + '</span>').join('、') + '</div></div>'
-    ).join('') : '<div class="noresult">ヒットしませんでした。<br>規制成分を含む薬品リストに含まれていない可能性があります。</div>';
+    ).join('');
+    html += otcHits.slice(0, 50).map(function(o){
+      return '<div class="card"><div class="name">' + esc(o.brand) + ' <span style="color:#e65100;font-size:12px">(市販薬)</span></div>' +
+        '<div class="ctrl">⚠ 規制成分を含む：' + esc(o.ja || (o.sub && o.sub.en) || '') +
+        (o.sub ? '<span class="sched">' + esc(o.sub.sched) + '</span>' : '') + '</div></div>';
+    }).join('');
+    if(otcHits.length > 50) html += '<div style="text-align:center;color:#888;font-size:13px;padding:8px">他 ' + (otcHits.length - 50) + ' 件の市販薬もヒット（絞り込んでください）</div>';
+    box.innerHTML = total ? html : '<div class="noresult">ヒットしませんでした。<br>規制成分を含む薬品リストに含まれていない可能性があります。</div>';
   }
 }
 
@@ -210,7 +237,7 @@ document.getElementById('q').addEventListener('input', function(){
 document.getElementById('q').addEventListener('keydown', function(e){
   if(e.key === 'Enter') doSearch();
 });
-document.getElementById('t-ver').textContent = 'v2026-10-12-3af95b3533';
+document.getElementById('t-ver').textContent = 'v2026-10-12-14d3ca2e49';
 document.getElementById('t-update-date').textContent = META.date;
 document.getElementById('t-src').textContent =
   '韓国の規制成分リスト（481成分）および KEGG 医薬品データ（日本で承認・販売されている医薬品を含む）を基に作成｜2か月ごとに更新';
