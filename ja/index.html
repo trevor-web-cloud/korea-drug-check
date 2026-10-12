@@ -39,6 +39,7 @@ h1{font-size:20px;margin:8px 0 4px}
 <div><a href="../?lang=zh" style="font-size:13px;margin-right:8px">中文</a><a href="../?lang=en" style="font-size:13px">EN</a></div>
 </div>
 <p class="sub">日本で販売されている医薬品に、韓国への持ち込みが規制されている成分が含まれているか確認できます。<br>ローマ字・日本語・英語のいずれでも検索可能です。</p>
+<p class="sub" style="background:#fff3e0;border-left:4px solid #ff9800;padding:8px 12px;border-radius:0 8px 8px 0">💡 <b>市販薬（OTC）の方へ</b>：パッケージの成分表示を見て、成分名で検索してください。日本では成分表示が義務付けられています。</p>
 
 <div class="tabs">
 <div class="tab active" id="tabSub" onclick="switchTab('sub')">成分名で検索</div>
@@ -194,7 +195,7 @@ document.getElementById('q').addEventListener('input', function(){
 document.getElementById('q').addEventListener('keydown', function(e){
   if(e.key === 'Enter') doSearch();
 });
-document.getElementById('t-ver').textContent = 'v2026-10-12-f76d124b24';
+document.getElementById('t-ver').textContent = 'v2026-10-12-36ebfed68f';
 document.getElementById('t-src').textContent =
   'データ基準日：' + META.date + '｜韓国の規制成分リスト（481成分）および KEGG 医薬品データ（日本で承認・販売されている医薬品を含む）を基に作成';
 
