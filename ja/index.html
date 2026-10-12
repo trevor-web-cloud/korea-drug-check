@@ -6,62 +6,74 @@
 <title>日本の医薬品の韓国持ち込みチェック</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;background:#f4f6f8;color:#222;padding:16px;max-width:640px;margin:0 auto}
-h1{font-size:20px;margin:8px 0 4px}
-.sub{font-size:13px;color:#666;margin-bottom:12px;line-height:1.7}
-.tabs{display:flex;gap:8px;margin-bottom:12px}
-.tab{flex:1;text-align:center;padding:11px;background:#e0e0e0;border-radius:8px;font-size:15px;cursor:pointer;font-weight:700}
-.tab.active{background:#1a73e8;color:#fff}
-.box{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
-#q{width:100%;font-size:20px;padding:12px;border:2px solid #1a73e8;border-radius:8px;outline:none}
-#conv{margin-top:8px;font-size:14px;color:#555;min-height:22px}
-#conv b{font-size:20px;color:#1a73e8}
-.hint{font-size:12px;color:#888;margin-top:8px;line-height:1.7}
-.go{width:100%;margin-top:10px;background:#1a73e8;color:#fff;border:none;border-radius:8px;font-size:17px;padding:13px;cursor:pointer}
-.go:active{background:#0d47a1}
-.card{border:1px solid #e0e0e0;border-radius:8px;padding:12px;margin-bottom:10px;background:#fff}
+body{font-family:-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;background:#f4f6f8;color:#222;line-height:1.6;padding:16px;max-width:860px;margin:0 auto}
+header{background:#123a5c;color:#fff;border-radius:12px;padding:20px;margin-bottom:14px}
+.hrow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hrow h1{flex:1;min-width:0;font-size:20px}
+.hrow .langs{flex-shrink:0;display:flex;gap:6px}
+.hrow .langs a{background:#fff;border:2px solid #123a5c;color:#123a5c;border-radius:8px;padding:6px 12px;font-size:14px;font-weight:700;text-decoration:none}
+header p{font-size:13px;opacity:.85;margin-top:6px}
+.src{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:12px 14px;font-size:12.5px;color:#555;margin-bottom:14px}
+.tabs{display:flex;gap:8px;margin-bottom:10px}
+.tab{flex:1;text-align:center;padding:10px;border-radius:10px;background:#e8edf3;color:#456;cursor:pointer;font-size:15px;border:2px solid transparent;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.tab.active{background:#fff;border-color:#123a5c;color:#123a5c;font-weight:700}
+.searchbox{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:14px}
+.searchbox input{width:100%;font-size:17px;padding:12px;border:2px solid #c9d4e0;border-radius:8px;margin-bottom:8px}
+.searchbox input:focus{outline:none;border-color:#123a5c}
+#conv{margin-top:4px;font-size:14px;color:#555;min-height:22px;margin-bottom:8px}
+#conv b{font-size:20px;color:#123a5c}
+.hint{font-size:12.5px;color:#777;margin-bottom:10px}
+button.go{width:100%;font-size:17px;padding:12px;background:#123a5c;color:#fff;border:none;border-radius:8px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button.go:active{background:#0d2c46}
+.count{font-size:14px;color:#555;margin:6px 2px 10px}
+.card{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.07);border-left:5px solid #c0392b}
 .card .name{font-size:17px;font-weight:700}
 .card .sub2{font-size:13px;color:#666;margin-top:2px}
-.ctrl{margin-top:8px;font-size:14px;color:#b71c1c;font-weight:700}
-.sched{display:inline-block;background:#ffebee;color:#b71c1c;border-radius:4px;padding:2px 8px;font-size:12px;margin-left:6px}
+.ctrl{font-size:13px;color:#8e1f1f;background:#fdf0ef;border-radius:6px;padding:6px 8px;margin-top:8px}
+.sched{display:inline-block;background:#c0392b;color:#fff;font-size:12px;padding:2px 8px;border-radius:12px;margin-left:6px}
 .drugs{margin-top:8px;font-size:13px;color:#444}
-.count{font-size:13px;color:#666;margin-bottom:8px}
-.noresult{color:#666;font-size:14px;padding:20px 0;text-align:center;line-height:1.8}
-.foot{font-size:12px;color:#999;margin-top:16px;line-height:1.8}
-.foot .warn{color:#b71c1c}
-.ver{background:#1a73e8;color:#fff;text-align:center;font-size:13px;font-weight:700;padding:8px;border-radius:8px;margin-top:12px;letter-spacing:1px}
-.src{font-size:12px;color:#888;margin-top:10px;line-height:1.7}
+.noresult{text-align:center;color:#888;padding:30px 10px;font-size:15px}
+footer{font-size:12px;color:#888;margin-top:18px;padding:12px 4px;border-top:1px solid #dde3ea}
+footer p{margin-bottom:6px}
+footer .warn{color:#b71c1c}
+.ver{font-size:13px;color:#123a5c;font-weight:700;text-align:center;margin-top:10px;background:#e8edf3;border-radius:8px;padding:6px}
+.otc-note{background:#fff3e0;border-left:4px solid #ff9800;padding:8px 12px;border-radius:0 8px 8px 0;font-size:13px;color:#666;margin-bottom:12px;line-height:1.7}
+.otc-list{background:#e8f5e9;border-left:4px solid #4caf50;padding:8px 12px;border-radius:0 8px 8px 0;font-size:13px;color:#666;margin-bottom:12px;line-height:1.7}
+.update-date{font-size:13px;color:#555;background:#e3f2fd;border-radius:8px;padding:8px 12px;margin-bottom:12px}
 </style>
 </head>
 <body>
-<div style="display:flex;justify-content:space-between;align-items:center">
+<header><div class="hrow">
 <h1>💊 日本の医薬品の韓国持ち込みチェック</h1>
-<div><a href="../?lang=zh" style="font-size:13px;margin-right:8px">中文</a><a href="../?lang=en" style="font-size:13px">EN</a></div>
+<div class="langs"><a href="../?lang=zh">中文</a><a href="../?lang=en">EN</a></div>
 </div>
-<p class="sub">日本で販売されている医薬品に、韓国への持ち込みが規制されている成分が含まれているか確認できます。<br>ローマ字・日本語・英語のいずれでも検索可能です。</p>
-<p id="t-update" style="font-size:13px;color:#666;background:#e3f2fd;border-radius:8px;padding:8px 12px;margin-bottom:12px">📅 データ更新日：<b id="t-update-date"></b></p>
-<p class="sub" style="background:#fff3e0;border-left:4px solid #ff9800;padding:8px 12px;border-radius:0 8px 8px 0">💡 <b>市販薬（OTC）の方へ</b>：パッケージの成分表示を見て、成分名で検索してください。日本では成分表示が義務付けられています。</p>
-<p class="sub" style="background:#e8f5e9;border-left:4px solid #4caf50;padding:8px 12px;border-radius:0 8px 8px 0">📋 <b>市販薬ブランド収録成分</b>（5成分・1,195製品）：アリルイソプロピルアセチル尿素、デキストロメトルファン、ジヒドロコデイン、コデイン、プソイドエフェドリン<br>※ PMDA一般用医薬品検索より取得。その他の成分は成分名で検索してください。</p>
+<p>日本で販売されている医薬品に、韓国への持ち込みが規制されている成分が含まれているか確認できます。ローマ字・日本語・英語のいずれでも検索可能です。</p>
+</header>
+<p class="update-date" id="t-update">📅 データ更新日：<b id="t-update-date"></b></p>
+<p class="otc-note">💡 <b>市販薬（OTC）の方へ</b>：パッケージの成分表示を見て、成分名で検索してください。日本では成分表示が義務付けられています。</p>
+<p class="otc-list">📋 <b>市販薬ブランド収録成分</b>（5成分・1,195製品）：アリルイソプロピルアセチル尿素、デキストロメトルファン、ジヒドロコデイン、コデイン、プソイドエフェドリン<br>※ PMDA一般用医薬品検索より取得。その他の成分は成分名で検索してください。</p>
 
 <div class="tabs">
 <div class="tab active" id="tabSub" onclick="switchTab('sub')">成分名で検索</div>
 <div class="tab" id="tabDrug" onclick="switchTab('drug')">薬品名で検索</div>
 </div>
 
-<div class="box">
+<div class="searchbox">
 <input id="q" type="text" placeholder="例：kodein / コデイン / Codeine" autocomplete="off" autocapitalize="none">
 <div id="conv"></div>
-<button class="go" onclick="doSearch()">検索</button>
 <p class="hint" id="hh">成分名を入力してください。ローマ字は自動でカタカナに変換されます（例：kodein → コデイン）。</p>
+<button class="go" onclick="doSearch()">検索</button>
 </div>
 
-<div class="box">
+<div class="searchbox">
 <div class="count" id="count"></div>
 <div id="results"><div class="noresult">キーワードを入力して検索してください</div></div>
 </div>
 
-<p class="foot"><span class="warn">※ 検索でヒットしない場合でも、規制対象でないことを保証するものではありません。</span><br>データは韓国の規制成分リスト（481成分）に基づいています。</p>
-<p class="src" id="t-src"></p>
+<footer>
+<p><span class="warn">※ 検索でヒットしない場合でも、規制対象でないことを保証するものではありません。</span></p>
+<p id="t-src"></p>
+</footer>
 <p class="ver" id="t-ver"></p>
 
 <script>
@@ -185,7 +197,7 @@ function doSearch(){
         '<div class="ctrl">⚠ 韓国では規制成分です</div>' +
         (drugs.length ? '<div class="drugs"><b>この成分を含む医薬品（' + drugs.length + '件）：</b>' +
           '<div id="dl' + si + '" style="display:none;max-height:200px;overflow-y:auto;margin-top:6px">' + drugList + otcSec + '</div>' +
-          '<button onclick="var e=document.getElementById(\'dl' + si + '\');var h=e.style.display===\'none\';e.style.display=h?\'block\':\'none\';this.textContent=h?\'閉じる\':\'一覧を見る\';" style="margin-top:6px;font-size:13px;color:#1a73e8;background:none;border:1px solid #1a73e8;border-radius:6px;padding:6px 12px;cursor:pointer">一覧を見る</button></div>' : '') +
+          '<button onclick="var e=document.getElementById(\'dl' + si + '\');var h=e.style.display===\'none\';e.style.display=h?\'block\':\'none\';this.textContent=h?\'閉じる\':\'一覧を見る\';" style="margin-top:6px;font-size:13px;color:#123a5c;background:none;border:1px solid #123a5c;border-radius:6px;padding:6px 12px;cursor:pointer">一覧を見る</button></div>' : '') +
         '</div>';
     }).join('') : '<div class="noresult">ヒットしませんでした。<br>規制成分リストに含まれていない可能性があります。</div>';
   } else {
@@ -272,7 +284,7 @@ function showSubstanceDetail(i){
     '<div class="ctrl">⚠ 韓国では規制成分です</div>' +
     '<div class="drugs"><b>この成分を含む医薬品（' + drugs.length + '件）：</b>' +
     '<div style="max-height:200px;overflow-y:auto;margin-top:6px">' + drugList + otcSec + '</div></div>' +
-    '<button onclick="showAllSubstances()" style="margin-top:8px;font-size:13px;color:#1a73e8;background:none;border:1px solid #1a73e8;border-radius:6px;padding:6px 12px;cursor:pointer">一覧に戻る</button></div>';
+    '<button onclick="showAllSubstances()" style="margin-top:8px;font-size:13px;color:#123a5c;background:none;border:1px solid #123a5c;border-radius:6px;padding:6px 12px;cursor:pointer">一覧に戻る</button></div>';
 }
 document.getElementById('q').addEventListener('input', function(){
   const v = this.value.trim();
@@ -283,7 +295,7 @@ document.getElementById('q').addEventListener('input', function(){
 document.getElementById('q').addEventListener('keydown', function(e){
   if(e.key === 'Enter') doSearch();
 });
-document.getElementById('t-ver').textContent = 'v2026-10-12-867a87f1e4';
+document.getElementById('t-ver').textContent = 'v2026-10-12-35bd0471c9';
 document.getElementById('t-update-date').textContent = META.date;
 document.getElementById('t-src').textContent =
   '韓国の規制成分リスト（481成分）および KEGG 医薬品データ（日本で承認・販売されている医薬品を含む）を基に作成｜2か月ごとに更新';
