@@ -275,11 +275,12 @@ document.getElementById('q').addEventListener('input', function(){
   const v = this.value.trim();
   document.getElementById('conv').innerHTML = v && mode === 'sub'
     ? 'カタカナ変換：<b>' + esc(hiraToKata(romajiToKatakana(v))) + '</b>' : '';
+  if(!v && mode === 'sub') showAllSubstances();
 });
 document.getElementById('q').addEventListener('keydown', function(e){
   if(e.key === 'Enter') doSearch();
 });
-document.getElementById('t-ver').textContent = 'v2026-10-12-110ab2a0ea';
+document.getElementById('t-ver').textContent = 'v2026-10-12-681743f6a0';
 document.getElementById('t-update-date').textContent = META.date;
 showAllSubstances();
 document.getElementById('t-src').textContent =
