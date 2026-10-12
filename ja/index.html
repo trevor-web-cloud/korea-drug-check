@@ -34,7 +34,10 @@ h1{font-size:20px;margin:8px 0 4px}
 </style>
 </head>
 <body>
+<div style="display:flex;justify-content:space-between;align-items:center">
 <h1>💊 韓国入国時の医薬品チェック</h1>
+<div><a href="../?lang=zh" style="font-size:13px;margin-right:8px">中文</a><a href="../?lang=en" style="font-size:13px">EN</a></div>
+</div>
 <p class="sub">お薬に韓国の規制成分が含まれているか確認できます。<br>ローマ字・日本語・英語のいずれでも検索可能です。</p>
 
 <div class="tabs">
@@ -191,7 +194,7 @@ document.getElementById('q').addEventListener('input', function(){
 document.getElementById('q').addEventListener('keydown', function(e){
   if(e.key === 'Enter') doSearch();
 });
-document.getElementById('t-ver').textContent = 'v2026-10-12-050218e453';
+document.getElementById('t-ver').textContent = 'v2026-10-12-15dae6affd';
 document.getElementById('t-src').textContent =
   'データ基準日：' + META.date + '｜韓国の規制成分リスト（481成分）および KEGG 医薬品データを基に作成';
 
