@@ -92,7 +92,11 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
         </div>
         <label>Google App 連結</label>
         <div class="mono" id="googleApp">—</div>
-        <p class="note">App 連結格式：<code>comgooglemaps://?q=緯度,經度&amp;zoom=17</code>（iPhone 需已安裝 Google Maps）</p>
+        <div class="linkrow">
+          <a class="btn btn-google btn-small" id="googleAppIOS" href="#" target="_blank" rel="noopener">iPhone：Google Maps App 開啟</a>
+          <a class="btn btn-google btn-small" id="googleAppAndroid" href="#" target="_blank" rel="noopener">Android：Google Maps App 開啟</a>
+        </div>
+        <p class="note">iPhone：<code>comgooglemaps://?q=緯度,經度&amp;zoom=17</code> ／ Android：<code>geo:緯度,經度?q=緯度,經度</code> ／ Android 點網頁連結也會跳出 App 選擇。</p>
       </div>
     </section>
 
@@ -109,15 +113,19 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
         <div class="mono" id="naverLink">—</div>
         <div class="linkrow">
           <a class="btn btn-naver btn-small" id="naverOpen" href="#" target="_blank" rel="noopener">在 Naver 網頁開啟 (c=)</a>
-          <a class="btn btn-naver btn-small" id="naverAppOpen" href="#" target="_blank" rel="noopener">在 Naver App 開啟 (圖釘)</a>
+          <a class="btn btn-naver btn-small" id="naverAppOpen" href="#" target="_blank" rel="noopener">iPhone：Naver App 開啟</a>
+          <a class="btn btn-naver btn-small" id="naverAppAndroid" href="#" target="_blank" rel="noopener">Android：Naver App 開啟</a>
           <button class="btn-ghost btn-small" type="button" data-copy="naverLink">複製連結</button>
-          <button class="btn-ghost btn-small" type="button" data-copy="naverApp">複製 App 連結</button>
+          <button class="btn-ghost btn-small" type="button" data-copy="naverApp">複製 iPhone App 連結</button>
+          <button class="btn-ghost btn-small" type="button" data-copy="naverAppAndroid">複製 Android App 連結</button>
         </div>
         <p class="note" style="color:#b42318">⚠️ Naver 搜尋框直接貼「緯度,經度」會顯示 No results found。座標請走上面 c= 網頁連結或 App 圖釘連結；搜尋框只吃店名 / 地址。</p>
-        <label>Naver App 連結</label>
+        <label>Naver App 連結（iPhone：nmap://）</label>
         <div class="mono" id="naverApp">—</div>
-        <p class="note">App 連結格式：<code>nmap://place?lat=緯度&amp;lng=經度&amp;name=名稱&amp;appname=網頁URL</code>（<code>appname</code> 必帶，網頁版必須填本頁 URL，填 bundle ID 會開啟失敗）</p>
-        <p class="note" style="color:#b42318">⚠️ 如果在 Muse / KakaoTalk / LINE 內建瀏覽器點 App 連結沒反應：請先點瀏覽器的「分享 → 在 Safari 開啟」，再回來點 App 連結。In-app browser 不支援 <code>nmap://</code> 跳轉。未安裝 Naver Map 時請先至 <a href="http://itunes.apple.com/app/id311867728?mt=8" target="_blank" rel="noopener">App Store 安裝 NAVER Map</a>。</p>
+        <label>Naver App 連結（Android：intent://，含 Play 商店備援）</label>
+        <div class="mono" id="naverAppAndroidText">—</div>
+        <p class="note">iPhone：<code>nmap://place?lat=緯度&amp;lng=經度&amp;name=名稱&amp;appname=網頁URL</code>（<code>appname</code> 必帶，網頁版必須填本頁 URL）<br>Android：<code>intent://place?...#Intent;scheme=nmap;package=com.nhn.android.nmap;S.browser_fallback_url=Play商店;end</code>（Chrome 直接點 <code>nmap://</code> 常常沒反應，必須用 <code>intent://</code> + package + 備援）</p>
+        <p class="note" style="color:#b42318">⚠️ 如果在 Muse / KakaoTalk / LINE 內建瀏覽器點 App 連結沒反應：請先點瀏覽器的「分享 → 在 Safari / Chrome 開啟」，再回來點 App 連結。In-app browser 不支援 <code>nmap://</code> / <code>intent://</code> 跳轉。未安裝 Naver Map 時：iPhone 請至 <a href="http://itunes.apple.com/app/id311867728?mt=8" target="_blank" rel="noopener">App Store 安裝 NAVER Map</a>；Android 請至 <a href="https://play.google.com/store/apps/details?id=com.nhn.android.nmap" target="_blank" rel="noopener">Google Play 安裝 NAVER Map</a>。</p>
         <p class="note">最穩的替代做法（不用 App 連結）：在 Safari 打開上面的 Naver 網頁連結，再點網頁裡的「App에서 보기 / Open in App」；或直接在 Naver Map App 搜尋框貼韓文店名 / 地址。</p>
       </div>
     </section>
@@ -135,7 +143,16 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
     </ol>
     <p class="note">不捏造座標：只顯示你輸入 / 解析出來的座標。沒有精確座標時，請用店名 / 地址搜尋連結，並在現場以地址再確認一次。</p>
   </div>
-  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18-fix2（修正：appname 改為網頁 URL + In-app browser 需先轉 Safari 說明）</p>
+  <div class="card">
+    <h2 style="margin-top:0">自我檢查（Android / iPhone 都要能開）</h2>
+    <ol>
+      <li><b>網頁：</b>iPhone Safari + Android Chrome 開本頁都應 200，左右兩欄都顯示範例座標。用分享 → 在 Safari / Chrome 開啟，不要停在 Muse / KakaoTalk / LINE 內建瀏覽器。</li>
+      <li><b>Google App：</b>iPhone 點「iPhone：Google Maps App」應跳 Google Maps App（<code>comgooglemaps://</code>）；Android 點「Android：Google Maps App」應跳 Google Maps App（<code>geo:</code>），或點網頁連結由系統跳 App 選擇。</li>
+      <li><b>Naver App：</b>iPhone 點「iPhone：Naver App」應跳 Naver Map App（<code>nmap://place</code>，Safari 內）；Android 點「Android：Naver App」應跳 Naver Map App（<code>intent://place…#Intent;scheme=nmap;package=com.nhn.android.nmap</code>，Chrome 內；未安裝時導 Play 商店）。</li>
+      <li><b>網頁備援：</b>App 沒反應時，改點「Naver 網頁開啟 (c=)」/「Google Maps 開啟」，在網頁裡再點 App 橫幅；或直接在 App 搜尋框貼韓文店名 / 地址。</li>
+    </ol>
+  </div>
+  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18-fix3（新增 Android intent:// + geo: 分流按鈕）</p>
 </div>
 
 <script>
@@ -143,7 +160,9 @@ const R = 20037508.34;
 const $ = id => document.getElementById(id);
 const els = {paste:$('paste'),name:$('name'),lat:$('lat'),lng:$('lng'),mx:$('mx'),my:$('my'),
   googleLink:$('googleLink'),googleApp:$('googleApp'),googleOpen:$('googleOpen'),
-  naverLink:$('naverLink'),naverApp:$('naverApp'),naverOpen:$('naverOpen'),naverAppOpen:$('naverAppOpen'),status:$('parseStatus')};
+  googleAppIOS:$('googleAppIOS'),googleAppAndroid:$('googleAppAndroid'),
+  naverLink:$('naverLink'),naverApp:$('naverApp'),naverOpen:$('naverOpen'),naverAppOpen:$('naverAppOpen'),
+  naverAppAndroid:$('naverAppAndroid'),naverAppAndroidText:$('naverAppAndroidText'),status:$('parseStatus')};
 let syncing = false;
 
 function wgsToMerc(lng,lat){
@@ -162,16 +181,19 @@ function setStatus(msg,ok){ els.status.textContent = msg||''; els.status.classNa
 function updateLinks(){
   const lat = parseFloat(els.lat.value), lng = parseFloat(els.lng.value);
   const name = els.name.value.trim();
-  if(!isFinite(lat)||!isFinite(lng)){ els.googleLink.textContent='—'; els.googleApp.textContent='—'; els.naverLink.textContent='—'; els.naverApp.textContent='—'; return; }
+  if(!isFinite(lat)||!isFinite(lng)){ els.googleLink.textContent='—'; els.googleApp.textContent='—'; els.naverLink.textContent='—'; els.naverApp.textContent='—'; if(els.naverAppAndroidText) els.naverAppAndroidText.textContent='—'; return; }
   const latS = fmt(lat,6), lngS = fmt(lng,6);
   // Google: precise pin uses lat,lng; if name exists also keep a name-search variant in title
   const gWeb = 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(latS+','+lngS);
   const gWebName = name ? 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(name) : '';
   const gApp = 'comgooglemaps://?q='+encodeURIComponent(latS+','+lngS)+'&zoom=17';
+  const gAppAndroid = 'geo:'+latS+','+lngS+'?q='+encodeURIComponent(latS+','+lngS);
   const gShow = gWeb + (gWebName ? '\n店名搜尋：'+gWebName : '');
   els.googleLink.textContent = gShow;
-  els.googleApp.textContent = gApp;
+  els.googleApp.textContent = gApp + '\nAndroid：' + gAppAndroid;
   els.googleOpen.href = gWeb;
+  if(els.googleAppIOS) els.googleAppIOS.href = gApp;
+  if(els.googleAppAndroid) els.googleAppAndroid.href = gAppAndroid;
 
   const [x,y] = wgsToMerc(lng,lat);
   const xS = fmt(x,2), yS = fmt(y,2);
@@ -185,11 +207,15 @@ function updateLinks(){
   // 另：In-app browser（Muse / KakaoTalk / LINE 內建瀏覽器）點 nmap:// 常常直接失敗，
   // 必須先用 Safari 開啟本頁再點 App 連結。
   const nApp = 'nmap://place?lat='+latS+'&lng='+lngS+'&name='+encodeURIComponent(name||latS+','+lngS)+'&appname='+encodeURIComponent('https://trevor-web-cloud.github.io/korea-drug-check/map-converter/');
+  // FIX fix3: Android Chrome 點 nmap:// 常常沒反應，必須用 intent:// + package + Play 備援。
+  const nAppAndroid = 'intent://place?lat='+latS+'&lng='+lngS+'&name='+encodeURIComponent(name||latS+','+lngS)+'&appname='+encodeURIComponent('https://trevor-web-cloud.github.io/korea-drug-check/map-converter/')+'#Intent;scheme=nmap;package=com.nhn.android.nmap;S.browser_fallback_url='+encodeURIComponent('https://play.google.com/store/apps/details?id=com.nhn.android.nmap')+';end';
   els.naverLink.textContent = nWeb + (nSearch ? '\n店名/地址搜尋：'+nSearch : '\n（無店名/地址時，Naver 不提供座標搜尋連結，請用上面 c= 或 App 圖釘連結）');
   els.naverApp.textContent = nApp;
+  if(els.naverAppAndroidText) els.naverAppAndroidText.textContent = nAppAndroid;
   els.naverOpen.href = nWeb;
   els.naverOpen.textContent = '在 Naver 網頁開啟 (c=)';
   if(els.naverAppOpen){ els.naverAppOpen.href = nApp; }
+  if(els.naverAppAndroid){ els.naverAppAndroid.href = nAppAndroid; }
 }
 
 function updateFromLatLng(lat,lng,msg){
@@ -272,7 +298,9 @@ $('clearBtn').addEventListener('click',()=>{ els.paste.value=''; els.name.value=
 document.querySelectorAll('[data-copy]').forEach(btn=>{
   btn.addEventListener('click', async ()=>{
     const key = btn.getAttribute('data-copy');
-    const text = els[key].textContent.split('\n')[0];
+    // naverAppAndroid 複製來源是 mono 文字欄，不是 <a> 按鈕本身
+    const srcEl = (key==='naverAppAndroid') ? els.naverAppAndroidText : els[key];
+    const text = srcEl.textContent.split('\n')[0];
     if(!text || text==='—') return;
     try{ await navigator.clipboard.writeText(text); btn.textContent='已複製 ✓'; setTimeout(()=>{ btn.textContent = key.includes('App')?'複製 App 連結':'複製連結'; },1200); }
     catch(e){ const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); btn.textContent='已複製 ✓'; setTimeout(()=>{ btn.textContent = key.includes('App')?'複製 App 連結':'複製連結'; },1200); }
