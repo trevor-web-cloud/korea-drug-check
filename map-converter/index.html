@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Naver ↔ Google 地圖座標轉換 · 左右對照</title>
+<meta name="description" content="Google Maps 與 Naver Map 左右對照轉換：貼上任一邊連結，自動算出另一邊。座標通用 WGS84，只有 Naver 網址的 c= 是 Web Mercator (EPSG:3857) 公尺座標。">
+<style>
+*{box-sizing:border-box}
+:root{--google:#1a73e8;--naver:#03c75a;--bg:#f6f7f9;--card:#fff;--line:#e2e6eb;--text:#1a1d21;--muted:#667085}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif;line-height:1.5}
+header{padding:20px 16px 12px;max-width:1080px;margin:0 auto}
+h1{font-size:22px;margin:0 0 6px}
+.sub{color:var(--muted);font-size:14px;margin:0}
+.sub b{color:var(--text)}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px 28px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:14px}
+label{display:block;font-size:13px;color:var(--muted);margin:12px 0 4px}
+input,textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-size:16px;background:#fff;color:var(--text)}
+input:focus,textarea:focus{outline:2px solid #a8c7fa;border-color:#a8c7fa}
+textarea{min-height:68px;resize:vertical}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+button,.btn{appearance:none;border:0;border-radius:999px;padding:10px 16px;font-size:15px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn-primary{background:#111;color:#fff}
+.btn-ghost{background:#eef2f6;color:#111}
+.btn-google{background:var(--google);color:#fff}
+.btn-naver{background:var(--naver);color:#fff}
+.btn-small{padding:7px 12px;font-size:13px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;position:relative}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.panel-head{padding:14px 16px;color:#fff;font-weight:800;display:flex;justify-content:space-between;align-items:center}
+.panel-head.google{background:var(--google)}
+.panel-head.naver{background:var(--naver)}
+.panel-body{padding:6px 16px 16px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;font-size:14px;background:#f6f7f9;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.linkrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.note{font-size:13px;color:var(--muted);margin:8px 0 0}
+.badge{font-size:12px;background:rgba(255,255,255,.22);padding:4px 8px;border-radius:999px}
+.vs{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;z-index:2;border:3px solid var(--bg)}
+.status{font-size:13px;margin-top:10px;min-height:20px}
+.status.ok{color:#067647}.status.err{color:#b42318}
+h2{font-size:16px;margin:14px 0 4px}
+ol,ul{margin:8px 0;padding-left:20px;font-size:14px}
+code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
+@media(max-width:760px){
+  .grid{grid-template-columns:1fr}
+  .vs{display:none}
+  h1{font-size:20px}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Naver ↔ Google 地圖座標轉換 <span style="font-weight:400">· 左右對照</span></h1>
+  <p class="sub">左邊 Google，右邊 Naver。改一邊，另一邊自動跟著算。<b>不用開對方連結，理論計算就夠。</b>有店名用店名搜尋最簡單；要精確圖釘才用座標。</p>
+</header>
+
+<div class="wrap">
+  <div class="card">
+    <h2 style="margin-top:0">① 貼上任一邊的連結 / 座標，自動解析</h2>
+    <label for="paste">Google 連結 / Naver 連結 / 座標（例如 <code>35.1028,129.0403</code> 或 Naver <code>c=14364700,4177860</code>）</label>
+    <textarea id="paste" placeholder="例如：https://www.google.com/maps/place/.../@35.1028,129.0403,17z&#10;或：https://map.naver.com/p?c=14364700,4177860,15,0,0,0,dh&#10;或直接貼 35.1028,129.0403"></textarea>
+    <div class="row">
+      <button class="btn-primary" id="parseBtn" type="button">解析並對照 →</button>
+      <button class="btn-ghost" id="exampleBtn" type="button">填入範例：釜山南浦洞</button>
+      <button class="btn-ghost" id="clearBtn" type="button">清除</button>
+    </div>
+    <div class="status" id="parseStatus"></div>
+    <label for="name">② 店名 / 地址（選填，會一起帶入兩邊的搜尋連結）</label>
+    <input id="name" placeholder="例如：아르반시티호텔 / 南浦洞 / 부산 연제구 연산동 603-10" autocomplete="off">
+    <p class="note">小提醒：<code>naver.me/...</code> 短連結本身沒有座標，網頁無法直接解。先在瀏覽器打開它一次，讓它跳轉成完整 <code>map.naver.com/...</code> 連結，再把完整連結貼到上面。Google 的 <code>maps.app.goo.gl/...</code> 短連結也一樣，要先打開展開。</p>
+  </div>
+
+  <div class="grid">
+    <div class="vs">⇄</div>
+    <!-- LEFT: Google -->
+    <section class="panel" aria-label="Google Maps">
+      <div class="panel-head google"><span>◀ Google Maps</span><span class="badge">WGS84 · 緯度,經度</span></div>
+      <div class="panel-body">
+        <label for="lat">緯度 lat（-90 ~ 90）</label>
+        <input id="lat" inputmode="decimal" placeholder="35.1028">
+        <label for="lng">經度 lng（-180 ~ 180）</label>
+        <input id="lng" inputmode="decimal" placeholder="129.0403">
+        <p class="note">Google 用 WGS84 <code>EPSG:4326</code>，單位是「度」。這組數字兩邊通用。</p>
+        <label>Google 連結</label>
+        <div class="mono" id="googleLink">—</div>
+        <div class="linkrow">
+          <a class="btn btn-google btn-small" id="googleOpen" href="#" target="_blank" rel="noopener">在 Google Maps 開啟</a>
+          <button class="btn-ghost btn-small" type="button" data-copy="googleLink">複製連結</button>
+          <button class="btn-ghost btn-small" type="button" data-copy="googleApp">複製 App 連結</button>
+        </div>
+        <label>Google App 連結</label>
+        <div class="mono" id="googleApp">—</div>
+        <p class="note">App 連結格式：<code>comgooglemaps://?q=緯度,經度&amp;zoom=17</code>（iPhone 需已安裝 Google Maps）</p>
+      </div>
+    </section>
+
+    <!-- RIGHT: Naver -->
+    <section class="panel" aria-label="Naver Map">
+      <div class="panel-head naver"><span>Naver Map ▶</span><span class="badge">c= · EPSG:3857 公尺</span></div>
+      <div class="panel-body">
+        <label for="mx">X（Naver <code>c=</code> 第 1 個數字，公尺）</label>
+        <input id="mx" inputmode="decimal" placeholder="14364700">
+        <label for="my">Y（Naver <code>c=</code> 第 2 個數字，公尺）</label>
+        <input id="my" inputmode="decimal" placeholder="4177860">
+        <p class="note">Naver 網頁網址的 <code>c=</code> 不是經緯度，是 Web Mercator <code>EPSG:3857</code> 投影座標，單位是公尺，順序是 <code>X,Y</code> = 經度方向,緯度方向。</p>
+        <label>Naver 連結</label>
+        <div class="mono" id="naverLink">—</div>
+        <div class="linkrow">
+          <a class="btn btn-naver btn-small" id="naverOpen" href="#" target="_blank" rel="noopener">在 Naver Map 開啟</a>
+          <button class="btn-ghost btn-small" type="button" data-copy="naverLink">複製連結</button>
+          <button class="btn-ghost btn-small" type="button" data-copy="naverApp">複製 App 連結</button>
+        </div>
+        <label>Naver App 連結</label>
+        <div class="mono" id="naverApp">—</div>
+        <p class="note">App 連結格式：<code>nmap://place?lat=緯度&amp;lng=經度&amp;name=名稱&amp;appname=...</code>（<code>appname</code> 必帶，否則會靜默失敗）</p>
+      </div>
+    </section>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">理論計算公式</h2>
+    <p style="font-size:14px;margin:0"><b>Google → Naver：</b><code>x = 經度 × 20037508.34 / 180</code>；<code>y = log(tan((90+緯度)×π/360)) / (π/180) × 20037508.34 / 180</code></p>
+    <p style="font-size:14px"><b>Naver → Google：</b><code>經度 = X × 180 / 20037508.34</code>；<code>緯度 = atan(exp(Y×π/20037508.34)) × 360/π - 90</code></p>
+    <h2>使用方式</h2>
+    <ol>
+      <li><b>有店名：</b>直接在上面填店名（韓文名最穩），兩邊都會產生搜尋連結，點開即是同一間。</li>
+      <li><b>要精確圖釘：</b>左邊填 <code>緯度,經度</code>，右邊自動算出 <code>c= X,Y</code>；或右邊填 <code>X,Y</code>，左邊自動算回經緯度。</li>
+      <li><b>只有一邊的分享連結：</b>貼到最上面解析。Google 連結取 <code>@緯度,經度</code>；Naver 連結取 <code>c= X,Y</code> 再轉。</li>
+    </ol>
+    <p class="note">不捏造座標：只顯示你輸入 / 解析出來的座標。沒有精確座標時，請用店名 / 地址搜尋連結，並在現場以地址再確認一次。</p>
+  </div>
+  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18</p>
+</div>
+
+<script>
+const R = 20037508.34;
+const $ = id => document.getElementById(id);
+const els = {paste:$('paste'),name:$('name'),lat:$('lat'),lng:$('lng'),mx:$('mx'),my:$('my'),
+  googleLink:$('googleLink'),googleApp:$('googleApp'),googleOpen:$('googleOpen'),
+  naverLink:$('naverLink'),naverApp:$('naverApp'),naverOpen:$('naverOpen'),status:$('parseStatus')};
+let syncing = false;
+
+function wgsToMerc(lng,lat){
+  const x = lng * R / 180;
+  const y = Math.log(Math.tan((90+lat)*Math.PI/360)) / (Math.PI/180) * R / 180;
+  return [x,y];
+}
+function mercToWgs(x,y){
+  const lng = x * 180 / R;
+  const lat = Math.atan(Math.exp(y*Math.PI/R)) * 360/Math.PI - 90;
+  return [lng,lat];
+}
+function fmt(n,d){ return Number(n).toFixed(d); }
+function setStatus(msg,ok){ els.status.textContent = msg||''; els.status.className='status '+(ok?'ok':'err'); }
+
+function updateLinks(){
+  const lat = parseFloat(els.lat.value), lng = parseFloat(els.lng.value);
+  const name = els.name.value.trim();
+  if(!isFinite(lat)||!isFinite(lng)){ els.googleLink.textContent='—'; els.googleApp.textContent='—'; els.naverLink.textContent='—'; els.naverApp.textContent='—'; return; }
+  const latS = fmt(lat,6), lngS = fmt(lng,6);
+  // Google: precise pin uses lat,lng; if name exists also keep a name-search variant in title
+  const gWeb = 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(latS+','+lngS);
+  const gWebName = name ? 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(name) : '';
+  const gApp = 'comgooglemaps://?q='+encodeURIComponent(latS+','+lngS)+'&zoom=17';
+  const gShow = gWeb + (gWebName ? '\n店名搜尋：'+gWebName : '');
+  els.googleLink.textContent = gShow;
+  els.googleApp.textContent = gApp;
+  els.googleOpen.href = gWeb;
+
+  const [x,y] = wgsToMerc(lng,lat);
+  const xS = fmt(x,2), yS = fmt(y,2);
+  // Naver web: c= link + name search
+  const nWeb = 'https://map.naver.com/p?c='+xS+','+yS+',15,0,0,0,dh';
+  const nSearch = name ? 'https://map.naver.com/p/search/'+encodeURIComponent(name)
+    : 'https://map.naver.com/p/search/'+encodeURIComponent(latS+','+lngS);
+  const nApp = 'nmap://place?lat='+latS+'&lng='+lngS+'&name='+encodeURIComponent(name||latS+','+lngS)+'&appname=com.example.mapconverter';
+  els.naverLink.textContent = nWeb + '\n店名/座標搜尋：'+nSearch;
+  els.naverApp.textContent = nApp;
+  els.naverOpen.href = nSearch; // search link is the most robust web entry; c= link shown above for copy
+  els.naverOpen.textContent = '在 Naver Map 開啟（搜尋）';
+}
+
+function updateFromLatLng(lat,lng,msg){
+  if(syncing) return; syncing=true;
+  els.lat.value = fmt(lat,6); els.lng.value = fmt(lng,6);
+  const [x,y]=wgsToMerc(lng,lat);
+  els.mx.value = fmt(x,2); els.my.value = fmt(y,2);
+  syncing=false; updateLinks(); if(msg) setStatus(msg,true);
+}
+function updateFromXY(x,y,msg){
+  if(syncing) return; syncing=true;
+  els.mx.value = fmt(x,2); els.my.value = fmt(y,2);
+  const [lng,lat]=mercToWgs(x,y);
+  els.lat.value = fmt(lat,6); els.lng.value = fmt(lng,6);
+  syncing=false; updateLinks(); if(msg) setStatus(msg,true);
+}
+
+function parseInput(){
+  const raw = els.paste.value.trim();
+  if(!raw){ setStatus('請先貼上連結或座標。',false); return; }
+  // Naver c= : c=14364700,4177860  (allow spaces)
+  let m = raw.match(/c\s*=\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/i);
+  if(m){
+    const x=parseFloat(m[1]), y=parseFloat(m[2]);
+    if(Math.abs(x)<=20037508.34 && Math.abs(y)<=20037508.34){
+      updateFromXY(x,y,'已解析 Naver c= → 換算為 Google 經緯度。');
+      return;
+    }
+  }
+  // Google @lat,lng  or  ?q=lat,lng / ?query=lat,lng / api=1&query=lat,lng
+  m = raw.match(/@(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
+  if(m){ updateFromLatLng(parseFloat(m[1]),parseFloat(m[2]),'已解析 Google @緯度,經度。'); return; }
+  m = raw.match(/[?&](?:q|query)\s*=\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/i);
+  if(m){ updateFromLatLng(parseFloat(m[1]),parseFloat(m[2]),'已解析 Google ?q=緯度,經度。'); return; }
+  // Bare "lat,lng" — assume Google order lat,lng
+  m = raw.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+  if(m){
+    const a=parseFloat(m[1]), b=parseFloat(m[2]);
+    // If first looks like Mercator meters (>180), treat as X,Y
+    if(Math.abs(a)>180 || Math.abs(b)>180){ updateFromXY(a,b,'已解析 X,Y（公尺）→ 換算為經緯度。'); return; }
+    updateFromLatLng(a,b,'已解析 緯度,經度。'); return;
+  }
+  // Naver / Google place search with a name: use it as name
+  // e.g. map.naver.com/p/search/xxx  or google .../search/xxx
+  m = raw.match(/\/p\/search\/([^\/?#]+)/);
+  if(m){ els.name.value = decodeURIComponent(m[1].replace(/\+/g,' ')); setStatus('已取出搜尋名稱，請再確認。已保留目前座標。',true); updateLinks(); return; }
+  setStatus('解析不到座標：如果是 naver.me / goo.gl 短連結，請先在瀏覽器打開一次，複製跳轉後的完整連結再貼。',false);
+}
+
+els.lat.addEventListener('input',()=>{ const la=parseFloat(els.lat.value), ln=parseFloat(els.lng.value); if(isFinite(la)&&isFinite(ln)&&Math.abs(la)<=90&&Math.abs(ln)<=180) updateFromLatLng(la,ln); });
+els.lng.addEventListener('input',()=>{ const la=parseFloat(els.lat.value), ln=parseFloat(els.lng.value); if(isFinite(la)&&isFinite(ln)&&Math.abs(la)<=90&&Math.abs(ln)<=180) updateFromLatLng(la,ln); });
+els.mx.addEventListener('input',()=>{ const x=parseFloat(els.mx.value), y=parseFloat(els.my.value); if(isFinite(x)&&isFinite(y)&&Math.abs(x)<=R&&Math.abs(y)<=R) updateFromXY(x,y); });
+els.my.addEventListener('input',()=>{ const x=parseFloat(els.mx.value), y=parseFloat(els.my.value); if(isFinite(x)&&isFinite(y)&&Math.abs(x)<=R&&Math.abs(y)<=R) updateFromXY(x,y); });
+els.name.addEventListener('input',updateLinks);
+$('parseBtn').addEventListener('click',parseInput);
+$('exampleBtn').addEventListener('click',()=>{ els.name.value='南浦洞'; updateFromLatLng(35.1028,129.0403,'已填入範例：釜山南浦洞 35.1028,129.0403'); });
+$('clearBtn').addEventListener('click',()=>{ els.paste.value=''; els.name.value=''; els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value=''; updateLinks(); setStatus('',true); });
+document.querySelectorAll('[data-copy]').forEach(btn=>{
+  btn.addEventListener('click', async ()=>{
+    const key = btn.getAttribute('data-copy');
+    const text = els[key].textContent.split('\n')[0];
+    if(!text || text==='—') return;
+    try{ await navigator.clipboard.writeText(text); btn.textContent='已複製 ✓'; setTimeout(()=>{ btn.textContent = key.includes('App')?'複製 App 連結':'複製連結'; },1200); }
+    catch(e){ const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); btn.textContent='已複製 ✓'; setTimeout(()=>{ btn.textContent = key.includes('App')?'複製 App 連結':'複製連結'; },1200); }
+  });
+});
+// Prefill example so left/right comparison is visible immediately
+updateFromLatLng(35.1028,129.0403);
+</script>
+</body>
+</html>
