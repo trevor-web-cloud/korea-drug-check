@@ -116,7 +116,9 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
         <p class="note" style="color:#b42318">⚠️ Naver 搜尋框直接貼「緯度,經度」會顯示 No results found。座標請走上面 c= 網頁連結或 App 圖釘連結；搜尋框只吃店名 / 地址。</p>
         <label>Naver App 連結</label>
         <div class="mono" id="naverApp">—</div>
-        <p class="note">App 連結格式：<code>nmap://place?lat=緯度&amp;lng=經度&amp;name=名稱&amp;appname=...</code>（<code>appname</code> 必帶，否則會靜默失敗）</p>
+        <p class="note">App 連結格式：<code>nmap://place?lat=緯度&amp;lng=經度&amp;name=名稱&amp;appname=網頁URL</code>（<code>appname</code> 必帶，網頁版必須填本頁 URL，填 bundle ID 會開啟失敗）</p>
+        <p class="note" style="color:#b42318">⚠️ 如果在 Muse / KakaoTalk / LINE 內建瀏覽器點 App 連結沒反應：請先點瀏覽器的「分享 → 在 Safari 開啟」，再回來點 App 連結。In-app browser 不支援 <code>nmap://</code> 跳轉。未安裝 Naver Map 時請先至 <a href="http://itunes.apple.com/app/id311867728?mt=8" target="_blank" rel="noopener">App Store 安裝 NAVER Map</a>。</p>
+        <p class="note">最穩的替代做法（不用 App 連結）：在 Safari 打開上面的 Naver 網頁連結，再點網頁裡的「App에서 보기 / Open in App」；或直接在 Naver Map App 搜尋框貼韓文店名 / 地址。</p>
       </div>
     </section>
   </div>
@@ -133,7 +135,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
     </ol>
     <p class="note">不捏造座標：只顯示你輸入 / 解析出來的座標。沒有精確座標時，請用店名 / 地址搜尋連結，並在現場以地址再確認一次。</p>
   </div>
-  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18-fix1（修正：Naver 座標搜尋 No results / goo.gl 短連結解析 / 新增 !3d!4d 解析）</p>
+  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18-fix2（修正：appname 改為網頁 URL + In-app browser 需先轉 Safari 說明）</p>
 </div>
 
 <script>
@@ -178,7 +180,11 @@ function updateLinks(){
   // /p/search/ 只用於店名 / 地址。
   const nWeb = 'https://map.naver.com/p?c='+xS+','+yS+',15,0,0,0,dh';
   const nSearch = name ? 'https://map.naver.com/p/search/'+encodeURIComponent(name) : '';
-  const nApp = 'nmap://place?lat='+latS+'&lng='+lngS+'&name='+encodeURIComponent(name||latS+','+lngS)+'&appname=com.example.mapconverter';
+  // FIX 2026-10-18-fix2: Naver 官方規定，mobile web 的 appname 必須是「網頁 URL」，
+  // 不是 bundle ID。之前用 com.example.mapconverter 會導致 App 開啟失敗。
+  // 另：In-app browser（Muse / KakaoTalk / LINE 內建瀏覽器）點 nmap:// 常常直接失敗，
+  // 必須先用 Safari 開啟本頁再點 App 連結。
+  const nApp = 'nmap://place?lat='+latS+'&lng='+lngS+'&name='+encodeURIComponent(name||latS+','+lngS)+'&appname='+encodeURIComponent('https://trevor-web-cloud.github.io/korea-drug-check/map-converter/');
   els.naverLink.textContent = nWeb + (nSearch ? '\n店名/地址搜尋：'+nSearch : '\n（無店名/地址時，Naver 不提供座標搜尋連結，請用上面 c= 或 App 圖釘連結）');
   els.naverApp.textContent = nApp;
   els.naverOpen.href = nWeb;
