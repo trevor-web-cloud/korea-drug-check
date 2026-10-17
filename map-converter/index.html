@@ -58,17 +58,17 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
 <div class="wrap">
   <div class="card">
     <h2 style="margin-top:0">① 貼上任一邊的連結 / 座標，自動解析</h2>
-    <label for="paste">Google 連結 / Naver 連結 / 座標（例如 <code>35.1028,129.0403</code> 或 Naver <code>c=14364700,4177860</code>）</label>
-    <textarea id="paste" placeholder="例如：https://www.google.com/maps/place/.../@35.1028,129.0403,17z&#10;或：https://map.naver.com/p?c=14364700,4177860,15,0,0,0,dh&#10;或直接貼 35.1028,129.0403"></textarea>
+    <label for="paste">Google 連結 / Naver 連結 / 座標（例如 <code>35.097883,129.034663</code> 或 Naver <code>c=14364073,4177191</code>）</label>
+    <textarea id="paste" placeholder="例如：https://www.google.com/maps/place/.../@35.097883,129.034663,17z&#10;或：https://map.naver.com/p?c=14364073,4177191,15,0,0,0,dh&#10;或直接貼 35.097883,129.034663"></textarea>
     <div class="row">
       <button class="btn-primary" id="parseBtn" type="button">解析並對照 →</button>
-      <button class="btn-ghost" id="exampleBtn" type="button">填入範例：釜山南浦洞</button>
+      <button class="btn-ghost" id="exampleBtn" type="button">填入範例：南浦站 남포역</button>
       <button class="btn-ghost" id="clearBtn" type="button">清除</button>
       <button class="btn-ghost" id="expandBtn" type="button" style="display:none">在新分頁打開短連結展開 →</button>
     </div>
     <div class="status" id="parseStatus"></div>
     <label for="name">② 店名 / 地址（選填，會一起帶入兩邊的搜尋連結）</label>
-    <input id="name" placeholder="例如：아르반시티호텔 / 南浦洞 / 부산 연제구 연산동 603-10" autocomplete="off">
+    <input id="name" placeholder="例如：아르반시티호텔 / 南浦站 / 부산 연제구 연산동 603-10" autocomplete="off">
     <p class="note">小提醒：<code>naver.me/...</code>、<code>maps.app.goo.gl/...</code> 短連結本身沒有座標，純前端網頁無法直接解（需跟隨跳轉，瀏覽器會擋 CORS）。請按解析區的「在新分頁打開短連結展開」，等跳轉成完整連結後，複製網址列的完整連結再貼回來。完整連結通常含 <code>@緯度,經度</code> 或 <code>!3d緯度!4d經度</code> 或 <code>c= X,Y</code>。</p>
   </div>
 
@@ -79,9 +79,9 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       <div class="panel-head google"><span>◀ Google Maps</span><span class="badge">WGS84 · 緯度,經度</span></div>
       <div class="panel-body">
         <label for="lat">緯度 lat（-90 ~ 90）</label>
-        <input id="lat" inputmode="decimal" placeholder="35.1028">
+        <input id="lat" inputmode="decimal" placeholder="35.097883">
         <label for="lng">經度 lng（-180 ~ 180）</label>
-        <input id="lng" inputmode="decimal" placeholder="129.0403">
+        <input id="lng" inputmode="decimal" placeholder="129.034663">
         <p class="note">Google 用 WGS84 <code>EPSG:4326</code>，單位是「度」。這組數字兩邊通用。</p>
         <label>Google 連結</label>
         <div class="mono" id="googleLink">—</div>
@@ -105,9 +105,9 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       <div class="panel-head naver"><span>Naver Map ▶</span><span class="badge">c= · EPSG:3857 公尺</span></div>
       <div class="panel-body">
         <label for="mx">X（Naver <code>c=</code> 第 1 個數字，公尺）</label>
-        <input id="mx" inputmode="decimal" placeholder="14364700">
+        <input id="mx" inputmode="decimal" placeholder="14364073">
         <label for="my">Y（Naver <code>c=</code> 第 2 個數字，公尺）</label>
-        <input id="my" inputmode="decimal" placeholder="4177860">
+        <input id="my" inputmode="decimal" placeholder="4177191">
         <p class="note">Naver 網頁網址的 <code>c=</code> 不是經緯度，是 Web Mercator <code>EPSG:3857</code> 投影座標，單位是公尺，順序是 <code>X,Y</code> = 經度方向,緯度方向。</p>
         <label>Naver 連結（網頁版用 c= 相機座標，勿用座標搜尋）</label>
         <div class="mono" id="naverLink">—</div>
@@ -152,7 +152,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       <li><b>網頁備援：</b>App 沒反應時，改點「Naver 網頁開啟 (c=)」/「Google Maps 開啟」，在網頁裡再點 App 橫幅；或直接在 App 搜尋框貼韓文店名 / 地址。</li>
     </ol>
   </div>
-  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18-fix3（新增 Android intent:// + geo: 分流按鈕）</p>
+  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18-fix4（修正範例座標：舊 35.1028,129.0403 是釜山市中心/中央洞碼頭，非南浦洞；改為南浦站 35.097883,129.034663）</p>
 </div>
 
 <script>
@@ -245,7 +245,7 @@ function parseInput(){
     return;
   }
   if(expandBtn) expandBtn.style.display='none';
-  // Naver c= : c=14364700,4177860  (allow spaces)
+  // Naver c= : c=14364073,4177191  (allow spaces)
   let m = raw.match(/c\s*=\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/i);
   if(m){
     const x=parseFloat(m[1]), y=parseFloat(m[2]);
@@ -293,7 +293,7 @@ els.mx.addEventListener('input',()=>{ const x=parseFloat(els.mx.value), y=parseF
 els.my.addEventListener('input',()=>{ const x=parseFloat(els.mx.value), y=parseFloat(els.my.value); if(isFinite(x)&&isFinite(y)&&Math.abs(x)<=R&&Math.abs(y)<=R) updateFromXY(x,y); });
 els.name.addEventListener('input',updateLinks);
 $('parseBtn').addEventListener('click',parseInput);
-$('exampleBtn').addEventListener('click',()=>{ els.name.value='南浦洞'; updateFromLatLng(35.1028,129.0403,'已填入範例：釜山南浦洞 35.1028,129.0403'); });
+$('exampleBtn').addEventListener('click',()=>{ els.name.value='남포역'; updateFromLatLng(35.097883,129.034663,'已填入範例：南浦站 남포역 35.097883,129.034663'); });
 $('clearBtn').addEventListener('click',()=>{ els.paste.value=''; els.name.value=''; els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value=''; updateLinks(); setStatus('',true); });
 document.querySelectorAll('[data-copy]').forEach(btn=>{
   btn.addEventListener('click', async ()=>{
@@ -307,7 +307,7 @@ document.querySelectorAll('[data-copy]').forEach(btn=>{
   });
 });
 // Prefill example so left/right comparison is visible immediately
-updateFromLatLng(35.1028,129.0403);
+updateFromLatLng(35.097883,129.034663);
 </script>
 </body>
 </html>
