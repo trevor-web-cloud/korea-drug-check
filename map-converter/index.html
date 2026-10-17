@@ -64,11 +64,12 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       <button class="btn-primary" id="parseBtn" type="button">解析並對照 →</button>
       <button class="btn-ghost" id="exampleBtn" type="button">填入範例：釜山南浦洞</button>
       <button class="btn-ghost" id="clearBtn" type="button">清除</button>
+      <button class="btn-ghost" id="expandBtn" type="button" style="display:none">在新分頁打開短連結展開 →</button>
     </div>
     <div class="status" id="parseStatus"></div>
     <label for="name">② 店名 / 地址（選填，會一起帶入兩邊的搜尋連結）</label>
     <input id="name" placeholder="例如：아르반시티호텔 / 南浦洞 / 부산 연제구 연산동 603-10" autocomplete="off">
-    <p class="note">小提醒：<code>naver.me/...</code> 短連結本身沒有座標，網頁無法直接解。先在瀏覽器打開它一次，讓它跳轉成完整 <code>map.naver.com/...</code> 連結，再把完整連結貼到上面。Google 的 <code>maps.app.goo.gl/...</code> 短連結也一樣，要先打開展開。</p>
+    <p class="note">小提醒：<code>naver.me/...</code>、<code>maps.app.goo.gl/...</code> 短連結本身沒有座標，純前端網頁無法直接解（需跟隨跳轉，瀏覽器會擋 CORS）。請按解析區的「在新分頁打開短連結展開」，等跳轉成完整連結後，複製網址列的完整連結再貼回來。完整連結通常含 <code>@緯度,經度</code> 或 <code>!3d緯度!4d經度</code> 或 <code>c= X,Y</code>。</p>
   </div>
 
   <div class="grid">
@@ -104,13 +105,15 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
         <label for="my">Y（Naver <code>c=</code> 第 2 個數字，公尺）</label>
         <input id="my" inputmode="decimal" placeholder="4177860">
         <p class="note">Naver 網頁網址的 <code>c=</code> 不是經緯度，是 Web Mercator <code>EPSG:3857</code> 投影座標，單位是公尺，順序是 <code>X,Y</code> = 經度方向,緯度方向。</p>
-        <label>Naver 連結</label>
+        <label>Naver 連結（網頁版用 c= 相機座標，勿用座標搜尋）</label>
         <div class="mono" id="naverLink">—</div>
         <div class="linkrow">
-          <a class="btn btn-naver btn-small" id="naverOpen" href="#" target="_blank" rel="noopener">在 Naver Map 開啟</a>
+          <a class="btn btn-naver btn-small" id="naverOpen" href="#" target="_blank" rel="noopener">在 Naver 網頁開啟 (c=)</a>
+          <a class="btn btn-naver btn-small" id="naverAppOpen" href="#" target="_blank" rel="noopener">在 Naver App 開啟 (圖釘)</a>
           <button class="btn-ghost btn-small" type="button" data-copy="naverLink">複製連結</button>
           <button class="btn-ghost btn-small" type="button" data-copy="naverApp">複製 App 連結</button>
         </div>
+        <p class="note" style="color:#b42318">⚠️ Naver 搜尋框直接貼「緯度,經度」會顯示 No results found。座標請走上面 c= 網頁連結或 App 圖釘連結；搜尋框只吃店名 / 地址。</p>
         <label>Naver App 連結</label>
         <div class="mono" id="naverApp">—</div>
         <p class="note">App 連結格式：<code>nmap://place?lat=緯度&amp;lng=經度&amp;name=名稱&amp;appname=...</code>（<code>appname</code> 必帶，否則會靜默失敗）</p>
@@ -130,7 +133,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
     </ol>
     <p class="note">不捏造座標：只顯示你輸入 / 解析出來的座標。沒有精確座標時，請用店名 / 地址搜尋連結，並在現場以地址再確認一次。</p>
   </div>
-  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18</p>
+  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18-fix1（修正：Naver 座標搜尋 No results / goo.gl 短連結解析 / 新增 !3d!4d 解析）</p>
 </div>
 
 <script>
@@ -138,7 +141,7 @@ const R = 20037508.34;
 const $ = id => document.getElementById(id);
 const els = {paste:$('paste'),name:$('name'),lat:$('lat'),lng:$('lng'),mx:$('mx'),my:$('my'),
   googleLink:$('googleLink'),googleApp:$('googleApp'),googleOpen:$('googleOpen'),
-  naverLink:$('naverLink'),naverApp:$('naverApp'),naverOpen:$('naverOpen'),status:$('parseStatus')};
+  naverLink:$('naverLink'),naverApp:$('naverApp'),naverOpen:$('naverOpen'),naverAppOpen:$('naverAppOpen'),status:$('parseStatus')};
 let syncing = false;
 
 function wgsToMerc(lng,lat){
@@ -170,15 +173,17 @@ function updateLinks(){
 
   const [x,y] = wgsToMerc(lng,lat);
   const xS = fmt(x,2), yS = fmt(y,2);
-  // Naver web: c= link + name search
+  // FIX 2026-10-18: Naver /p/search/「緯度,經度」會 No results found，勿再產生。
+  // 座標定位只用：網頁 c= 相機連結 + App nmap://place 圖釘連結。
+  // /p/search/ 只用於店名 / 地址。
   const nWeb = 'https://map.naver.com/p?c='+xS+','+yS+',15,0,0,0,dh';
-  const nSearch = name ? 'https://map.naver.com/p/search/'+encodeURIComponent(name)
-    : 'https://map.naver.com/p/search/'+encodeURIComponent(latS+','+lngS);
+  const nSearch = name ? 'https://map.naver.com/p/search/'+encodeURIComponent(name) : '';
   const nApp = 'nmap://place?lat='+latS+'&lng='+lngS+'&name='+encodeURIComponent(name||latS+','+lngS)+'&appname=com.example.mapconverter';
-  els.naverLink.textContent = nWeb + '\n店名/座標搜尋：'+nSearch;
+  els.naverLink.textContent = nWeb + (nSearch ? '\n店名/地址搜尋：'+nSearch : '\n（無店名/地址時，Naver 不提供座標搜尋連結，請用上面 c= 或 App 圖釘連結）');
   els.naverApp.textContent = nApp;
-  els.naverOpen.href = nSearch; // search link is the most robust web entry; c= link shown above for copy
-  els.naverOpen.textContent = '在 Naver Map 開啟（搜尋）';
+  els.naverOpen.href = nWeb;
+  els.naverOpen.textContent = '在 Naver 網頁開啟 (c=)';
+  if(els.naverAppOpen){ els.naverAppOpen.href = nApp; }
 }
 
 function updateFromLatLng(lat,lng,msg){
@@ -199,6 +204,15 @@ function updateFromXY(x,y,msg){
 function parseInput(){
   const raw = els.paste.value.trim();
   if(!raw){ setStatus('請先貼上連結或座標。',false); return; }
+  const expandBtn = $('expandBtn');
+  // FIX 2026-10-18: 短連結本身沒有座標，純前端無法直接解（CORS + 需跟隨跳轉）。
+  // 先明確告知 + 提供一鍵在新分頁展開，展開後再複製網址列的完整連結回來貼。
+  if(/maps\.app\.goo\.gl|goo\.gl\/maps|naver\.me\//i.test(raw) && !/[@?].*(\d+\.\d+|!3d|c=)/.test(raw)){
+    setStatus('這是短連結，裡面沒有座標，網頁無法直接解析。請按「在新分頁打開短連結展開」，等跳轉成完整連結後，複製網址列的完整連結再貼回來。',false);
+    if(expandBtn){ expandBtn.style.display=''; expandBtn.onclick=()=>{ window.open(raw,'_blank','noopener'); }; }
+    return;
+  }
+  if(expandBtn) expandBtn.style.display='none';
   // Naver c= : c=14364700,4177860  (allow spaces)
   let m = raw.match(/c\s*=\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/i);
   if(m){
@@ -208,10 +222,17 @@ function parseInput(){
       return;
     }
   }
-  // Google @lat,lng  or  ?q=lat,lng / ?query=lat,lng / api=1&query=lat,lng
+  // Google place data: !3d lat !4d lng  (expanded share links often use this, not @lat,lng)
+  // Also handle reversed order just in case.
+  let m3 = raw.match(/!3d(-?\d+(?:\.\d+)?)/), m4 = raw.match(/!4d(-?\d+(?:\.\d+)?)/);
+  if(m3 && m4){
+    const lat = parseFloat(m3[1]), lng = parseFloat(m4[1]);
+    if(Math.abs(lat)<=90 && Math.abs(lng)<=180){ updateFromLatLng(lat,lng,'已解析 Google !3d緯度 !4d經度。'); return; }
+  }
+  // Google @lat,lng  or  ?q=lat,lng / ?query=lat,lng / api=1&query=lat,lng / ?ll= / ?center= / ?destination=
   m = raw.match(/@(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
   if(m){ updateFromLatLng(parseFloat(m[1]),parseFloat(m[2]),'已解析 Google @緯度,經度。'); return; }
-  m = raw.match(/[?&](?:q|query)\s*=\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/i);
+  m = raw.match(/[?&](?:q|query|ll|center|destination|saddr|daddr)\s*=\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/i);
   if(m){ updateFromLatLng(parseFloat(m[1]),parseFloat(m[2]),'已解析 Google ?q=緯度,經度。'); return; }
   // Bare "lat,lng" — assume Google order lat,lng
   m = raw.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
@@ -223,9 +244,15 @@ function parseInput(){
   }
   // Naver / Google place search with a name: use it as name
   // e.g. map.naver.com/p/search/xxx  or google .../search/xxx
+  // Skip if it looks like "lat,lng" (already handled above, and Naver search with coords returns No results)
   m = raw.match(/\/p\/search\/([^\/?#]+)/);
-  if(m){ els.name.value = decodeURIComponent(m[1].replace(/\+/g,' ')); setStatus('已取出搜尋名稱，請再確認。已保留目前座標。',true); updateLinks(); return; }
-  setStatus('解析不到座標：如果是 naver.me / goo.gl 短連結，請先在瀏覽器打開一次，複製跳轉後的完整連結再貼。',false);
+  if(m){
+    const decoded = decodeURIComponent(m[1].replace(/\+/g,' '));
+    if(!/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(decoded)){
+      els.name.value = decoded; setStatus('已取出搜尋名稱，請再確認。已保留目前座標。',true); updateLinks(); return;
+    }
+  }
+  setStatus('解析不到座標：短連結（maps.app.goo.gl / naver.me）需先在瀏覽器打開展開，複製跳轉後的完整連結再貼。完整連結通常含 @緯度,經度 或 !3d緯度!4d經度 或 c= X,Y。',false);
 }
 
 els.lat.addEventListener('input',()=>{ const la=parseFloat(els.lat.value), ln=parseFloat(els.lng.value); if(isFinite(la)&&isFinite(ln)&&Math.abs(la)<=90&&Math.abs(ln)<=180) updateFromLatLng(la,ln); });
