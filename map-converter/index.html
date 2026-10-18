@@ -110,7 +110,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       </div>
     </section>
   </div>
-  <p class="note" style="text-align:center">v2026-10-18-fix18</p>
+  <p class="note" style="text-align:center">v2026-10-18-fix19</p>
 </div>
 
 <script>
@@ -401,9 +401,10 @@ function parseInput(){
     try{ qDec = decodeURIComponent(qText[1].replace(/\+/g,' ')); }catch(e){ qDec = qText[1]; }
     if(qDec && qDec.length>1 && !/^[\d.,\s-]+$/.test(qDec)){
       els.name.value = qDec;
-      // FIX fix18: 此連結沒有座標，欄位裡的舊座標（南浦預設值）是殘留的，必須標為失效，
-      // 否則 Naver 主按鈕會誤用殘留南浦座標當「座標」開啟。ID 未找到時主按鈕應為「ID 未找到」，備援按鈕才顯示店名搜尋。
+      // FIX fix19: 此連結沒有座標，欄位裡的舊座標（南浦預設值）是殘留的，必須清空 + 標為失效，
+      // 否則 Naver 主按鈕會誤用殘留南浦座標當「座標」開啟，且 X/Y 欄會誤顯示南浦值。ID 未找到時主按鈕應為「ID 未找到」，備援按鈕才顯示店名搜尋。
       coordsValidForName = false;
+      els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value='';
       if(currentGoogleId) setStatus('已解析：'+qDec+'（Google ID 已取出）',true);
       else setStatus('已取出店名「'+qDec+'」：Google ID 未找到，請用備援店名搜尋。',true);
       updateLinks(); return;
@@ -424,7 +425,7 @@ function parseInput(){
   if(m){
     const decoded = decodeURIComponent(m[1].replace(/\+/g,' '));
     if(!/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(decoded)){
-      els.name.value = decoded; coordsValidForName = false; setStatus('已取出搜尋名稱，請再確認。',true); updateLinks(); return;
+      els.name.value = decoded; coordsValidForName = false; els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value=''; setStatus('已取出搜尋名稱，請再確認。',true); updateLinks(); return;
     }
   }
   // Google /place/<店名>/ 展開連結：取出店名 + Plus Code 解碼
@@ -450,6 +451,7 @@ function parseInput(){
   if(placeName){
     els.name.value = placeName;
     coordsValidForName = false;
+    els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value='';
     setStatus('已取出店名「'+placeName+'」：此連結沒有座標 / Plus Code。',true);
     updateLinks(); return;
   }
