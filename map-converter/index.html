@@ -152,7 +152,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       <li><b>網頁備援：</b>App 沒反應時，改點「Naver 網頁開啟 (c=)」/「Google Maps 開啟」，在網頁裡再點 App 橫幅；或直接在 App 搜尋框貼韓文店名 / 地址。</li>
     </ol>
   </div>
-  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18-fix7（修：短連結提示不再把殘留店名誤說成這次取出）</p>
+  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18-fix8（新增 Google ?q=店名/地址文字擷取：goo.gl 展開後無座標時也能產生搜尋連結）</p>
 </div>
 
 <script>
@@ -319,6 +319,21 @@ function parseInput(){
   if(m){ updateFromLatLng(parseFloat(m[1]),parseFloat(m[2]),'已解析 Google @緯度,經度。'); return; }
   m = raw.match(/[?&](?:q|query|ll|center|destination|saddr|daddr)\s*=\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/i);
   if(m){ updateFromLatLng(parseFloat(m[1]),parseFloat(m[2]),'已解析 Google ?q=緯度,經度。'); return; }
+  // FIX fix8: Google goo.gl 展開後的 maps.google.com?q=<店名+地址>（非座標）：
+  // 例 ?q=南韓 Gyeongsangnam-do, Miryang-si, ... 三浪津生態文化公園&ftid=...
+  // 之前會掉到最後的「解析不到座標」，其實應取出 q= 文字當店名/地址，產生雙邊搜尋連結。
+  const qText = raw.match(/[?&](?:q|query)\s*=\s*([^&]+)/i);
+  if(qText){
+    let qDec = '';
+    try{ qDec = decodeURIComponent(qText[1].replace(/\+/g,' ')); }catch(e){ qDec = qText[1]; }
+    // 取最後一段（通常是店名），例如「... Songji-ri, 458 三浪津生態文化公園」→「三浪津生態文化公園」
+    // 若 q= 全是地址，也直接當店名/地址用，搜尋連結仍可用。
+    if(qDec && qDec.length>1 && !/^[\d.,\s-]+$/.test(qDec)){
+      els.name.value = qDec;
+      setStatus('已取出 Google ?q= 店名/地址「'+qDec+'」：此連結沒有座標，請用店名/地址搜尋連結（下方已產生）。',true);
+      updateLinks(); return;
+    }
+  }
   // Bare "lat,lng" — assume Google order lat,lng
   m = raw.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
   if(m){
