@@ -156,7 +156,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       <li><b>網頁備援：</b>App 沒反應時，改點「Naver 網頁開啟 (c=)」/「Google Maps 開啟」，在網頁裡再點 App 橫幅；或直接在 App 搜尋框貼韓文店名 / 地址。</li>
     </ol>
   </div>
-  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18-fix11（新增：非韓文連結取出 pinId 產生 place 連結，直接開正確地點，不用搜尋；非韓文名稱明確提示）</p>
+  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18-fix12（改：全部搜索以 ID 為主 — 有 pinId 時 Naver 主按鈕走 place ID 連結，店名搜尋僅為無 ID 時的備援）</p>
 </div>
 
 <script>
@@ -231,11 +231,14 @@ function updateLinks(){
   els.naverLink.textContent = (hasName ? '店名/地址搜尋：'+nSearch : '') + (hasCoords ? (hasName ? '\n' : '') + '座標 (c=)：'+nCoordWeb : '') + (currentPinId ? '\n地點連結（place ID，不受語言影響）：https://map.naver.com/p/entry/place/'+currentPinId : '') + (!hasName ? '\n（無店名/地址時，Naver 不提供座標搜尋連結，請用上面 c= 或 App 圖釘連結）' : '');
   els.naverApp.textContent = (hasName ? '店名搜尋：'+nAppName : '') + (hasCoords ? (hasName ? '\n' : '') + '座標圖釘：'+nAppCoord : '');
   if(els.naverAppAndroidText) els.naverAppAndroidText.textContent = (hasName ? '店名搜尋：'+nAppAndroidName : '') + (hasCoords ? (hasName ? '\n' : '') + '座標圖釘：'+nAppAndroidCoord : '');
-  els.naverOpen.href = hasName ? nSearch : (nCoordWeb || '#');
-  els.naverOpen.textContent = hasName ? '在 Naver 網頁開啟 (店名搜尋)' : '在 Naver 網頁開啟 (座標 c=)';
+  // FIX fix12: 全部搜索以 ID 為主 — 有 pinId 時，Naver 主按鈕一律走 place ID 連結（與語言無關、精確、不會搜不到），
+  // 店名搜尋降為備援（僅在無 ID 時才當主按鈕）。nmap:// 沒有 pinId 參數，所以 App 按鈕也用 place 網頁連結（已安裝 Naver App 時會由 App 開啟）。
+  const nPlace = currentPinId ? 'https://map.naver.com/p/entry/place/'+currentPinId : '';
+  els.naverOpen.href = nPlace || (hasName ? nSearch : (nCoordWeb || '#'));
+  els.naverOpen.textContent = nPlace ? '在 Naver 開啟 (地點 ID)' : (hasName ? '在 Naver 網頁開啟 (店名搜尋)' : '在 Naver 網頁開啟 (座標 c=)');
   if(els.naverCoordOpen){ els.naverCoordOpen.href = nCoordWeb || '#'; els.naverCoordOpen.style.display = hasCoords ? '' : 'none'; }
-  if(els.naverAppOpen){ els.naverAppOpen.href = hasName ? nAppName : (nAppCoord || '#'); els.naverAppOpen.textContent = hasName ? 'iPhone：Naver App 開啟 (店名搜尋)' : 'iPhone：Naver App 開啟 (座標圖釘)'; }
-  if(els.naverAppAndroid){ els.naverAppAndroid.href = hasName ? nAppAndroidName : (nAppAndroidCoord || '#'); els.naverAppAndroid.textContent = hasName ? 'Android：Naver App 開啟 (店名搜尋)' : 'Android：Naver App 開啟 (座標圖釘)'; }
+  if(els.naverAppOpen){ els.naverAppOpen.href = nPlace || (hasName ? nAppName : (nAppCoord || '#')); els.naverAppOpen.textContent = nPlace ? 'iPhone：Naver App 開啟 (地點 ID)' : (hasName ? 'iPhone：Naver App 開啟 (店名搜尋)' : 'iPhone：Naver App 開啟 (座標圖釘)'); }
+  if(els.naverAppAndroid){ els.naverAppAndroid.href = nPlace || (hasName ? nAppAndroidName : (nAppAndroidCoord || '#')); els.naverAppAndroid.textContent = nPlace ? 'Android：Naver App 開啟 (地點 ID)' : (hasName ? 'Android：Naver App 開啟 (店名搜尋)' : 'Android：Naver App 開啟 (座標圖釘)'); }
 }
 
 function updateFromLatLng(lat,lng,msg){
@@ -428,7 +431,7 @@ els.my.addEventListener('input',()=>{ const x=parseFloat(els.mx.value), y=parseF
 els.name.addEventListener('input',updateLinks);
 $('parseBtn').addEventListener('click',parseInput);
 $('exampleBtn').addEventListener('click',()=>{ els.name.value='남포역'; updateFromLatLng(35.097883,129.034663,'已填入範例：南浦站 남포역 35.097883,129.034663'); });
-$('clearBtn').addEventListener('click',()=>{ els.paste.value=''; els.name.value=''; els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value=''; updateLinks(); setStatus('',true); });
+$('clearBtn').addEventListener('click',()=>{ els.paste.value=''; els.name.value=''; els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value=''; currentPinId=''; updateLinks(); setStatus('',true); });
 document.querySelectorAll('[data-copy]').forEach(btn=>{
   btn.addEventListener('click', async ()=>{
     const key = btn.getAttribute('data-copy');
