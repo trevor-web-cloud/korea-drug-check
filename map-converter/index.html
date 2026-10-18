@@ -156,7 +156,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       <li><b>網頁備援：</b>App 沒反應時，改點「Naver 網頁開啟 (c=)」/「Google Maps 開啟」，在網頁裡再點 App 橫幅；或直接在 App 搜尋框貼韓文店名 / 地址。</li>
     </ol>
   </div>
-  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18-fix12（改：全部搜索以 ID 為主 — 有 pinId 時 Naver 主按鈕走 place ID 連結，店名搜尋僅為無 ID 時的備援）</p>
+  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18-fix13（改：不以店名/地名為主 — ID/座標優先，僅在座標不是這間店時才用店名搜尋）</p>
 </div>
 
 <script>
@@ -169,6 +169,10 @@ const els = {paste:$('paste'),name:$('name'),lat:$('lat'),lng:$('lng'),mx:$('mx'
   naverAppAndroid:$('naverAppAndroid'),naverAppAndroidText:$('naverAppAndroidText'),status:$('parseStatus')};
 let syncing = false;
 let currentPinId = '';
+// FIX fix13: 不以店名/地名為主 — 座標/ID 優先，但必須是「這間店的」座標才優先。
+// 座標與店名從同一條連結一起解析出來時，coordsValidForName=true，座標優先；
+// 使用者手動改店名時，舊座標不再保證是這間店的，coordsValidForName=false，店名搜尋優先（避免南浦洞舊座標誤開）。
+let coordsValidForName = false;
 
 function wgsToMerc(lng,lat){
   const x = lng * R / 180;
@@ -202,21 +206,22 @@ function updateLinks(){
     return;
   }
   const latS = hasCoords ? fmt(lat,6) : '', lngS = hasCoords ? fmt(lng,6) : '';
-  // Google 網頁：主 = 店名搜尋（若有店名），副 = 座標圖釘（若有座標）
+  // FIX fix13: Google 也不以店名為主 — 座標是這間店的（同連結解析出）或無店名時，主 = 座標圖釘；
+  // 僅在有店名且座標不是這間店的（使用者手改店名、舊座標殘留）時，主 = 店名搜尋。
+  const coordsPrimary = hasCoords && (coordsValidForName || !hasName);
   const gCoordWeb = hasCoords ? 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(latS+','+lngS) : '';
   const gNameWeb = hasName ? 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(name) : '';
-  els.googleLink.textContent = (hasName ? '店名/地址搜尋：'+gNameWeb : '') + (hasCoords ? (hasName ? '\n' : '') + '座標圖釘：'+gCoordWeb : '');
-  els.googleOpen.href = hasName ? gNameWeb : gCoordWeb;
-  els.googleOpen.textContent = hasName ? '在 Google Maps 開啟 (店名搜尋)' : '在 Google Maps 開啟 (座標圖釘)';
+  els.googleLink.textContent = (coordsPrimary ? '座標圖釘：'+gCoordWeb : '') + (hasName ? (coordsPrimary ? '\n' : '') + '店名/地址搜尋：'+gNameWeb : '') + (!coordsPrimary && hasCoords ? '\n座標圖釘：'+gCoordWeb : '');
+  els.googleOpen.href = coordsPrimary ? gCoordWeb : (hasName ? gNameWeb : (gCoordWeb || '#'));
+  els.googleOpen.textContent = coordsPrimary ? '在 Google Maps 開啟 (座標圖釘)' : (hasName ? '在 Google Maps 開啟 (店名搜尋)' : '在 Google Maps 開啟 (座標圖釘)');
   if(els.googleCoordOpen){ els.googleCoordOpen.href = gCoordWeb || '#'; els.googleCoordOpen.style.display = hasCoords ? '' : 'none'; }
-  // Google App：主 = 店名搜尋（若有店名），座標圖釘只放在文字欄供複製
   const gAppCoord = hasCoords ? 'comgooglemaps://?q='+encodeURIComponent(latS+','+lngS)+'&zoom=17' : '';
   const gAppName = hasName ? 'comgooglemaps://?q='+encodeURIComponent(name)+'&zoom=17' : '';
   const gAppAndroidCoord = hasCoords ? 'geo:'+latS+','+lngS+'?q='+encodeURIComponent(latS+','+lngS) : '';
   const gAppAndroidName = hasName ? 'geo:0,0?q='+encodeURIComponent(name) : '';
-  els.googleApp.textContent = (hasName ? '店名搜尋 iPhone：'+gAppName+'\n店名搜尋 Android：'+gAppAndroidName : '') + (hasCoords ? (hasName ? '\n' : '') + '座標圖釘 iPhone：'+gAppCoord+'\n座標圖釘 Android：'+gAppAndroidCoord : '');
-  if(els.googleAppIOS) els.googleAppIOS.href = hasName ? gAppName : (gAppCoord || '#');
-  if(els.googleAppAndroid) els.googleAppAndroid.href = hasName ? gAppAndroidName : (gAppAndroidCoord || '#');
+  els.googleApp.textContent = (coordsPrimary ? '座標圖釘 iPhone：'+gAppCoord+'\n座標圖釘 Android：'+gAppAndroidCoord : '') + (hasName ? (coordsPrimary ? '\n' : '') + '店名搜尋 iPhone：'+gAppName+'\n店名搜尋 Android：'+gAppAndroidName : '') + (!coordsPrimary && hasCoords ? '\n座標圖釘 iPhone：'+gAppCoord+'\n座標圖釘 Android：'+gAppAndroidCoord : '');
+  if(els.googleAppIOS) els.googleAppIOS.href = coordsPrimary ? (gAppCoord || '#') : (hasName ? gAppName : (gAppCoord || '#'));
+  if(els.googleAppAndroid) els.googleAppAndroid.href = coordsPrimary ? (gAppAndroidCoord || '#') : (hasName ? gAppAndroidName : (gAppAndroidCoord || '#'));
 
   const [x,y] = hasCoords ? wgsToMerc(lng,lat) : [NaN,NaN];
   const xS = hasCoords ? fmt(x,2) : '', yS = hasCoords ? fmt(y,2) : '';
@@ -234,11 +239,17 @@ function updateLinks(){
   // FIX fix12: 全部搜索以 ID 為主 — 有 pinId 時，Naver 主按鈕一律走 place ID 連結（與語言無關、精確、不會搜不到），
   // 店名搜尋降為備援（僅在無 ID 時才當主按鈕）。nmap:// 沒有 pinId 參數，所以 App 按鈕也用 place 網頁連結（已安裝 Naver App 時會由 App 開啟）。
   const nPlace = currentPinId ? 'https://map.naver.com/p/entry/place/'+currentPinId : '';
-  els.naverOpen.href = nPlace || (hasName ? nSearch : (nCoordWeb || '#'));
-  els.naverOpen.textContent = nPlace ? '在 Naver 開啟 (地點 ID)' : (hasName ? '在 Naver 網頁開啟 (店名搜尋)' : '在 Naver 網頁開啟 (座標 c=)');
+  // FIX fix13: Naver 網頁主按鈕 — pinId → place；無 pinId 時，座標是這間店的 → c=；否則 → 店名搜尋。
+  els.naverOpen.href = nPlace || (coordsPrimary ? (nCoordWeb || '#') : (hasName ? nSearch : (nCoordWeb || '#')));
+  els.naverOpen.textContent = nPlace ? '在 Naver 開啟 (地點 ID)' : (coordsPrimary ? '在 Naver 網頁開啟 (座標 c=)' : (hasName ? '在 Naver 網頁開啟 (店名搜尋)' : '在 Naver 網頁開啟 (座標 c=)'));
   if(els.naverCoordOpen){ els.naverCoordOpen.href = nCoordWeb || '#'; els.naverCoordOpen.style.display = hasCoords ? '' : 'none'; }
-  if(els.naverAppOpen){ els.naverAppOpen.href = nPlace || (hasName ? nAppName : (nAppCoord || '#')); els.naverAppOpen.textContent = nPlace ? 'iPhone：Naver App 開啟 (地點 ID)' : (hasName ? 'iPhone：Naver App 開啟 (店名搜尋)' : 'iPhone：Naver App 開啟 (座標圖釘)'); }
-  if(els.naverAppAndroid){ els.naverAppAndroid.href = nPlace || (hasName ? nAppAndroidName : (nAppAndroidCoord || '#')); els.naverAppAndroid.textContent = nPlace ? 'Android：Naver App 開啟 (地點 ID)' : (hasName ? 'Android：Naver App 開啟 (店名搜尋)' : 'Android：Naver App 開啟 (座標圖釘)'); }
+  // FIX fix13: Naver App 也不以店名為主 — 有 pinId → place；無 pinId 時，座標是這間店的 → 座標圖釘；否則 → 店名搜尋。
+  const naverAppMain = nPlace || (coordsPrimary ? nAppCoord : (hasName ? nAppName : (nAppCoord || '#')));
+  const naverAppMainLabel = nPlace ? 'iPhone：Naver App 開啟 (地點 ID)' : (coordsPrimary ? 'iPhone：Naver App 開啟 (座標圖釘)' : (hasName ? 'iPhone：Naver App 開啟 (店名搜尋)' : 'iPhone：Naver App 開啟 (座標圖釘)'));
+  const naverAppAndroidMain = nPlace || (coordsPrimary ? nAppAndroidCoord : (hasName ? nAppAndroidName : (nAppAndroidCoord || '#')));
+  const naverAppAndroidLabel = nPlace ? 'Android：Naver App 開啟 (地點 ID)' : (coordsPrimary ? 'Android：Naver App 開啟 (座標圖釘)' : (hasName ? 'Android：Naver App 開啟 (店名搜尋)' : 'Android：Naver App 開啟 (座標圖釘)'));
+  if(els.naverAppOpen){ els.naverAppOpen.href = naverAppMain; els.naverAppOpen.textContent = naverAppMainLabel; }
+  if(els.naverAppAndroid){ els.naverAppAndroid.href = naverAppAndroidMain; els.naverAppAndroid.textContent = naverAppAndroidLabel; }
 }
 
 function updateFromLatLng(lat,lng,msg){
@@ -246,6 +257,8 @@ function updateFromLatLng(lat,lng,msg){
   els.lat.value = fmt(lat,6); els.lng.value = fmt(lng,6);
   const [x,y]=wgsToMerc(lng,lat);
   els.mx.value = fmt(x,2); els.my.value = fmt(y,2);
+  // FIX fix13: 座標被明確設定（解析連結或手動輸入），視為是目前這間店的，座標優先。
+  coordsValidForName = true;
   syncing=false; updateLinks(); if(msg) setStatus(msg,true);
 }
 function updateFromXY(x,y,msg){
@@ -253,6 +266,7 @@ function updateFromXY(x,y,msg){
   els.mx.value = fmt(x,2); els.my.value = fmt(y,2);
   const [lng,lat]=mercToWgs(x,y);
   els.lat.value = fmt(lat,6); els.lng.value = fmt(lng,6);
+  coordsValidForName = true;
   syncing=false; updateLinks(); if(msg) setStatus(msg,true);
 }
 
@@ -313,6 +327,7 @@ function parseInput(){
     let newlyExtracted = false;
     if(nameLine){ els.name.value = nameLine; newlyExtracted = true; }
     els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value='';
+    coordsValidForName=false;
     // FIX fix10: 必須無條件呼叫 updateLinks()，否則店名為空時按鈕會殘留南浦洞預設值。
     updateLinks();
     setStatus('這是短連結，網頁無法直接解析（需跟隨跳轉，瀏覽器會擋 CORS）。請按「在新分頁打開短連結展開」，等跳轉成完整連結後，複製網址列的完整連結再貼回來。'+(newlyExtracted ? '已先取出店名「'+els.name.value+'」，下方搜尋連結已可用。座標已清空（短連結無座標），請勿用舊座標。' : '座標已清空（短連結無座標）。'),false);
@@ -428,10 +443,10 @@ els.lat.addEventListener('input',()=>{ const la=parseFloat(els.lat.value), ln=pa
 els.lng.addEventListener('input',()=>{ const la=parseFloat(els.lat.value), ln=parseFloat(els.lng.value); if(isFinite(la)&&isFinite(ln)&&Math.abs(la)<=90&&Math.abs(ln)<=180) updateFromLatLng(la,ln); });
 els.mx.addEventListener('input',()=>{ const x=parseFloat(els.mx.value), y=parseFloat(els.my.value); if(isFinite(x)&&isFinite(y)&&Math.abs(x)<=R&&Math.abs(y)<=R) updateFromXY(x,y); });
 els.my.addEventListener('input',()=>{ const x=parseFloat(els.mx.value), y=parseFloat(els.my.value); if(isFinite(x)&&isFinite(y)&&Math.abs(x)<=R&&Math.abs(y)<=R) updateFromXY(x,y); });
-els.name.addEventListener('input',updateLinks);
+els.name.addEventListener('input',()=>{ coordsValidForName=false; updateLinks(); });
 $('parseBtn').addEventListener('click',parseInput);
 $('exampleBtn').addEventListener('click',()=>{ els.name.value='남포역'; updateFromLatLng(35.097883,129.034663,'已填入範例：南浦站 남포역 35.097883,129.034663'); });
-$('clearBtn').addEventListener('click',()=>{ els.paste.value=''; els.name.value=''; els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value=''; currentPinId=''; updateLinks(); setStatus('',true); });
+$('clearBtn').addEventListener('click',()=>{ els.paste.value=''; els.name.value=''; els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value=''; currentPinId=''; coordsValidForName=false; updateLinks(); setStatus('',true); });
 document.querySelectorAll('[data-copy]').forEach(btn=>{
   btn.addEventListener('click', async ()=>{
     const key = btn.getAttribute('data-copy');
