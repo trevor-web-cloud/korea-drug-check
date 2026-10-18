@@ -110,7 +110,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       </div>
     </section>
   </div>
-  <p class="note" style="text-align:center">v2026-10-18-fix19</p>
+  <p class="note" style="text-align:center">v2026-10-18-fix20</p>
 </div>
 
 <script>
@@ -157,9 +157,17 @@ function updateLinks(){
   if(!hasCoords && !hasName){
     els.googleLink.textContent='—'; els.googleApp.textContent='—'; els.naverLink.textContent='—'; els.naverApp.textContent='—';
     if(els.naverAppAndroidText) els.naverAppAndroidText.textContent='—';
-    els.googleOpen.href='#'; els.naverOpen.href='#';
-    if(els.googleCoordOpen) els.googleCoordOpen.href='#';
-    if(els.naverCoordOpen) els.naverCoordOpen.href='#';
+    // FIX fix20: 清空時必須同時重置所有按鈕文字 + 隱藏備援按鈕，否則上一個狀態的「地點 ID / ID 未找到 / 備援」文字會殘留。
+    els.googleOpen.href='#'; els.googleOpen.textContent='在 Google Maps 開啟';
+    els.naverOpen.href='#'; els.naverOpen.textContent='在 Naver 開啟';
+    if(els.googleCoordOpen){ els.googleCoordOpen.href='#'; els.googleCoordOpen.style.display='none'; }
+    if(els.naverCoordOpen){ els.naverCoordOpen.href='#'; els.naverCoordOpen.style.display='none'; }
+    if(els.googleAppIOS){ els.googleAppIOS.href='#'; els.googleAppIOS.textContent='iPhone App'; }
+    if(els.googleAppAndroid){ els.googleAppAndroid.href='#'; els.googleAppAndroid.textContent='Android App'; }
+    if(els.naverAppOpen){ els.naverAppOpen.href='#'; els.naverAppOpen.textContent='iPhone App'; }
+    if(els.naverAppAndroid){ els.naverAppAndroid.href='#'; els.naverAppAndroid.textContent='Android App'; }
+    if(els.googleNameFallback) els.googleNameFallback.style.display='none';
+    if(els.naverNameFallback) els.naverNameFallback.style.display='none';
     return;
   }
   const latS = hasCoords ? fmt(lat,6) : '', lngS = hasCoords ? fmt(lng,6) : '';
