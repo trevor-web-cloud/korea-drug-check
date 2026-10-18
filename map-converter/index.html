@@ -110,7 +110,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       </div>
     </section>
   </div>
-  <p class="note" style="text-align:center">v2026-10-18-fix20</p>
+  <p class="note" style="text-align:center">v2026-10-18-fix21</p>
 </div>
 
 <script>
@@ -195,11 +195,18 @@ function updateLinks(){
   const gAppAndroidCoord = hasCoords ? 'geo:'+latS+','+lngS+'?q='+encodeURIComponent(latS+','+lngS) : '';
   const gAppAndroidName = hasName ? 'geo:0,0?q='+encodeURIComponent(name) : '';
   els.googleApp.textContent = (coordsPrimary ? '座標圖釘 iPhone：'+gAppCoord+'\n座標圖釘 Android：'+gAppAndroidCoord : '') + (hasName ? (coordsPrimary ? '\n' : '') + '店名搜尋 iPhone：'+gAppName+'\n店名搜尋 Android：'+gAppAndroidName : '') + (!coordsPrimary && hasCoords ? '\n座標圖釘 iPhone：'+gAppCoord+'\n座標圖釘 Android：'+gAppAndroidCoord : '');
-  // FIX fix17: Google App 按鈕也只用 ID — ftid 無法直接用於 App URL Scheme，App 用座標圖釘；無座標時顯示 ID 未找到，不退回店名搜尋。
-  if(els.googleAppIOS) els.googleAppIOS.href = coordsPrimary ? (gAppCoord || '#') : '#';
-  if(els.googleAppIOS) els.googleAppIOS.textContent = coordsPrimary ? 'iPhone App' : 'iPhone App（ID 未找到）';
-  if(els.googleAppAndroid) els.googleAppAndroid.href = coordsPrimary ? (gAppAndroidCoord || '#') : '#';
-  if(els.googleAppAndroid) els.googleAppAndroid.textContent = coordsPrimary ? 'Android App' : 'Android App（ID 未找到）';
+  // FIX fix21: App 按鈕不能是死按鈕（href='#' 點了沒反應 = 使用者說的「無法開啟」）。
+  // Google App：ftid 無法用於 App URL Scheme，App 用座標圖釘；無座標但有店名時，退回店名搜尋備援（標示清楚），讓 App 能打開；兩者皆無時才顯示 ID 未找到。
+  if(els.googleAppIOS){
+    if(coordsPrimary){ els.googleAppIOS.href = gAppCoord || '#'; els.googleAppIOS.textContent = 'iPhone App'; }
+    else if(hasName){ els.googleAppIOS.href = gAppName; els.googleAppIOS.textContent = 'iPhone App（店名搜尋備援）'; }
+    else { els.googleAppIOS.href = '#'; els.googleAppIOS.textContent = 'iPhone App（ID 未找到）'; }
+  }
+  if(els.googleAppAndroid){
+    if(coordsPrimary){ els.googleAppAndroid.href = gAppAndroidCoord || '#'; els.googleAppAndroid.textContent = 'Android App'; }
+    else if(hasName){ els.googleAppAndroid.href = gAppAndroidName; els.googleAppAndroid.textContent = 'Android App（店名搜尋備援）'; }
+    else { els.googleAppAndroid.href = '#'; els.googleAppAndroid.textContent = 'Android App（ID 未找到）'; }
+  }
   if(els.googleNameFallback){
     if(hasName && !currentGoogleId && !coordsPrimary){
       els.googleNameFallback.href = gNameWeb;
@@ -234,10 +241,12 @@ function updateLinks(){
     els.naverOpen.textContent = 'ID 未找到';
   }
   if(els.naverCoordOpen){ els.naverCoordOpen.href = nCoordWeb || '#'; els.naverCoordOpen.style.display = hasCoords ? '' : 'none'; }
-  const naverAppMain = nPlace || (coordsPrimary ? nAppCoord : '#');
-  const naverAppMainLabel = nPlace ? 'iPhone App（地點 ID）' : (coordsPrimary ? 'iPhone App（座標圖釘）' : 'iPhone App（ID 未找到）');
-  const naverAppAndroidMain = nPlace || (coordsPrimary ? nAppAndroidCoord : '#');
-  const naverAppAndroidLabel = nPlace ? 'Android App（地點 ID）' : (coordsPrimary ? 'Android App（座標圖釘）' : 'Android App（ID 未找到）');
+  // FIX fix21: Naver App 按鈕也不能是死按鈕 — 有 pinId → place；無 pinId 時座標是這間店的 → 座標圖釘；
+  // 無 pinId 且無有效座標但有店名時，退回店名搜尋備援（nmap://search / intent://search，標示清楚），讓 App 能打開；三者皆無時才顯示 ID 未找到。
+  const naverAppMain = nPlace || (coordsPrimary ? nAppCoord : (hasName ? nAppName : '#'));
+  const naverAppMainLabel = nPlace ? 'iPhone App（地點 ID）' : (coordsPrimary ? 'iPhone App（座標圖釘）' : (hasName ? 'iPhone App（店名搜尋備援）' : 'iPhone App（ID 未找到）'));
+  const naverAppAndroidMain = nPlace || (coordsPrimary ? nAppAndroidCoord : (hasName ? nAppAndroidName : '#'));
+  const naverAppAndroidLabel = nPlace ? 'Android App（地點 ID）' : (coordsPrimary ? 'Android App（座標圖釘）' : (hasName ? 'Android App（店名搜尋備援）' : 'Android App（ID 未找到）'));
   if(els.naverAppOpen){ els.naverAppOpen.href = naverAppMain; els.naverAppOpen.textContent = naverAppMainLabel; }
   if(els.naverAppAndroid){ els.naverAppAndroid.href = naverAppAndroidMain; els.naverAppAndroid.textContent = naverAppAndroidLabel; }
   if(els.naverNameFallback){
