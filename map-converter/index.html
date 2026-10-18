@@ -6,6 +6,8 @@
 <title>Naver ↔ Google 地圖座標轉換 · 左右對照</title>
 <meta name="description" content="Google Maps 與 Naver Map 左右對照轉換：貼上任一邊連結，自動算出另一邊。座標通用 WGS84，只有 Naver 網址的 c= 是 Web Mercator (EPSG:3857) 公尺座標。">
 <style>
+/* FIX fix16: 簡化頁面 — 只顯示必要按鈕，隱藏連結文字、複製按鈕、座標副按鈕與範例（JS 仍更新它們，僅不顯示）。 */
+#googleLink,#googleApp,#naverLink,#naverApp,#naverAppAndroidText,#googleCoordOpen,#naverCoordOpen,#exampleBtn{display:none!important}
 *{box-sizing:border-box}
 :root{--google:#1a73e8;--naver:#03c75a;--bg:#f6f7f9;--card:#fff;--line:#e2e6eb;--text:#1a1d21;--muted:#667085}
 body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif;line-height:1.5}
@@ -51,112 +53,62 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
 </head>
 <body>
 <header>
-  <h1>Naver ↔ Google 地圖座標轉換 <span style="font-weight:400">· 左右對照</span></h1>
-  <p class="sub">左邊 Google，右邊 Naver。改一邊，另一邊自動跟著算。<b>不用開對方連結，理論計算就夠。</b>有店名用店名搜尋最簡單；要精確圖釘才用座標。</p>
+  <h1>Naver ↔ Google 地圖轉換</h1>
 </header>
 
 <div class="wrap">
   <div class="card">
-    <h2 style="margin-top:0">① 貼上任一邊的連結 / 座標，自動解析</h2>
-    <label for="paste">Google 連結 / Naver 連結 / 座標（例如 <code>35.097883,129.034663</code> 或 Naver <code>c=14364073,4177191</code>）</label>
-    <textarea id="paste" placeholder="例如：https://www.google.com/maps/place/.../@35.097883,129.034663,17z&#10;或：https://map.naver.com/p?c=14364073,4177191,15,0,0,0,dh&#10;或直接貼 35.097883,129.034663"></textarea>
+    <textarea id="paste" placeholder="貼上 Google / Naver 連結或座標"></textarea>
     <div class="row">
       <button class="btn-primary" id="parseBtn" type="button">解析並對照 →</button>
-      <button class="btn-ghost" id="exampleBtn" type="button">填入範例：南浦站 남포역</button>
+      <button class="btn-ghost" id="exampleBtn" type="button">填入範例</button>
       <button class="btn-ghost" id="clearBtn" type="button">清除</button>
       <button class="btn-ghost" id="expandBtn" type="button" style="display:none">在新分頁打開短連結展開 →</button>
     </div>
     <div class="status" id="parseStatus"></div>
-    <label for="name">② 店名 / 地址（選填，會一起帶入兩邊的搜尋連結）</label>
-    <input id="name" placeholder="例如：아르반시티호텔 / 南浦站 / 부산 연제구 연산동 603-10" autocomplete="off">
-    <p class="note">小提醒：<code>naver.me/...</code>、<code>maps.app.goo.gl/...</code> 短連結本身沒有座標，純前端網頁無法直接解（需跟隨跳轉，瀏覽器會擋 CORS）。請按解析區的「在新分頁打開短連結展開」，等跳轉成完整連結後，複製網址列的完整連結再貼回來。完整連結通常含 <code>@緯度,經度</code> 或 <code>!3d緯度!4d經度</code> 或 <code>c= X,Y</code>。</p>
+    <input id="name" placeholder="店名 / 地址" autocomplete="off" style="margin-top:10px">
   </div>
 
   <div class="grid">
     <div class="vs">⇄</div>
     <!-- LEFT: Google -->
     <section class="panel" aria-label="Google Maps">
-      <div class="panel-head google"><span>◀ Google Maps</span><span class="badge">WGS84 · 緯度,經度</span></div>
+      <div class="panel-head google"><span>Google Maps</span></div>
       <div class="panel-body">
-        <label for="lat">緯度 lat（-90 ~ 90）</label>
-        <input id="lat" inputmode="decimal" placeholder="35.097883">
-        <label for="lng">經度 lng（-180 ~ 180）</label>
-        <input id="lng" inputmode="decimal" placeholder="129.034663">
-        <p class="note">Google 用 WGS84 <code>EPSG:4326</code>，單位是「度」。這組數字兩邊通用。</p>
-        <label>Google 連結</label>
+        <input id="lat" inputmode="decimal" placeholder="緯度" style="margin-bottom:8px">
+        <input id="lng" inputmode="decimal" placeholder="經度">
         <div class="mono" id="googleLink">—</div>
         <div class="linkrow">
           <a class="btn btn-google btn-small" id="googleOpen" href="#" target="_blank" rel="noopener">在 Google Maps 開啟</a>
           <a class="btn btn-google btn-small" id="googleCoordOpen" href="#" target="_blank" rel="noopener">座標圖釘開啟</a>
-          <button class="btn-ghost btn-small" type="button" data-copy="googleLink">複製連結</button>
-          <button class="btn-ghost btn-small" type="button" data-copy="googleApp">複製 App 連結</button>
         </div>
-        <p class="note" style="color:#b42318">⚠️ 有填店名/地址時，主按鈕走「店名搜尋」（不會再被預設南浦洞座標帶走）；「座標圖釘開啟」才是用上面緯度/經度開圖釘，僅在座標確定是這間店時才點。</p>
-        <label>Google App 連結</label>
         <div class="mono" id="googleApp">—</div>
         <div class="linkrow">
-          <a class="btn btn-google btn-small" id="googleAppIOS" href="#" target="_blank" rel="noopener">iPhone：Google Maps App 開啟</a>
-          <a class="btn btn-google btn-small" id="googleAppAndroid" href="#" target="_blank" rel="noopener">Android：Google Maps App 開啟</a>
+          <a class="btn btn-google btn-small" id="googleAppIOS" href="#" target="_blank" rel="noopener">iPhone App</a>
+          <a class="btn btn-google btn-small" id="googleAppAndroid" href="#" target="_blank" rel="noopener">Android App</a>
         </div>
-        <p class="note">iPhone：<code>comgooglemaps://?q=緯度,經度&amp;zoom=17</code> ／ Android：<code>geo:緯度,經度?q=緯度,經度</code> ／ Android 點網頁連結也會跳出 App 選擇。</p>
       </div>
     </section>
 
     <!-- RIGHT: Naver -->
     <section class="panel" aria-label="Naver Map">
-      <div class="panel-head naver"><span>Naver Map ▶</span><span class="badge">c= · EPSG:3857 公尺</span></div>
+      <div class="panel-head naver"><span>Naver Map</span></div>
       <div class="panel-body">
-        <label for="mx">X（Naver <code>c=</code> 第 1 個數字，公尺）</label>
-        <input id="mx" inputmode="decimal" placeholder="14364073">
-        <label for="my">Y（Naver <code>c=</code> 第 2 個數字，公尺）</label>
-        <input id="my" inputmode="decimal" placeholder="4177191">
-        <p class="note">Naver 網頁網址的 <code>c=</code> 不是經緯度，是 Web Mercator <code>EPSG:3857</code> 投影座標，單位是公尺，順序是 <code>X,Y</code> = 經度方向,緯度方向。</p>
-        <label>Naver 連結（網頁版用 c= 相機座標，勿用座標搜尋）</label>
+        <input id="mx" inputmode="decimal" placeholder="X" style="margin-bottom:8px">
+        <input id="my" inputmode="decimal" placeholder="Y">
         <div class="mono" id="naverLink">—</div>
         <div class="linkrow">
-          <a class="btn btn-naver btn-small" id="naverOpen" href="#" target="_blank" rel="noopener">在 Naver 網頁開啟</a>
-          <a class="btn btn-naver btn-small" id="naverCoordOpen" href="#" target="_blank" rel="noopener">座標 (c=) 開啟</a>
-          <a class="btn btn-naver btn-small" id="naverAppOpen" href="#" target="_blank" rel="noopener">iPhone：Naver App 開啟</a>
-          <a class="btn btn-naver btn-small" id="naverAppAndroid" href="#" target="_blank" rel="noopener">Android：Naver App 開啟</a>
-          <button class="btn-ghost btn-small" type="button" data-copy="naverLink">複製連結</button>
-          <button class="btn-ghost btn-small" type="button" data-copy="naverApp">複製 iPhone App 連結</button>
-          <button class="btn-ghost btn-small" type="button" data-copy="naverAppAndroid">複製 Android App 連結</button>
+          <a class="btn btn-naver btn-small" id="naverOpen" href="#" target="_blank" rel="noopener">在 Naver 開啟</a>
+          <a class="btn btn-naver btn-small" id="naverCoordOpen" href="#" target="_blank" rel="noopener">座標開啟</a>
+          <a class="btn btn-naver btn-small" id="naverAppOpen" href="#" target="_blank" rel="noopener">iPhone App</a>
+          <a class="btn btn-naver btn-small" id="naverAppAndroid" href="#" target="_blank" rel="noopener">Android App</a>
         </div>
-        <p class="note" style="color:#b42318">⚠️ 有填店名/地址時，主按鈕走「店名搜尋」（不會再被預設南浦洞座標帶走）；「座標 (c=) 開啟」才是用上面 X,Y 開圖釘，僅在座標確定是這間店時才點。</p>
-        <p class="note" style="color:#b42318">⚠️ Naver 搜尋框直接貼「緯度,經度」會顯示 No results found。座標請走上面 c= 網頁連結或 App 圖釘連結；搜尋框只吃店名 / 地址。</p>
-        <label>Naver App 連結（iPhone：nmap://）</label>
         <div class="mono" id="naverApp">—</div>
-        <label>Naver App 連結（Android：intent://，含 Play 商店備援）</label>
         <div class="mono" id="naverAppAndroidText">—</div>
-        <p class="note">iPhone：<code>nmap://place?lat=緯度&amp;lng=經度&amp;name=名稱&amp;appname=網頁URL</code>（<code>appname</code> 必帶，網頁版必須填本頁 URL）<br>Android：<code>intent://place?...#Intent;scheme=nmap;package=com.nhn.android.nmap;S.browser_fallback_url=Play商店;end</code>（Chrome 直接點 <code>nmap://</code> 常常沒反應，必須用 <code>intent://</code> + package + 備援）</p>
-        <p class="note" style="color:#b42318">⚠️ 如果在 Muse / KakaoTalk / LINE 內建瀏覽器點 App 連結沒反應：請先點瀏覽器的「分享 → 在 Safari / Chrome 開啟」，再回來點 App 連結。In-app browser 不支援 <code>nmap://</code> / <code>intent://</code> 跳轉。未安裝 Naver Map 時：iPhone 請至 <a href="http://itunes.apple.com/app/id311867728?mt=8" target="_blank" rel="noopener">App Store 安裝 NAVER Map</a>；Android 請至 <a href="https://play.google.com/store/apps/details?id=com.nhn.android.nmap" target="_blank" rel="noopener">Google Play 安裝 NAVER Map</a>。</p>
-        <p class="note">最穩的替代做法（不用 App 連結）：在 Safari 打開上面的 Naver 網頁連結，再點網頁裡的「App에서 보기 / Open in App」；或直接在 Naver Map App 搜尋框貼韓文店名 / 地址。</p>
       </div>
     </section>
   </div>
-
-  <div class="card">
-    <h2 style="margin-top:0">理論計算公式</h2>
-    <p style="font-size:14px;margin:0"><b>Google → Naver：</b><code>x = 經度 × 20037508.34 / 180</code>；<code>y = log(tan((90+緯度)×π/360)) / (π/180) × 20037508.34 / 180</code></p>
-    <p style="font-size:14px"><b>Naver → Google：</b><code>經度 = X × 180 / 20037508.34</code>；<code>緯度 = atan(exp(Y×π/20037508.34)) × 360/π - 90</code></p>
-    <h2>使用方式</h2>
-    <ol>
-      <li><b>有店名：</b>直接在上面填店名（韓文名最穩），兩邊都會產生搜尋連結，點開即是同一間。</li>
-      <li><b>要精確圖釘：</b>左邊填 <code>緯度,經度</code>，右邊自動算出 <code>c= X,Y</code>；或右邊填 <code>X,Y</code>，左邊自動算回經緯度。</li>
-      <li><b>只有一邊的分享連結：</b>貼到最上面解析。Google 連結取 <code>@緯度,經度</code>；Naver 連結取 <code>c= X,Y</code> 再轉。</li>
-    </ol>
-    <p class="note">不捏造座標：只顯示你輸入 / 解析出來的座標。沒有精確座標時，請用店名 / 地址搜尋連結，並在現場以地址再確認一次。</p>
-  </div>
-  <div class="card">
-    <h2 style="margin-top:0">自我檢查（Android / iPhone 都要能開）</h2>
-    <ol>
-      <li><b>網頁：</b>iPhone Safari + Android Chrome 開本頁都應 200，左右兩欄都顯示範例座標。用分享 → 在 Safari / Chrome 開啟，不要停在 Muse / KakaoTalk / LINE 內建瀏覽器。</li>
-      <li><b>Google App：</b>iPhone 點「iPhone：Google Maps App」應跳 Google Maps App（<code>comgooglemaps://</code>）；Android 點「Android：Google Maps App」應跳 Google Maps App（<code>geo:</code>），或點網頁連結由系統跳 App 選擇。</li>
-      <li><b>Naver App：</b>iPhone 點「iPhone：Naver App」應跳 Naver Map App（<code>nmap://place</code>，Safari 內）；Android 點「Android：Naver App」應跳 Naver Map App（<code>intent://place…#Intent;scheme=nmap;package=com.nhn.android.nmap</code>，Chrome 內；未安裝時導 Play 商店）。</li>
-      <li><b>網頁備援：</b>App 沒反應時，改點「Naver 網頁開啟 (c=)」/「Google Maps 開啟」，在網頁裡再點 App 橫幅；或直接在 App 搜尋框貼韓文店名 / 地址。</li>
-    </ol>
-  </div>
-  <p class="note" style="text-align:center">短連結由解析服務主動取 ID（map-resolve.tsai0215.workers.dev）· v2026-10-18-fix15（改：Worker 網址已設定，換好 Worker 程式碼後自動解析生效）</p>
+  <p class="note" style="text-align:center">v2026-10-18-fix16</p>
 </div>
 
 <script>
@@ -350,7 +302,7 @@ function parseInput(){
         els.paste.value = loc;
         parseInput();
       }else{
-        setStatus('短連結自動解析未成功（解析服務未部署或連線失敗）。請按「在新分頁打開短連結展開」，等跳轉成完整連結後，複製網址列的完整連結再貼回來。'+(newlyExtracted ? '已先取出店名「'+els.name.value+'」，下方搜尋連結已可用。座標已清空（短連結無座標），請勿用舊座標。' : '座標已清空（短連結無座標）。'),false);
+        setStatus('自動解析失敗，請按「展開」手動取完整連結再貼回來。'+(newlyExtracted ? '已取出店名「'+els.name.value+'」。' : ''),false);
       }
     });
     return;
@@ -372,9 +324,9 @@ function parseInput(){
       const tm = raw.match(/[?&]title\s*=\s*([^&]+)/i);
       if(tm){ try{ els.name.value = decodeURIComponent(tm[1]); }catch(e){} }
       const isKorean = /[\uAC00-\uD7A3]/.test(els.name.value);
-      const pinNote = currentPinId ? ' Naver 地點連結（不受語言影響，直接開正確地點）：https://map.naver.com/p/entry/place/'+currentPinId : '';
-      const langNote = (!isKorean && els.name.value) ? '（注意：此名稱不含韓文，可能是英文/中文翻譯名，搜尋可能搜不到；請用上面的 place 連結直接開，或開 place 連結確認韓文原名。）' : '';
-      updateFromLatLng(la, ln, '已解析 Naver 跳轉連結 ?lat= / ?lng='+(els.name.value ? '（店名：'+els.name.value+'）' : '')+'。'+langNote+pinNote);
+      const pinNote = currentPinId ? '（ID '+currentPinId+'）' : '';
+      const langNote = (!isKorean && els.name.value) ? '（非韓文名，已轉 ID）' : '';
+      updateFromLatLng(la, ln, '已解析：'+(els.name.value||'')+pinNote+langNote);
       return;
     }
   }
