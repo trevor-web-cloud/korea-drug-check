@@ -110,7 +110,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       </div>
     </section>
   </div>
-  <p class="note" style="text-align:center">v2026-10-18-fix21</p>
+  <p class="note" style="text-align:center">v2026-10-18-fix22</p>
 </div>
 
 <script>
@@ -179,12 +179,13 @@ function updateLinks(){
   const gNameWeb = hasName ? 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(name) : '';
   const gFtidWeb = currentGoogleId ? 'https://maps.google.com/?ftid='+encodeURIComponent(currentGoogleId) : '';
   els.googleLink.textContent = (currentGoogleId ? 'ID (ftid)：'+gFtidWeb : '') + (coordsPrimary ? '\n座標圖釘：'+gCoordWeb : '');
-  if(currentGoogleId){
-    els.googleOpen.href = gFtidWeb;
-    els.googleOpen.textContent = '在 Google Maps 開啟 (地點 ID)';
-  }else if(coordsPrimary){
+  // FIX fix22: 以經緯度為主 — 有有效座標 → 座標圖釘；無座標時才用 ID；兩者皆無 → 「ID 未找到」，絕不退回店名搜尋。
+  if(coordsPrimary){
     els.googleOpen.href = gCoordWeb;
     els.googleOpen.textContent = '在 Google Maps 開啟 (座標圖釘)';
+  }else if(currentGoogleId){
+    els.googleOpen.href = gFtidWeb;
+    els.googleOpen.textContent = '在 Google Maps 開啟 (地點 ID)';
   }else{
     els.googleOpen.href = '#';
     els.googleOpen.textContent = 'ID 未找到';
@@ -227,26 +228,25 @@ function updateLinks(){
   els.naverLink.textContent = (hasName ? '店名/地址搜尋：'+nSearch : '') + (hasCoords ? (hasName ? '\n' : '') + '座標 (c=)：'+nCoordWeb : '') + (currentPinId ? '\n地點連結（place ID，不受語言影響）：https://map.naver.com/p/entry/place/'+currentPinId : '') + (!hasName ? '\n（無店名/地址時，Naver 不提供座標搜尋連結，請用上面 c= 或 App 圖釘連結）' : '');
   els.naverApp.textContent = (hasName ? '店名搜尋：'+nAppName : '') + (hasCoords ? (hasName ? '\n' : '') + '座標圖釘：'+nAppCoord : '');
   if(els.naverAppAndroidText) els.naverAppAndroidText.textContent = (hasName ? '店名搜尋：'+nAppAndroidName : '') + (hasCoords ? (hasName ? '\n' : '') + '座標圖釘：'+nAppAndroidCoord : '');
-  // FIX fix17: Naver 主按鈕也只用 ID 搜尋 — pinId → place；無 pinId 時，座標是這間店的 → c= / 座標圖釘；
-  // 兩者都沒有時，顯示「ID 未找到」，不退回店名搜尋。店名搜尋僅為備援按鈕（naverNameFallback）。
+  // FIX fix22: 以經緯度為主 — 有有效座標 → 座標；無座標時才用 pinId；兩者皆無 → 「ID 未找到」，不退回店名搜尋。店名搜尋僅為備援按鈕（naverNameFallback）。
   const nPlace = currentPinId ? 'https://map.naver.com/p/entry/place/'+currentPinId : '';
-  if(nPlace){
-    els.naverOpen.href = nPlace;
-    els.naverOpen.textContent = '在 Naver 開啟 (地點 ID)';
-  }else if(coordsPrimary){
+  if(coordsPrimary){
     els.naverOpen.href = nCoordWeb || '#';
     els.naverOpen.textContent = '在 Naver 開啟 (座標)';
+  }else if(nPlace){
+    els.naverOpen.href = nPlace;
+    els.naverOpen.textContent = '在 Naver 開啟 (地點 ID)';
   }else{
     els.naverOpen.href = '#';
     els.naverOpen.textContent = 'ID 未找到';
   }
   if(els.naverCoordOpen){ els.naverCoordOpen.href = nCoordWeb || '#'; els.naverCoordOpen.style.display = hasCoords ? '' : 'none'; }
-  // FIX fix21: Naver App 按鈕也不能是死按鈕 — 有 pinId → place；無 pinId 時座標是這間店的 → 座標圖釘；
-  // 無 pinId 且無有效座標但有店名時，退回店名搜尋備援（nmap://search / intent://search，標示清楚），讓 App 能打開；三者皆無時才顯示 ID 未找到。
-  const naverAppMain = nPlace || (coordsPrimary ? nAppCoord : (hasName ? nAppName : '#'));
-  const naverAppMainLabel = nPlace ? 'iPhone App（地點 ID）' : (coordsPrimary ? 'iPhone App（座標圖釘）' : (hasName ? 'iPhone App（店名搜尋備援）' : 'iPhone App（ID 未找到）'));
-  const naverAppAndroidMain = nPlace || (coordsPrimary ? nAppAndroidCoord : (hasName ? nAppAndroidName : '#'));
-  const naverAppAndroidLabel = nPlace ? 'Android App（地點 ID）' : (coordsPrimary ? 'Android App（座標圖釘）' : (hasName ? 'Android App（店名搜尋備援）' : 'Android App（ID 未找到）'));
+  // FIX fix21+22: Naver App 按鈕也不能是死按鈕 — 以經緯度為主：有有效座標 → 座標圖釘；無座標時 pinId → place；
+  // 無座標且無 pinId 但有店名時，退回店名搜尋備援（nmap://search / intent://search，標示清楚），讓 App 能打開；三者皆無時才顯示 ID 未找到。
+  const naverAppMain = coordsPrimary ? nAppCoord : (nPlace || (hasName ? nAppName : '#'));
+  const naverAppMainLabel = coordsPrimary ? 'iPhone App（座標圖釘）' : (nPlace ? 'iPhone App（地點 ID）' : (hasName ? 'iPhone App（店名搜尋備援）' : 'iPhone App（ID 未找到）'));
+  const naverAppAndroidMain = coordsPrimary ? nAppAndroidCoord : (nPlace || (hasName ? nAppAndroidName : '#'));
+  const naverAppAndroidLabel = coordsPrimary ? 'Android App（座標圖釘）' : (nPlace ? 'Android App（地點 ID）' : (hasName ? 'Android App（店名搜尋備援）' : 'Android App（ID 未找到）'));
   if(els.naverAppOpen){ els.naverAppOpen.href = naverAppMain; els.naverAppOpen.textContent = naverAppMainLabel; }
   if(els.naverAppAndroid){ els.naverAppAndroid.href = naverAppAndroidMain; els.naverAppAndroid.textContent = naverAppAndroidLabel; }
   if(els.naverNameFallback){
