@@ -152,7 +152,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       <li><b>網頁備援：</b>App 沒反應時，改點「Naver 網頁開啟 (c=)」/「Google Maps 開啟」，在網頁裡再點 App 橫幅；或直接在 App 搜尋框貼韓文店名 / 地址。</li>
     </ol>
   </div>
-  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18-fix6（修：貼整段分享文字展開會 404 → 只開乾淨 URL；新增 Naver 跳轉 ?lat=/ ?lng= 解析）</p>
+  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18-fix7（修：短連結提示不再把殘留店名誤說成這次取出）</p>
 </div>
 
 <script>
@@ -273,11 +273,13 @@ function parseInput(){
   // 注意：展開按鈕必須開 cleanUrl，不是 raw，否則貼整段分享文字會 404。
   if(/maps\.app\.goo\.gl|goo\.gl\/maps|naver\.me\//i.test(cleanUrl) && !/[@?].*(\d+\.\d+|!3d|c=)/.test(cleanUrl)){
     // 分享整段文字時，順便取出店名（第 2 行），讓下方搜尋連結先可用
+    // FIX fix7: 只有「這次」真的取出店名才說已取出；否則殘留的上一次店名會被誤說成這次取出的。
     const lines = raw.split(/\n+/).map(s=>s.trim()).filter(Boolean);
     const nameLine = lines.find(s=>!/^\[NAVER|^\[Google|https?:\/\//i.test(s) && !/釜山|부산|市|区|洞|동|路|로|街|道/.test(s));
-    if(nameLine && !els.name.value) els.name.value = nameLine;
+    let newlyExtracted = false;
+    if(nameLine && !els.name.value){ els.name.value = nameLine; newlyExtracted = true; }
     if(els.name.value) updateLinks();
-    setStatus('這是短連結，網頁無法直接解析（需跟隨跳轉，瀏覽器會擋 CORS）。請按「在新分頁打開短連結展開」，等跳轉成完整連結後，複製網址列的完整連結再貼回來。'+(els.name.value ? '已先取出店名「'+els.name.value+'」，下方搜尋連結已可用。' : ''),false);
+    setStatus('這是短連結，網頁無法直接解析（需跟隨跳轉，瀏覽器會擋 CORS）。請按「在新分頁打開短連結展開」，等跳轉成完整連結後，複製網址列的完整連結再貼回來。'+(newlyExtracted ? '已先取出店名「'+els.name.value+'」，下方搜尋連結已可用。' : ''),false);
     if(expandBtn){ expandBtn.style.display=''; expandBtn.onclick=()=>{ window.open(cleanUrl,'_blank','noopener'); }; }
     return;
   }
