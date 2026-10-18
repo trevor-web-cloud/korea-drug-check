@@ -156,7 +156,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       <li><b>網頁備援：</b>App 沒反應時，改點「Naver 網頁開啟 (c=)」/「Google Maps 開啟」，在網頁裡再點 App 橫幅；或直接在 App 搜尋框貼韓文店名 / 地址。</li>
     </ol>
   </div>
-  <p class="note" style="text-align:center">短連結由解析服務主動取 ID（同目錄 worker.js，需部署）· v2026-10-18-fix14（新增：短連結主動切換為 ID，未部署時退回手動展開）</p>
+  <p class="note" style="text-align:center">短連結由解析服務主動取 ID（map-resolve.tsai0215.workers.dev）· v2026-10-18-fix15（改：Worker 網址已設定，換好 Worker 程式碼後自動解析生效）</p>
 </div>
 
 <script>
@@ -297,9 +297,9 @@ function plusCodeDecode(code){
   return [lat+latCell/2, lng+lngCell/2];
 }
 
-// FIX fix14: 短連結主動切換為 ID — 需後端 Worker（同目錄 worker.js）做 HEAD + redirect:manual 取得 Location。
-// 部署 Worker 後，把下面改成你的 Worker 網址；未部署時自動退回手動展開流程。
-const RESOLVE_WORKER = 'https://map-converter-resolve.workers.dev/resolve';
+// FIX fix15: 短連結主動切換為 ID — Worker 已部署在 map-resolve.tsai0215.workers.dev，做 HEAD + redirect:manual 取得 Location。
+// 若 Worker 程式碼尚未換成 worker.js（仍是 Hello World），會退回手動展開流程；換好程式碼後自動解析生效。
+const RESOLVE_WORKER = 'https://map-resolve.tsai0215.workers.dev/resolve';
 async function resolveShortLink(shortUrl){
   try{
     const r = await fetch(RESOLVE_WORKER+'?url='+encodeURIComponent(shortUrl), {signal: AbortSignal.timeout(8000)});
