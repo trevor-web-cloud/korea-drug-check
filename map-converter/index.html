@@ -110,7 +110,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       </div>
     </section>
   </div>
-  <p class="note" style="text-align:center">v2026-10-18-fix22</p>
+  <p class="note" style="text-align:center">v2026-10-18-fix23</p>
 </div>
 
 <script>
@@ -457,8 +457,16 @@ function parseInput(){
       if(dn && !/^[\d.,\s-]+$/.test(dn) && !/^data=/i.test(dn)) placeName = dn;
     }catch(e){}
   }
+  // FIX fix23: Plus Code 只解「完整碼」（+ 前面正好 8 字，例如 8Q7C5RJG+F63）。短碼（+ 前面 < 8 字，例如 5RJG+FVG）沒有參考位置解不出正確座標，
+  // 舊 regex 會把短碼當完整碼硬解，產生偏差極大的錯誤座標（例如誤解到 Yulha-dong 845-1）。短碼一律拒絕，不產生座標。
+  const shortPcm = decodedRaw.match(/\b[23456789CFGHJMPQRVWX]{2,7}\+[23456789CFGHJMPQRVWX]{2,3}\b/);
+  if(shortPcm && !decodedRaw.match(/\b[23456789CFGHJMPQRVWX]{8}\+[23456789CFGHJMPQRVWX]{2,3}\b/)){
+    if(placeName) els.name.value = placeName;
+    setStatus('這是短碼 Plus Code「'+shortPcm[0]+'」：沒有參考位置解不出正確座標，請貼完整碼（+ 前面 8 字，例如 8Q7C5RJG+F63）。',false);
+    updateLinks(); return;
+  }
   // Plus Code: 8Q7C5RJG+F63（完整碼）— 在 data 裡是 20s8Q7C5RJG+F63
-  const pcm = decodedRaw.match(/([23456789CFGHJMPQRVWX]{2,8}[23456789CFGHJMPQRVWX]{2}\+[23456789CFGHJMPQRVWX]{2,3})/);
+  const pcm = decodedRaw.match(/([23456789CFGHJMPQRVWX]{8}\+[23456789CFGHJMPQRVWX]{2,3})/);
   if(pcm){
     const [clat, clng] = plusCodeDecode(pcm[1]);
     if(placeName) els.name.value = placeName;
