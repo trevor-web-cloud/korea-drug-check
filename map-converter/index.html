@@ -152,7 +152,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       <li><b>網頁備援：</b>App 沒反應時，改點「Naver 網頁開啟 (c=)」/「Google Maps 開啟」，在網頁裡再點 App 橫幅；或直接在 App 搜尋框貼韓文店名 / 地址。</li>
     </ol>
   </div>
-  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18-fix5（新增 Google /place/店名 + Plus Code 解碼：地點頁展開後無 @lat,lng 時也能解析）</p>
+  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18-fix6（修：貼整段分享文字展開會 404 → 只開乾淨 URL；新增 Naver 跳轉 ?lat=/ ?lng= 解析）</p>
 </div>
 
 <script>
@@ -264,14 +264,38 @@ function parseInput(){
   const raw = els.paste.value.trim();
   if(!raw){ setStatus('請先貼上連結或座標。',false); return; }
   const expandBtn = $('expandBtn');
+  // FIX fix6: 貼上整段分享文字（[NAVER Maps]\n店名\n地址\n短連結）時，必須先取出乾淨的 URL，
+  // 否則 window.open(整段文字) 會被當成相對路徑，在 GitHub Pages 上開出 404。
+  const urlInText = raw.match(/https?:\/\/[^\s]+/);
+  const cleanUrl = urlInText ? urlInText[0].replace(/[）\]】.,;]+$/,'') : raw;
   // FIX 2026-10-18: 短連結本身沒有座標，純前端無法直接解（CORS + 需跟隨跳轉）。
   // 先明確告知 + 提供一鍵在新分頁展開，展開後再複製網址列的完整連結回來貼。
-  if(/maps\.app\.goo\.gl|goo\.gl\/maps|naver\.me\//i.test(raw) && !/[@?].*(\d+\.\d+|!3d|c=)/.test(raw)){
-    setStatus('這是短連結，裡面沒有座標，網頁無法直接解析。請按「在新分頁打開短連結展開」，等跳轉成完整連結後，複製網址列的完整連結再貼回來。',false);
-    if(expandBtn){ expandBtn.style.display=''; expandBtn.onclick=()=>{ window.open(raw,'_blank','noopener'); }; }
+  // 注意：展開按鈕必須開 cleanUrl，不是 raw，否則貼整段分享文字會 404。
+  if(/maps\.app\.goo\.gl|goo\.gl\/maps|naver\.me\//i.test(cleanUrl) && !/[@?].*(\d+\.\d+|!3d|c=)/.test(cleanUrl)){
+    // 分享整段文字時，順便取出店名（第 2 行），讓下方搜尋連結先可用
+    const lines = raw.split(/\n+/).map(s=>s.trim()).filter(Boolean);
+    const nameLine = lines.find(s=>!/^\[NAVER|^\[Google|https?:\/\//i.test(s) && !/釜山|부산|市|区|洞|동|路|로|街|道/.test(s));
+    if(nameLine && !els.name.value) els.name.value = nameLine;
+    if(els.name.value) updateLinks();
+    setStatus('這是短連結，網頁無法直接解析（需跟隨跳轉，瀏覽器會擋 CORS）。請按「在新分頁打開短連結展開」，等跳轉成完整連結後，複製網址列的完整連結再貼回來。'+(els.name.value ? '已先取出店名「'+els.name.value+'」，下方搜尋連結已可用。' : ''),false);
+    if(expandBtn){ expandBtn.style.display=''; expandBtn.onclick=()=>{ window.open(cleanUrl,'_blank','noopener'); }; }
     return;
   }
   if(expandBtn) expandBtn.style.display='none';
+  // FIX fix6: Naver 短連結展開後的跳轉網址本身就帶座標 + 店名：
+  // map.naver.com/?title=兄弟潜水艇&pinId=...&lng=129.0972166&lat=35.1235958
+  // 之前解析器不認 ?lat= / ?lng= 分開的參數，會誤判解析失敗。
+  const latParam = raw.match(/[?&]lat\s*=\s*(-?\d+(?:\.\d+)?)/i);
+  const lngParam = raw.match(/[?&]lng\s*=\s*(-?\d+(?:\.\d+)?)/i);
+  if(latParam && lngParam){
+    const la = parseFloat(latParam[1]), ln = parseFloat(lngParam[1]);
+    if(Math.abs(la)<=90 && Math.abs(ln)<=180){
+      const tm = raw.match(/[?&]title\s*=\s*([^&]+)/i);
+      if(tm){ try{ els.name.value = decodeURIComponent(tm[1]); }catch(e){} }
+      updateFromLatLng(la, ln, '已解析 Naver 跳轉連結 ?lat= / ?lng='+(els.name.value ? '（店名：'+els.name.value+'）' : '')+'。');
+      return;
+    }
+  }
   // Naver c= : c=14364073,4177191  (allow spaces)
   let m = raw.match(/c\s*=\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/i);
   if(m){
