@@ -152,7 +152,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       <li><b>網頁備援：</b>App 沒反應時，改點「Naver 網頁開啟 (c=)」/「Google Maps 開啟」，在網頁裡再點 App 橫幅；或直接在 App 搜尋框貼韓文店名 / 地址。</li>
     </ol>
   </div>
-  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18-fix4（修正範例座標：舊 35.1028,129.0403 是釜山市中心/中央洞碼頭，非南浦洞；改為南浦站 35.097883,129.034663）</p>
+  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18-fix5（新增 Google /place/店名 + Plus Code 解碼：地點頁展開後無 @lat,lng 時也能解析）</p>
 </div>
 
 <script>
@@ -233,6 +233,33 @@ function updateFromXY(x,y,msg){
   syncing=false; updateLinks(); if(msg) setStatus(msg,true);
 }
 
+// FIX fix5: Google /place/ 地點頁展開後也沒有 @lat,lng / !3d / !4d，只有
+// 店名（/place/<店名>/）+ Plus Code（data 裡的 20s8Q7C5RJG+F63）。
+// 必須解析這兩項，否則使用者照指示展開再貼回來還是「解析失敗」。
+function plusCodeDecode(code){
+  // code: e.g. 8Q7C5RJG+F63 -> lat/lng center
+  const ALPH = '23456789CFGHJMPQRVWX';
+  const clean = code.toUpperCase().replace(/\+/g,'').replace(/0/g,'');
+  const pair = clean.slice(0,10), grid = clean.slice(10);
+  let lat = -90, lng = -180, res = 20;
+  for(let i=0;i<pair.length;i+=2){
+    lat += ALPH.indexOf(pair[i]) * res;
+    lng += ALPH.indexOf(pair[i+1]) * res;
+    res /= 20;
+  }
+  const n = grid.length;
+  if(!n) return [lat+0.000125/2, lng+0.000125/2];
+  let latRes = 0.000125/5, lngRes = 0.000125/4;
+  for(const ch of grid){
+    const v = ALPH.indexOf(ch);
+    lat += Math.floor(v/4) * latRes;
+    lng += (v%4) * lngRes;
+    latRes /= 5; lngRes /= 4;
+  }
+  const latCell = 0.000125 / Math.pow(5,n), lngCell = 0.000125 / Math.pow(4,n);
+  return [lat+latCell/2, lng+lngCell/2];
+}
+
 function parseInput(){
   const raw = els.paste.value.trim();
   if(!raw){ setStatus('請先貼上連結或座標。',false); return; }
@@ -284,7 +311,32 @@ function parseInput(){
       els.name.value = decoded; setStatus('已取出搜尋名稱，請再確認。已保留目前座標。',true); updateLinks(); return;
     }
   }
-  setStatus('解析不到座標：短連結（maps.app.goo.gl / naver.me）需先在瀏覽器打開展開，複製跳轉後的完整連結再貼。完整連結通常含 @緯度,經度 或 !3d緯度!4d經度 或 c= X,Y。',false);
+  // Google /place/<店名>/ 展開連結：取出店名 + Plus Code 解碼
+  // 例：google.com/maps/place/釜山金海樂天飯店/data=...!20s8Q7C5RJG+F63...
+  // 注意：這種連結沒有 @lat,lng / !3d / !4d，之前會誤判為解析失敗。
+  const decodedRaw = (()=>{ try{ return decodeURIComponent(raw); }catch(e){ return raw; } })();
+  let placeName = null;
+  const pm = decodedRaw.match(/\/place\/([^\/\?#]+)/);
+  if(pm){
+    try{
+      const dn = decodeURIComponent(pm[1].replace(/\+/g,' '));
+      if(dn && !/^[\d.,\s-]+$/.test(dn) && !/^data=/i.test(dn)) placeName = dn;
+    }catch(e){}
+  }
+  // Plus Code: 8Q7C5RJG+F63（完整碼）— 在 data 裡是 20s8Q7C5RJG+F63
+  const pcm = decodedRaw.match(/([23456789CFGHJMPQRVWX]{2,8}[23456789CFGHJMPQRVWX]{2}\+[23456789CFGHJMPQRVWX]{2,3})/);
+  if(pcm){
+    const [clat, clng] = plusCodeDecode(pcm[1]);
+    if(placeName) els.name.value = placeName;
+    updateFromLatLng(clat, clng, '已解析 Google 地點頁：取出店名「'+(placeName||'')+'」+ Plus Code '+pcm[1]+' 解碼為座標（約 3m 格子中心，請以店名搜尋再確認）。');
+    return;
+  }
+  if(placeName){
+    els.name.value = placeName;
+    setStatus('已取出店名「'+placeName+'」：此連結沒有座標 / Plus Code，請用店名搜尋連結（下方已產生 Google / Naver 搜尋連結）。',true);
+    updateLinks(); return;
+  }
+  setStatus('解析不到座標：短連結（maps.app.goo.gl / naver.me）需先在瀏覽器打開展開，複製跳轉後的完整連結再貼。完整連結通常含 @緯度,經度 或 !3d緯度!4d經度 或 c= X,Y，或 /place/店名 + Plus Code。',false);
 }
 
 els.lat.addEventListener('input',()=>{ const la=parseFloat(els.lat.value), ln=parseFloat(els.lng.value); if(isFinite(la)&&isFinite(ln)&&Math.abs(la)<=90&&Math.abs(ln)<=180) updateFromLatLng(la,ln); });
