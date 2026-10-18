@@ -37,6 +37,11 @@ button,.btn{appearance:none;border:0;border-radius:999px;padding:10px 16px;font-
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;font-size:14px;background:#f6f7f9;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .linkrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .note{font-size:13px;color:var(--muted);margin:8px 0 0}
+details.guide{border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-top:14px;background:var(--card)}
+details.guide summary{font-weight:700;font-size:15px;cursor:pointer}
+details.guide ol,details.guide ul{font-size:14px;margin:8px 0;padding-left:20px}
+details.guide li{margin:6px 0}
+details.guide code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
 .badge{font-size:12px;background:rgba(255,255,255,.22);padding:4px 8px;border-radius:999px}
 .vs{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;z-index:2;border:3px solid var(--bg)}
 .status{font-size:13px;margin-top:10px;min-height:20px}
@@ -110,7 +115,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       </div>
     </section>
   </div>
-  <p class="note" style="text-align:center">v2026-10-18-fix26</p>
+  <p class="note" style="text-align:center">v2026-10-18-fix27</p>
 </div>
 
 <script>
@@ -607,5 +612,30 @@ els.paste.value=''; els.name.value=''; els.lat.value=''; els.lng.value=''; els.m
 currentPinId=''; currentGoogleId=''; coordsValidForName=false;
 updateLinks(); setStatus('',true);
 </script>
+
+<!-- FIX fix27: Google Maps Plus Code 使用說明與教學（可收合，預設收起，不干擾簡化版面） -->
+<details class="guide">
+<summary>📍 Google Maps Plus Code 使用說明（點開看教學）</summary>
+<h2>什麼是 Plus Code？</h2>
+<p>Plus Code 是 Google 的地點編碼，用一串字元代表經緯度。完整碼像 <code>8Q7C5RJG+F63</code>（<code>+</code> 前面 8 字），短碼像 <code>5RJG+F6</code>（<code>+</code> 前面只有 4 字，需搭配城市名）。</p>
+<h2>怎麼從 Google Maps App 複製 Plus Code？</h2>
+<ol>
+<li>在 Google Maps App 點<strong>地點名稱</strong>，打開地點卡片（不要長按地圖空地，那會拿到別的位置的碼）。</li>
+<li>往下滑到「關於」區，找到 <strong>Plus Code</strong> 那一行（例如 <code>5RJG+F6 金海市 南韓慶尚南道</code>）。</li>
+<li>點那行複製，或手動記下短碼 + 城市名。</li>
+</ol>
+<h2>怎麼貼到轉換頁？</h2>
+<ul>
+<li><strong>完整碼</strong>：直接貼 <code>8Q7C5RJG+F63</code> 就好，不用加城市名。</li>
+<li><strong>短碼</strong>：一定要加上城市名，例如貼 <code>5RJG+F6 金海市</code>。只貼短碼 <code>5RJG+F6</code> 會提示需要參考位置，不會產生座標。</li>
+<li>貼上後按「解析並對照」，轉換頁會自動還原短碼 → 長碼 → 經緯度，兩邊都能用座標圖釘開。</li>
+</ul>
+<h2>注意事項</h2>
+<ul>
+<li>App 顯示的都是<strong>短碼</strong>，務必連城市名一起貼。</li>
+<li>短碼的格子字不同就是不同位置：<code>F6</code> 是飯店、<code>FVG</code> 是旁邊公園，相差約 150 公尺。請確認是從地點卡片複製的碼，不是長按空地拿到的碼。</li>
+<li>Plus Code 解出來的是格子中心點（約 3 公尺範圍），不是精確圖釘。到現場請以店名再確認。</li>
+</ul>
+</details>
 </body>
 </html>
