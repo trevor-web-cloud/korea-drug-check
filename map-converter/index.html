@@ -110,7 +110,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       </div>
     </section>
   </div>
-  <p class="note" style="text-align:center">v2026-10-18-fix23</p>
+  <p class="note" style="text-align:center">v2026-10-18-fix24</p>
 </div>
 
 <script>
@@ -462,6 +462,9 @@ function parseInput(){
   const shortPcm = decodedRaw.match(/\b[23456789CFGHJMPQRVWX]{2,7}\+[23456789CFGHJMPQRVWX]{2,3}\b/);
   if(shortPcm && !decodedRaw.match(/\b[23456789CFGHJMPQRVWX]{8}\+[23456789CFGHJMPQRVWX]{2,3}\b/)){
     if(placeName) els.name.value = placeName;
+    // FIX fix24: 短碼拒絕時也要清空殘留座標（否則欄位仍顯示南浦預設值，主按鈕會誤指南浦）。
+    coordsValidForName = false;
+    els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value='';
     setStatus('這是短碼 Plus Code「'+shortPcm[0]+'」：沒有參考位置解不出正確座標，請貼完整碼（+ 前面 8 字，例如 8Q7C5RJG+F63）。',false);
     updateLinks(); return;
   }
