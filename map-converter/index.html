@@ -156,7 +156,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       <li><b>網頁備援：</b>App 沒反應時，改點「Naver 網頁開啟 (c=)」/「Google Maps 開啟」，在網頁裡再點 App 橫幅；或直接在 App 搜尋框貼韓文店名 / 地址。</li>
     </ol>
   </div>
-  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18-fix9（修：有店名時主按鈕走店名搜尋，不再被預設南浦洞座標帶走；貼短連結時清空舊座標）</p>
+  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18-fix10（修：貼短連結時無條件更新按鈕，不再殘留南浦洞；分享文字貼成一行時也能取出店名）</p>
 </div>
 
 <script>
@@ -296,11 +296,21 @@ function parseInput(){
     // FIX fix9: App 分享都是短網址，短連結本身無座標，必須清空舊座標，
     // 否則座標欄殘留南浦洞預設值，點「座標圖釘」會誤開南浦洞。
     const lines = raw.split(/\n+/).map(s=>s.trim()).filter(Boolean);
-    const nameLine = lines.find(s=>!/^\[NAVER|^\[Google|https?:\/\//i.test(s) && !/釜山|부산|市|区|洞|동|路|로|街|道/.test(s));
+    let nameLine = lines.find(s=>!/^\[NAVER|^\[Google|https?:\/\//i.test(s) && !/釜山|부산|市|区|洞|동|路|로|街|道/.test(s));
+    // FIX fix10: 分享文字可能被貼成「一行」（換行遺失），上面按行找會找不到店名。
+    // 備援：從整段文字去掉 [NAVER Maps]、網址、地址部分，剩下的就是店名。
+    if(!nameLine){
+      let one = raw.replace(/\[NAVER Maps\]|\[Google Maps\]/gi,' ').replace(/https?:\/\/[^\s]+/g,' ').replace(/\s+/g,' ').trim();
+      // 地址通常從 釜山/부산/市/区/洞/동/路/로/街/道 開始，切掉地址及之後的部分
+      const addrIdx = one.search(/釜山|부산|市|区|洞|동|路|로|街|道/);
+      if(addrIdx > 0) one = one.slice(0, addrIdx).trim();
+      if(one && one.length >= 2 && one.length <= 60) nameLine = one;
+    }
     let newlyExtracted = false;
-    if(nameLine && !els.name.value){ els.name.value = nameLine; newlyExtracted = true; }
+    if(nameLine){ els.name.value = nameLine; newlyExtracted = true; }
     els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value='';
-    if(els.name.value) updateLinks();
+    // FIX fix10: 必須無條件呼叫 updateLinks()，否則店名為空時按鈕會殘留南浦洞預設值。
+    updateLinks();
     setStatus('這是短連結，網頁無法直接解析（需跟隨跳轉，瀏覽器會擋 CORS）。請按「在新分頁打開短連結展開」，等跳轉成完整連結後，複製網址列的完整連結再貼回來。'+(newlyExtracted ? '已先取出店名「'+els.name.value+'」，下方搜尋連結已可用。座標已清空（短連結無座標），請勿用舊座標。' : '座標已清空（短連結無座標）。'),false);
     if(expandBtn){ expandBtn.style.display=''; expandBtn.onclick=()=>{ window.open(cleanUrl,'_blank','noopener'); }; }
     return;
