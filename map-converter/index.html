@@ -87,9 +87,11 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
         <div class="mono" id="googleLink">—</div>
         <div class="linkrow">
           <a class="btn btn-google btn-small" id="googleOpen" href="#" target="_blank" rel="noopener">在 Google Maps 開啟</a>
+          <a class="btn btn-google btn-small" id="googleCoordOpen" href="#" target="_blank" rel="noopener">座標圖釘開啟</a>
           <button class="btn-ghost btn-small" type="button" data-copy="googleLink">複製連結</button>
           <button class="btn-ghost btn-small" type="button" data-copy="googleApp">複製 App 連結</button>
         </div>
+        <p class="note" style="color:#b42318">⚠️ 有填店名/地址時，主按鈕走「店名搜尋」（不會再被預設南浦洞座標帶走）；「座標圖釘開啟」才是用上面緯度/經度開圖釘，僅在座標確定是這間店時才點。</p>
         <label>Google App 連結</label>
         <div class="mono" id="googleApp">—</div>
         <div class="linkrow">
@@ -112,13 +114,15 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
         <label>Naver 連結（網頁版用 c= 相機座標，勿用座標搜尋）</label>
         <div class="mono" id="naverLink">—</div>
         <div class="linkrow">
-          <a class="btn btn-naver btn-small" id="naverOpen" href="#" target="_blank" rel="noopener">在 Naver 網頁開啟 (c=)</a>
+          <a class="btn btn-naver btn-small" id="naverOpen" href="#" target="_blank" rel="noopener">在 Naver 網頁開啟</a>
+          <a class="btn btn-naver btn-small" id="naverCoordOpen" href="#" target="_blank" rel="noopener">座標 (c=) 開啟</a>
           <a class="btn btn-naver btn-small" id="naverAppOpen" href="#" target="_blank" rel="noopener">iPhone：Naver App 開啟</a>
           <a class="btn btn-naver btn-small" id="naverAppAndroid" href="#" target="_blank" rel="noopener">Android：Naver App 開啟</a>
           <button class="btn-ghost btn-small" type="button" data-copy="naverLink">複製連結</button>
           <button class="btn-ghost btn-small" type="button" data-copy="naverApp">複製 iPhone App 連結</button>
           <button class="btn-ghost btn-small" type="button" data-copy="naverAppAndroid">複製 Android App 連結</button>
         </div>
+        <p class="note" style="color:#b42318">⚠️ 有填店名/地址時，主按鈕走「店名搜尋」（不會再被預設南浦洞座標帶走）；「座標 (c=) 開啟」才是用上面 X,Y 開圖釘，僅在座標確定是這間店時才點。</p>
         <p class="note" style="color:#b42318">⚠️ Naver 搜尋框直接貼「緯度,經度」會顯示 No results found。座標請走上面 c= 網頁連結或 App 圖釘連結；搜尋框只吃店名 / 地址。</p>
         <label>Naver App 連結（iPhone：nmap://）</label>
         <div class="mono" id="naverApp">—</div>
@@ -152,16 +156,16 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       <li><b>網頁備援：</b>App 沒反應時，改點「Naver 網頁開啟 (c=)」/「Google Maps 開啟」，在網頁裡再點 App 橫幅；或直接在 App 搜尋框貼韓文店名 / 地址。</li>
     </ol>
   </div>
-  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18-fix8（新增 Google ?q=店名/地址文字擷取：goo.gl 展開後無座標時也能產生搜尋連結）</p>
+  <p class="note" style="text-align:center">純前端計算，不上傳任何資料 · v2026-10-18-fix9（修：有店名時主按鈕走店名搜尋，不再被預設南浦洞座標帶走；貼短連結時清空舊座標）</p>
 </div>
 
 <script>
 const R = 20037508.34;
 const $ = id => document.getElementById(id);
 const els = {paste:$('paste'),name:$('name'),lat:$('lat'),lng:$('lng'),mx:$('mx'),my:$('my'),
-  googleLink:$('googleLink'),googleApp:$('googleApp'),googleOpen:$('googleOpen'),
+  googleLink:$('googleLink'),googleApp:$('googleApp'),googleOpen:$('googleOpen'),googleCoordOpen:$('googleCoordOpen'),
   googleAppIOS:$('googleAppIOS'),googleAppAndroid:$('googleAppAndroid'),
-  naverLink:$('naverLink'),naverApp:$('naverApp'),naverOpen:$('naverOpen'),naverAppOpen:$('naverAppOpen'),
+  naverLink:$('naverLink'),naverApp:$('naverApp'),naverOpen:$('naverOpen'),naverCoordOpen:$('naverCoordOpen'),naverAppOpen:$('naverAppOpen'),
   naverAppAndroid:$('naverAppAndroid'),naverAppAndroidText:$('naverAppAndroidText'),status:$('parseStatus')};
 let syncing = false;
 
@@ -181,41 +185,56 @@ function setStatus(msg,ok){ els.status.textContent = msg||''; els.status.classNa
 function updateLinks(){
   const lat = parseFloat(els.lat.value), lng = parseFloat(els.lng.value);
   const name = els.name.value.trim();
-  if(!isFinite(lat)||!isFinite(lng)){ els.googleLink.textContent='—'; els.googleApp.textContent='—'; els.naverLink.textContent='—'; els.naverApp.textContent='—'; if(els.naverAppAndroidText) els.naverAppAndroidText.textContent='—'; return; }
-  const latS = fmt(lat,6), lngS = fmt(lng,6);
-  // Google: precise pin uses lat,lng; if name exists also keep a name-search variant in title
-  const gWeb = 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(latS+','+lngS);
-  const gWebName = name ? 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(name) : '';
-  const gApp = 'comgooglemaps://?q='+encodeURIComponent(latS+','+lngS)+'&zoom=17';
-  const gAppAndroid = 'geo:'+latS+','+lngS+'?q='+encodeURIComponent(latS+','+lngS);
-  const gShow = gWeb + (gWebName ? '\n店名搜尋：'+gWebName : '');
-  els.googleLink.textContent = gShow;
-  els.googleApp.textContent = gApp + '\nAndroid：' + gAppAndroid;
-  els.googleOpen.href = gWeb;
-  if(els.googleAppIOS) els.googleAppIOS.href = gApp;
-  if(els.googleAppAndroid) els.googleAppAndroid.href = gAppAndroid;
+  const hasCoords = isFinite(lat) && isFinite(lng);
+  const hasName = !!name;
+  const APPNAME = encodeURIComponent('https://trevor-web-cloud.github.io/korea-drug-check/map-converter/');
+  // FIX fix9: 主按鈕優先走店名/地址搜尋，否則任何地址都會被預設南浦洞座標帶走。
+  // 原因：座標欄預設是南浦站，之前主按鈕一律用座標連結，填了店名也還是開南浦洞。
+  // 新規則：有店名 → 主按鈕 = 店名搜尋；座標圖釘是另一個按鈕，僅在座標確定是這間店時才點。
+  // App 分享都是短網址：短連結本身無座標，貼短連結時不得沿用舊座標，必須先展開或用店名搜尋。
+  if(!hasCoords && !hasName){
+    els.googleLink.textContent='—'; els.googleApp.textContent='—'; els.naverLink.textContent='—'; els.naverApp.textContent='—';
+    if(els.naverAppAndroidText) els.naverAppAndroidText.textContent='—';
+    els.googleOpen.href='#'; els.naverOpen.href='#';
+    if(els.googleCoordOpen) els.googleCoordOpen.href='#';
+    if(els.naverCoordOpen) els.naverCoordOpen.href='#';
+    return;
+  }
+  const latS = hasCoords ? fmt(lat,6) : '', lngS = hasCoords ? fmt(lng,6) : '';
+  // Google 網頁：主 = 店名搜尋（若有店名），副 = 座標圖釘（若有座標）
+  const gCoordWeb = hasCoords ? 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(latS+','+lngS) : '';
+  const gNameWeb = hasName ? 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(name) : '';
+  els.googleLink.textContent = (hasName ? '店名/地址搜尋：'+gNameWeb : '') + (hasCoords ? (hasName ? '\n' : '') + '座標圖釘：'+gCoordWeb : '');
+  els.googleOpen.href = hasName ? gNameWeb : gCoordWeb;
+  els.googleOpen.textContent = hasName ? '在 Google Maps 開啟 (店名搜尋)' : '在 Google Maps 開啟 (座標圖釘)';
+  if(els.googleCoordOpen){ els.googleCoordOpen.href = gCoordWeb || '#'; els.googleCoordOpen.style.display = hasCoords ? '' : 'none'; }
+  // Google App：主 = 店名搜尋（若有店名），座標圖釘只放在文字欄供複製
+  const gAppCoord = hasCoords ? 'comgooglemaps://?q='+encodeURIComponent(latS+','+lngS)+'&zoom=17' : '';
+  const gAppName = hasName ? 'comgooglemaps://?q='+encodeURIComponent(name)+'&zoom=17' : '';
+  const gAppAndroidCoord = hasCoords ? 'geo:'+latS+','+lngS+'?q='+encodeURIComponent(latS+','+lngS) : '';
+  const gAppAndroidName = hasName ? 'geo:0,0?q='+encodeURIComponent(name) : '';
+  els.googleApp.textContent = (hasName ? '店名搜尋 iPhone：'+gAppName+'\n店名搜尋 Android：'+gAppAndroidName : '') + (hasCoords ? (hasName ? '\n' : '') + '座標圖釘 iPhone：'+gAppCoord+'\n座標圖釘 Android：'+gAppAndroidCoord : '');
+  if(els.googleAppIOS) els.googleAppIOS.href = hasName ? gAppName : (gAppCoord || '#');
+  if(els.googleAppAndroid) els.googleAppAndroid.href = hasName ? gAppAndroidName : (gAppAndroidCoord || '#');
 
-  const [x,y] = wgsToMerc(lng,lat);
-  const xS = fmt(x,2), yS = fmt(y,2);
+  const [x,y] = hasCoords ? wgsToMerc(lng,lat) : [NaN,NaN];
+  const xS = hasCoords ? fmt(x,2) : '', yS = hasCoords ? fmt(y,2) : '';
   // FIX 2026-10-18: Naver /p/search/「緯度,經度」會 No results found，勿再產生。
-  // 座標定位只用：網頁 c= 相機連結 + App nmap://place 圖釘連結。
-  // /p/search/ 只用於店名 / 地址。
-  const nWeb = 'https://map.naver.com/p?c='+xS+','+yS+',15,0,0,0,dh';
-  const nSearch = name ? 'https://map.naver.com/p/search/'+encodeURIComponent(name) : '';
-  // FIX 2026-10-18-fix2: Naver 官方規定，mobile web 的 appname 必須是「網頁 URL」，
-  // 不是 bundle ID。之前用 com.example.mapconverter 會導致 App 開啟失敗。
-  // 另：In-app browser（Muse / KakaoTalk / LINE 內建瀏覽器）點 nmap:// 常常直接失敗，
-  // 必須先用 Safari 開啟本頁再點 App 連結。
-  const nApp = 'nmap://place?lat='+latS+'&lng='+lngS+'&name='+encodeURIComponent(name||latS+','+lngS)+'&appname='+encodeURIComponent('https://trevor-web-cloud.github.io/korea-drug-check/map-converter/');
-  // FIX fix3: Android Chrome 點 nmap:// 常常沒反應，必須用 intent:// + package + Play 備援。
-  const nAppAndroid = 'intent://place?lat='+latS+'&lng='+lngS+'&name='+encodeURIComponent(name||latS+','+lngS)+'&appname='+encodeURIComponent('https://trevor-web-cloud.github.io/korea-drug-check/map-converter/')+'#Intent;scheme=nmap;package=com.nhn.android.nmap;S.browser_fallback_url='+encodeURIComponent('https://play.google.com/store/apps/details?id=com.nhn.android.nmap')+';end';
-  els.naverLink.textContent = nWeb + (nSearch ? '\n店名/地址搜尋：'+nSearch : '\n（無店名/地址時，Naver 不提供座標搜尋連結，請用上面 c= 或 App 圖釘連結）');
-  els.naverApp.textContent = nApp;
-  if(els.naverAppAndroidText) els.naverAppAndroidText.textContent = nAppAndroid;
-  els.naverOpen.href = nWeb;
-  els.naverOpen.textContent = '在 Naver 網頁開啟 (c=)';
-  if(els.naverAppOpen){ els.naverAppOpen.href = nApp; }
-  if(els.naverAppAndroid){ els.naverAppAndroid.href = nAppAndroid; }
+  const nCoordWeb = hasCoords ? 'https://map.naver.com/p?c='+xS+','+yS+',15,0,0,0,dh' : '';
+  const nSearch = hasName ? 'https://map.naver.com/p/search/'+encodeURIComponent(name) : '';
+  // Naver App：有店名 → nmap://search / intent://search；無店名有座標 → nmap://place / intent://place
+  const nAppCoord = hasCoords ? 'nmap://place?lat='+latS+'&lng='+lngS+'&name='+encodeURIComponent(name||latS+','+lngS)+'&appname='+APPNAME : '';
+  const nAppName = hasName ? 'nmap://search?query='+encodeURIComponent(name)+'&appname='+APPNAME : '';
+  const nAppAndroidCoord = hasCoords ? 'intent://place?lat='+latS+'&lng='+lngS+'&name='+encodeURIComponent(name||latS+','+lngS)+'&appname='+APPNAME+'#Intent;scheme=nmap;package=com.nhn.android.nmap;S.browser_fallback_url='+encodeURIComponent('https://play.google.com/store/apps/details?id=com.nhn.android.nmap')+';end' : '';
+  const nAppAndroidName = hasName ? 'intent://search?query='+encodeURIComponent(name)+'&appname='+APPNAME+'#Intent;scheme=nmap;package=com.nhn.android.nmap;S.browser_fallback_url='+encodeURIComponent('https://play.google.com/store/apps/details?id=com.nhn.android.nmap')+';end' : '';
+  els.naverLink.textContent = (hasName ? '店名/地址搜尋：'+nSearch : '') + (hasCoords ? (hasName ? '\n' : '') + '座標 (c=)：'+nCoordWeb : '') + (!hasName ? '\n（無店名/地址時，Naver 不提供座標搜尋連結，請用上面 c= 或 App 圖釘連結）' : '');
+  els.naverApp.textContent = (hasName ? '店名搜尋：'+nAppName : '') + (hasCoords ? (hasName ? '\n' : '') + '座標圖釘：'+nAppCoord : '');
+  if(els.naverAppAndroidText) els.naverAppAndroidText.textContent = (hasName ? '店名搜尋：'+nAppAndroidName : '') + (hasCoords ? (hasName ? '\n' : '') + '座標圖釘：'+nAppAndroidCoord : '');
+  els.naverOpen.href = hasName ? nSearch : (nCoordWeb || '#');
+  els.naverOpen.textContent = hasName ? '在 Naver 網頁開啟 (店名搜尋)' : '在 Naver 網頁開啟 (座標 c=)';
+  if(els.naverCoordOpen){ els.naverCoordOpen.href = nCoordWeb || '#'; els.naverCoordOpen.style.display = hasCoords ? '' : 'none'; }
+  if(els.naverAppOpen){ els.naverAppOpen.href = hasName ? nAppName : (nAppCoord || '#'); els.naverAppOpen.textContent = hasName ? 'iPhone：Naver App 開啟 (店名搜尋)' : 'iPhone：Naver App 開啟 (座標圖釘)'; }
+  if(els.naverAppAndroid){ els.naverAppAndroid.href = hasName ? nAppAndroidName : (nAppAndroidCoord || '#'); els.naverAppAndroid.textContent = hasName ? 'Android：Naver App 開啟 (店名搜尋)' : 'Android：Naver App 開啟 (座標圖釘)'; }
 }
 
 function updateFromLatLng(lat,lng,msg){
@@ -274,12 +293,15 @@ function parseInput(){
   if(/maps\.app\.goo\.gl|goo\.gl\/maps|naver\.me\//i.test(cleanUrl) && !/[@?].*(\d+\.\d+|!3d|c=)/.test(cleanUrl)){
     // 分享整段文字時，順便取出店名（第 2 行），讓下方搜尋連結先可用
     // FIX fix7: 只有「這次」真的取出店名才說已取出；否則殘留的上一次店名會被誤說成這次取出的。
+    // FIX fix9: App 分享都是短網址，短連結本身無座標，必須清空舊座標，
+    // 否則座標欄殘留南浦洞預設值，點「座標圖釘」會誤開南浦洞。
     const lines = raw.split(/\n+/).map(s=>s.trim()).filter(Boolean);
     const nameLine = lines.find(s=>!/^\[NAVER|^\[Google|https?:\/\//i.test(s) && !/釜山|부산|市|区|洞|동|路|로|街|道/.test(s));
     let newlyExtracted = false;
     if(nameLine && !els.name.value){ els.name.value = nameLine; newlyExtracted = true; }
+    els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value='';
     if(els.name.value) updateLinks();
-    setStatus('這是短連結，網頁無法直接解析（需跟隨跳轉，瀏覽器會擋 CORS）。請按「在新分頁打開短連結展開」，等跳轉成完整連結後，複製網址列的完整連結再貼回來。'+(newlyExtracted ? '已先取出店名「'+els.name.value+'」，下方搜尋連結已可用。' : ''),false);
+    setStatus('這是短連結，網頁無法直接解析（需跟隨跳轉，瀏覽器會擋 CORS）。請按「在新分頁打開短連結展開」，等跳轉成完整連結後，複製網址列的完整連結再貼回來。'+(newlyExtracted ? '已先取出店名「'+els.name.value+'」，下方搜尋連結已可用。座標已清空（短連結無座標），請勿用舊座標。' : '座標已清空（短連結無座標）。'),false);
     if(expandBtn){ expandBtn.style.display=''; expandBtn.onclick=()=>{ window.open(cleanUrl,'_blank','noopener'); }; }
     return;
   }
