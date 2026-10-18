@@ -110,7 +110,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       </div>
     </section>
   </div>
-  <p class="note" style="text-align:center">v2026-10-18-fix25</p>
+  <p class="note" style="text-align:center">v2026-10-18-fix26</p>
 </div>
 
 <script>
@@ -601,8 +601,11 @@ document.querySelectorAll('[data-copy]').forEach(btn=>{
     catch(e){ const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); btn.textContent='已複製 ✓'; setTimeout(()=>{ btn.textContent = key.includes('App')?'複製 App 連結':'複製連結'; },1200); }
   });
 });
-// Prefill example so left/right comparison is visible immediately
-updateFromLatLng(35.097883,129.034663);
+// FIX fix26: 預設為空白，而不是南浦洞 — 頁面載入時不再預填南浦站座標（殘留南浦是歷次 bug 根源 fix9/13/17/18/19/24）。
+// 預設空白：欄位皆空、按鈕為初始狀態，使用者貼上連結/座標後才有值。
+els.paste.value=''; els.name.value=''; els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value='';
+currentPinId=''; currentGoogleId=''; coordsValidForName=false;
+updateLinks(); setStatus('',true);
 </script>
 </body>
 </html>
