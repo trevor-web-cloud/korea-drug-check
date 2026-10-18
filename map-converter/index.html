@@ -110,7 +110,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       </div>
     </section>
   </div>
-  <p class="note" style="text-align:center">v2026-10-18-fix24</p>
+  <p class="note" style="text-align:center">v2026-10-18-fix25</p>
 </div>
 
 <script>
@@ -302,6 +302,86 @@ function plusCodeDecode(code){
   return [lat+latCell/2, lng+lngCell/2];
 }
 
+// FIX fix25: App 只顯示短碼 Plus Code（例如 5RJG+FVG），短碼需參考位置才能解碼。實作短碼還原：
+// 用參考經緯度編出完整碼，取前綴補上短碼缺的前幾字，解碼後若與參考距離太遠，嘗試鄰近 8 格取最近者。
+function plusCodeEncode(lat,lng){
+  const ALPH = '23456789CFGHJMPQRVWX';
+  let la = lat + 90, ln = lng + 180, code = '';
+  let res = 20;
+  for(let i=0;i<5;i++){
+    const laI = Math.floor(la / res), lnI = Math.floor(ln / res);
+    code += ALPH[laI] + ALPH[lnI];
+    la -= laI * res; ln -= lnI * res;
+    res /= 20;
+  }
+  // 完整碼：前 8 字 + '+' + 後 2 字（取第 6 對的前 2 字當 grid，這裡只取 2 字已足夠定位到 ~3m）
+  // 為了與 decode 對齊，grid 取 2 字（第 6 對的 2 字）。
+  // 注意：encode 的第 6 對是 grid 的第一字；這裡簡化取 2 字。
+  return code.slice(0,8) + '+' + code.slice(8,10);
+}
+function recoverShortCode(shortCode, refLat, refLng){
+  const ALPH = '23456789CFGHJMPQRVWX';
+  const parts = shortCode.toUpperCase().split('+');
+  if(parts.length !== 2) return null;
+  const before = parts[0], after = parts[1];
+  if(before.length >= 8) return null; // 不是短碼
+  const missing = 8 - before.length;
+  if(missing % 2 !== 0) return null; // 短碼缺的字數必為偶數（2/4/6）
+  const refCode = plusCodeEncode(refLat, refLng);
+  const refBefore = refCode.split('+')[0]; // 8 字
+  const prefix = refBefore.slice(0, missing);
+  // 候選：前綴 + 短碼前段 + '+' + 短碼後段
+  function tryCandidate(pfx){
+    const full = pfx + before + '+' + after;
+    try{ return {full, xy: plusCodeDecode(full)}; }catch(e){ return null; }
+  }
+  let best = tryCandidate(prefix);
+  if(!best) return null;
+  // 若候選與參考距離過遠（超過缺失部分的一半解析度），嘗試鄰近 8 格取最近者
+  const pairRes = [20, 1, 0.05][missing/2 - 1] || 20; // 缺 2 字→20°, 缺 4 字→1°, 缺 6 字→0.05°
+  const dist = (a,b) => Math.hypot(a[0]-refLat, a[1]-refLng);
+  if(dist(best.xy, [refLat, refLng]) > pairRes/2){
+    // 調整前綴的最後一對（lat/lng 各 ±1），取與參考最近者
+    const lastPairIdx = missing - 2;
+    const laCh = prefix[lastPairIdx], lnCh = prefix[lastPairIdx+1];
+    const laI = ALPH.indexOf(laCh), lnI = ALPH.indexOf(lnCh);
+    for(let dla=-1; dla<=1; dla++){
+      for(let dln=-1; dln<=1; dln++){
+        if(dla===0 && dln===0) continue;
+        const nla = laI + dla, nln = lnI + dln;
+        if(nla < 0 || nla >= 20 || nln < 0 || nln >= 20) continue;
+        const newPfx = prefix.slice(0,lastPairIdx) + ALPH[nla] + ALPH[nln] + prefix.slice(lastPairIdx+2);
+        // 前綴長度若 > missing（因 slice），需截到 missing
+        const cand = tryCandidate(newPfx.slice(0, missing));
+        if(cand && dist(cand.xy, [refLat, refLng]) < dist(best.xy, [refLat, refLng])) best = cand;
+      }
+    }
+  }
+  return best;
+}
+// 韓國主要城市參考座標（短碼還原用，市中心概略值，僅供短碼定位參考）
+const CITY_REF = [
+  ['金海', '김해', 'gimhae', 35.25, 128.90],
+  ['釜山', '부산', 'busan', 35.18, 129.07],
+  ['首爾', '서울', 'seoul', 37.56, 126.97],
+  ['大邱', '대구', 'daegu', 35.87, 128.60],
+  ['仁川', '인천', 'incheon', 37.45, 126.62],
+  ['光州', '광주', 'gwangju', 35.15, 126.85],
+  ['大田', '대전', 'daejeon', 36.35, 127.38],
+  ['蔚山', '울산', 'ulsan', 35.54, 129.31],
+  ['濟州', '제주', 'jeju', 33.51, 126.52],
+  ['慶州', '경주', 'gyeongju', 35.85, 129.21],
+  ['全州', '전주', 'jeonju', 35.82, 127.15],
+  ['水原', '수원', 'suwon', 37.26, 127.03],
+  ['春川', '춘천', 'chuncheon', 37.87, 127.73],
+  ['麗水', '여수', 'yeosu', 34.76, 127.66],
+  ['浦項', '포항', 'pohang', 36.03, 129.36],
+  ['昌原', '창원', 'changwon', 35.22, 128.68],
+  ['密陽', '밀양', 'miryang', 35.50, 128.73],
+  ['統營', '통영', 'tongyeong', 34.85, 128.42],
+  ['巨濟', '거제', 'geoje', 34.88, 128.62],
+];
+
 // FIX fix15: 短連結主動切換為 ID — Worker 已部署在 map-resolve.tsai0215.workers.dev，做 HEAD + redirect:manual 取得 Location。
 // 若 Worker 程式碼尚未換成 worker.js（仍是 Hello World），會退回手動展開流程；換好程式碼後自動解析生效。
 const RESOLVE_WORKER = 'https://map-resolve.tsai0215.workers.dev/resolve';
@@ -457,15 +537,31 @@ function parseInput(){
       if(dn && !/^[\d.,\s-]+$/.test(dn) && !/^data=/i.test(dn)) placeName = dn;
     }catch(e){}
   }
-  // FIX fix23: Plus Code 只解「完整碼」（+ 前面正好 8 字，例如 8Q7C5RJG+F63）。短碼（+ 前面 < 8 字，例如 5RJG+FVG）沒有參考位置解不出正確座標，
-  // 舊 regex 會把短碼當完整碼硬解，產生偏差極大的錯誤座標（例如誤解到 Yulha-dong 845-1）。短碼一律拒絕，不產生座標。
+  // FIX fix25: App 只顯示短碼 Plus Code（例如 5RJG+FVG）。短碼需參考位置還原：先從貼上的文字找城市名（金海/釜山/首爾…）當參考；
+  // 若無城市名但頁面已有座標，用該座標當參考；兩者皆無時才拒絕並請使用者補參考位置。
   const shortPcm = decodedRaw.match(/\b[23456789CFGHJMPQRVWX]{2,7}\+[23456789CFGHJMPQRVWX]{2,3}\b/);
   if(shortPcm && !decodedRaw.match(/\b[23456789CFGHJMPQRVWX]{8}\+[23456789CFGHJMPQRVWX]{2,3}\b/)){
     if(placeName) els.name.value = placeName;
-    // FIX fix24: 短碼拒絕時也要清空殘留座標（否則欄位仍顯示南浦預設值，主按鈕會誤指南浦）。
+    let ref = null, refLabel = '';
+    const lowerRaw = decodedRaw.toLowerCase();
+    for(const [zh, ko, en, rla, rln] of CITY_REF){
+      if(decodedRaw.includes(zh) || decodedRaw.includes(ko) || lowerRaw.includes(en)){ ref = [rla, rln]; refLabel = zh; break; }
+    }
+    if(!ref && els.lat.value && els.lng.value){
+      const rla = parseFloat(els.lat.value), rln = parseFloat(els.lng.value);
+      if(isFinite(rla) && isFinite(rln)) { ref = [rla, rln]; refLabel = '頁面座標'; }
+    }
+    if(ref){
+      const rec = recoverShortCode(shortPcm[0], ref[0], ref[1]);
+      if(rec){
+        updateFromLatLng(rec.xy[0], rec.xy[1], '已解析短碼 Plus Code「'+shortPcm[0]+'」（參考：'+refLabel+'，還原為 '+rec.full+'）。');
+        return;
+      }
+    }
+    // 無參考可還原 → 拒絕，不產生錯誤座標（fix23/24 邏輯）。
     coordsValidForName = false;
     els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value='';
-    setStatus('這是短碼 Plus Code「'+shortPcm[0]+'」：沒有參考位置解不出正確座標，請貼完整碼（+ 前面 8 字，例如 8Q7C5RJG+F63）。',false);
+    setStatus('這是短碼 Plus Code「'+shortPcm[0]+'」：需參考位置才能還原，請在短碼後面加上城市名（例如「5RJG+FVG 金海市」）或先貼一個附近地點的經緯度。',false);
     updateLinks(); return;
   }
   // Plus Code: 8Q7C5RJG+F63（完整碼）— 在 data 裡是 20s8Q7C5RJG+F63
