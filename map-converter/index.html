@@ -9,7 +9,7 @@
 /* FIX fix16: 簡化頁面 — 只顯示必要按鈕，隱藏連結文字、複製按鈕、座標副按鈕與範例（JS 仍更新它們，僅不顯示）。 */
 #googleLink,#googleApp,#naverLink,#naverApp,#naverAppAndroidText,#googleCoordOpen,#naverCoordOpen,#exampleBtn{display:none!important}
 *{box-sizing:border-box}
-:root{--google:#1a73e8;--naver:#03c75a;--bg:#f6f7f9;--card:#fff;--line:#e2e6eb;--text:#1a1d21;--muted:#667085}
+:root{--google:#1a73e8;--naver:#03c75a;--yahoo:#720e9e;--bg:#f6f7f9;--card:#fff;--line:#e2e6eb;--text:#1a1d21;--muted:#667085}
 body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif;line-height:1.5}
 header{padding:20px 16px 12px;max-width:1080px;margin:0 auto}
 h1{font-size:22px;margin:0 0 6px}
@@ -27,6 +27,8 @@ button,.btn{appearance:none;border:0;border-radius:999px;padding:10px 16px;font-
 .btn-ghost{background:#eef2f6;color:#111}
 .btn-google{background:var(--google);color:#fff}
 .btn-naver{background:var(--naver);color:#fff}
+.btn-yahoo{background:var(--yahoo);color:#fff}
+.panel-head.yahoo{background:var(--yahoo)}
 .btn-small{padding:7px 12px;font-size:13px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;position:relative}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
@@ -115,7 +117,20 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       </div>
     </section>
   </div>
-  <p class="note" style="text-align:center">v2026-10-19-fix29</p>
+
+  <!-- FIX fix30: Yahoo! MAP（日本）切換 — Yahoo 地圖用 WGS84 經緯度（與 Google 相同，不需轉換），網頁連結 map.yahoo.co.jp/?lat=&lon=&z= -->
+  <section class="panel" aria-label="Yahoo! MAP" style="margin-top:14px">
+    <div class="panel-head yahoo"><span>Yahoo! MAP（日本）</span><span class="badge">需經緯度</span></div>
+    <div class="panel-body">
+      <div class="mono" id="yahooLink">—</div>
+      <div class="linkrow">
+        <a class="btn btn-yahoo btn-small" id="yahooOpen" href="#" target="_blank" rel="noopener">在 Yahoo! MAP 開啟</a>
+        <a class="btn btn-ghost btn-small" id="yahooNameFallback" href="#" target="_blank" rel="noopener" style="display:none">備援：店名搜尋</a>
+      </div>
+      <p class="note">Yahoo! MAP 是日本在地人常用的地圖（圖資最詳細）。只支援經緯度切換；無經緯度時請用上方 Google / Naver 的店名搜尋備援。Yahoo App 連結未驗證，僅提供網頁版。</p>
+    </div>
+  </section>
+  <p class="note" style="text-align:center">v2026-10-19-fix30</p>
 </div>
 
 <script>
@@ -125,7 +140,8 @@ const els = {paste:$('paste'),name:$('name'),lat:$('lat'),lng:$('lng'),mx:$('mx'
   googleLink:$('googleLink'),googleApp:$('googleApp'),googleOpen:$('googleOpen'),googleCoordOpen:$('googleCoordOpen'),
   googleAppIOS:$('googleAppIOS'),googleAppAndroid:$('googleAppAndroid'),googleNameFallback:$('googleNameFallback'),
   naverLink:$('naverLink'),naverApp:$('naverApp'),naverOpen:$('naverOpen'),naverCoordOpen:$('naverCoordOpen'),naverAppOpen:$('naverAppOpen'),
-  naverAppAndroid:$('naverAppAndroid'),naverAppAndroidText:$('naverAppAndroidText'),naverNameFallback:$('naverNameFallback'),status:$('parseStatus')};
+  naverAppAndroid:$('naverAppAndroid'),naverAppAndroidText:$('naverAppAndroidText'),naverNameFallback:$('naverNameFallback'),
+  yahooLink:$('yahooLink'),yahooOpen:$('yahooOpen'),yahooNameFallback:$('yahooNameFallback'),status:$('parseStatus')};
 let syncing = false;
 let currentPinId = '';
 // FIX fix17: Google 的 ID 是 ftid（Google 地點頁 / ?q= 跳轉連結裡的 ftid=0x... 參數），與 Naver pinId 對應。
@@ -173,6 +189,10 @@ function updateLinks(){
     if(els.naverAppAndroid){ els.naverAppAndroid.href='#'; els.naverAppAndroid.textContent='Android App'; }
     if(els.googleNameFallback) els.googleNameFallback.style.display='none';
     if(els.naverNameFallback) els.naverNameFallback.style.display='none';
+    // FIX fix30: 清空時也重置 Yahoo 按鈕。
+    if(els.yahooLink) els.yahooLink.textContent='—';
+    if(els.yahooOpen){ els.yahooOpen.href='#'; els.yahooOpen.textContent='在 Yahoo! MAP 開啟'; }
+    if(els.yahooNameFallback) els.yahooNameFallback.style.display='none';
     return;
   }
   const latS = hasCoords ? fmt(lat,6) : '', lngS = hasCoords ? fmt(lng,6) : '';
@@ -259,6 +279,19 @@ function updateLinks(){
       els.naverNameFallback.href = nSearch;
       els.naverNameFallback.style.display = '';
     }else els.naverNameFallback.style.display = 'none';
+  }
+  // FIX fix30: Yahoo! MAP（日本）— 用 WGS84 經緯度（與 Google 相同），網頁連結 map.yahoo.co.jp/?lat=&lon=&z=。
+  // 有有效座標 → 座標切換；無座標但有店名 → 店名搜尋備援（Yahoo 地圖搜尋）；兩者皆無 → 需經緯度。
+  const yWeb = coordsPrimary ? 'https://map.yahoo.co.jp/?lat='+latS+'&lon='+lngS+'&z=17' : '';
+  const yNameWeb = hasName ? 'https://map.yahoo.co.jp/search?q='+encodeURIComponent(name) : '';
+  if(els.yahooLink) els.yahooLink.textContent = yWeb || (hasName ? '店名搜尋：'+yNameWeb : '—');
+  if(els.yahooOpen){
+    if(coordsPrimary){ els.yahooOpen.href = yWeb; els.yahooOpen.textContent = '在 Yahoo! MAP 開啟 (座標)'; }
+    else { els.yahooOpen.href = '#'; els.yahooOpen.textContent = '需經緯度'; }
+  }
+  if(els.yahooNameFallback){
+    if(hasName && !coordsPrimary){ els.yahooNameFallback.href = yNameWeb; els.yahooNameFallback.style.display = ''; }
+    else els.yahooNameFallback.style.display = 'none';
   }
 }
 
