@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Naver Yahoo JP Google 地圖轉換</title>
-<meta name="description" content="Google Maps 與 Naver Map 左右對照轉換：貼上任一邊連結，自動算出另一邊。座標通用 WGS84，只有 Naver 網址的 c= 是 Web Mercator (EPSG:3857) 公尺座標。">
+<meta name="description" content="Naver / Yahoo JP / Google 地圖轉換：貼上任一邊連結，自動算出其他兩邊。座標通用 WGS84，只有 Naver 網址的 c= 是 Web Mercator (EPSG:3857) 公尺座標。">
 <style>
 /* FIX fix16: 簡化頁面 — 只顯示必要按鈕，隱藏連結文字、複製按鈕、座標副按鈕與範例（JS 仍更新它們，僅不顯示）。 */
 #googleLink,#googleApp,#naverLink,#naverApp,#naverAppAndroidText,#googleCoordOpen,#naverCoordOpen,#exampleBtn{display:none!important}
@@ -65,7 +65,8 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
 
 <div class="wrap">
   <div class="card">
-    <textarea id="paste" placeholder="貼上 Google / Naver 連結或座標"></textarea>
+    <textarea id="paste" placeholder="貼上 Google / Naver / Yahoo JP 連結、座標或 Plus Code"></textarea>
+    <p class="note">支援：Google / Naver 短連結（maps.app.goo.gl / naver.me）與 Yahoo JP 短連結（yahoo.jp），貼上後自動展開解析；也可直接貼經緯度、完整連結或 Plus Code（完整碼直接貼，短碼加城市名）。</p>
     <div class="row">
       <button class="btn-primary" id="parseBtn" type="button">解析並對照 →</button>
       <button class="btn-ghost" id="exampleBtn" type="button">填入範例</button>
@@ -130,7 +131,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       <p class="note">Yahoo! MAP 是日本在地人常用的地圖（圖資最詳細）。網頁連結只會置中地圖，不會顯示圖釘（Yahoo 不支援 URL 圖釘參數）。如需圖釘，請用上方 Google / Naver。無經緯度時請用店名搜尋備援。Yahoo App 連結未驗證，僅提供網頁版。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-19-fix33</p>
+  <p class="note" style="text-align:center">v2026-10-19-fix34</p>
 </div>
 
 <script>
