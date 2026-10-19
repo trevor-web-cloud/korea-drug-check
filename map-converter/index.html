@@ -130,7 +130,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       <p class="note">Yahoo! MAP 是日本在地人常用的地圖（圖資最詳細）。網頁連結只會置中地圖，不會顯示圖釘（Yahoo 不支援 URL 圖釘參數）。如需圖釘，請用上方 Google / Naver。無經緯度時請用店名搜尋備援。Yahoo App 連結未驗證，僅提供網頁版。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-19-fix32</p>
+  <p class="note" style="text-align:center">v2026-10-19-fix33</p>
 </div>
 
 <script>
@@ -483,7 +483,7 @@ function parseInput(){
   // FIX 2026-10-18: 短連結本身沒有座標，純前端無法直接解（CORS + 需跟隨跳轉）。
   // 先明確告知 + 提供一鍵在新分頁展開，展開後再複製網址列的完整連結回來貼。
   // 注意：展開按鈕必須開 cleanUrl，不是 raw，否則貼整段分享文字會 404。
-  if(/maps\.app\.goo\.gl|goo\.gl\/maps|naver\.me\//i.test(cleanUrl) && !/[@?].*(\d+\.\d+|!3d|c=)/.test(cleanUrl)){
+  if(/maps\.app\.goo\.gl|goo\.gl\/maps|naver\.me\/|yahoo\.jp\//i.test(cleanUrl) && !/[@?].*(\d+\.\d+|!3d|c=)/.test(cleanUrl)){
     // 分享整段文字時，順便取出店名（第 2 行），讓下方搜尋連結先可用
     // FIX fix7: 只有「這次」真的取出店名才說已取出；否則殘留的上一次店名會被誤說成這次取出的。
     // FIX fix9: App 分享都是短網址，短連結本身無座標，必須清空舊座標，
@@ -532,7 +532,8 @@ function parseInput(){
   // map.naver.com/?title=兄弟潜水艇&pinId=...&lng=129.0972166&lat=35.1235958
   // 之前解析器不認 ?lat= / ?lng= 分開的參數，會誤判解析失敗。
   const latParam = raw.match(/[?&]lat\s*=\s*(-?\d+(?:\.\d+)?)/i);
-  const lngParam = raw.match(/[?&]lng\s*=\s*(-?\d+(?:\.\d+)?)/i);
+  // FIX fix33: Yahoo 地圖用 lon=（不是 lng=）：map.yahoo.co.jp/place?gid=...&lat=35.63367&lon=139.79152
+  const lngParam = raw.match(/[?&](?:lng|lon)\s*=\s*(-?\d+(?:\.\d+)?)/i);
   if(latParam && lngParam){
     const la = parseFloat(latParam[1]), ln = parseFloat(lngParam[1]);
     if(Math.abs(la)<=90 && Math.abs(ln)<=180){
@@ -656,7 +657,7 @@ function parseInput(){
     setStatus('已取出店名「'+placeName+'」：此連結沒有座標 / Plus Code。',true);
     updateLinks(); return;
   }
-  setStatus('解析不到座標：短連結（maps.app.goo.gl / naver.me）需先在瀏覽器打開展開，複製跳轉後的完整連結再貼。完整連結通常含 @緯度,經度 或 !3d緯度!4d經度 或 c= X,Y，或 /place/店名 + Plus Code。',false);
+  setStatus('解析不到座標：短連結（maps.app.goo.gl / naver.me / yahoo.jp）需先在瀏覽器打開展開，複製跳轉後的完整連結再貼。完整連結通常含 @緯度,經度 或 !3d緯度!4d經度 或 c= X,Y，或 /place/店名 + Plus Code。',false);
 }
 
 els.lat.addEventListener('input',()=>{ const la=parseFloat(els.lat.value), ln=parseFloat(els.lng.value); if(isFinite(la)&&isFinite(ln)&&Math.abs(la)<=90&&Math.abs(ln)<=180) updateFromLatLng(la,ln); });
