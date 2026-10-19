@@ -115,7 +115,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       </div>
     </section>
   </div>
-  <p class="note" style="text-align:center">v2026-10-19-fix28</p>
+  <p class="note" style="text-align:center">v2026-10-19-fix29</p>
 </div>
 
 <script>
@@ -407,6 +407,23 @@ const CITY_REF = [
   ['台東', '타이둥', 'taitung', 22.75, 121.15],
   ['澎湖', '펑후', 'penghu', 23.56, 119.56],
   ['金門', '진먼', 'kinmen', 24.44, 118.32],
+  // FIX fix29: 日本主要城市（貼日本地點短碼時，韓國+台灣城市表找不到參考，誤判為無參考）。
+  ['東京', '도쿄', 'tokyo', 35.68, 139.69],
+  ['江東', '고토', 'koto', 35.68, 139.82],
+  ['新宿', '신주쿠', 'shinjuku', 35.69, 139.70],
+  ['澀谷', '시부야', 'shibuya', 35.66, 139.70],
+  ['大阪', '오사카', 'osaka', 34.69, 135.50],
+  ['京都', '교토', 'kyoto', 35.01, 135.76],
+  ['名古屋', '나고야', 'nagoya', 35.18, 136.90],
+  ['福岡', '후쿠오카', 'fukuoka', 33.59, 130.40],
+  ['札幌', '삿포로', 'sapporo', 43.06, 141.35],
+  ['仙台', '센다이', 'sendai', 38.26, 140.87],
+  ['廣島', '히로시마', 'hiroshima', 34.38, 132.45],
+  ['橫濱', '요코하마', 'yokohama', 35.44, 139.64],
+  ['神戶', '고베', 'kobe', 34.69, 135.19],
+  ['奈良', '나라', 'nara', 34.68, 135.80],
+  ['沖繩', '오키나와', 'okinawa', 26.21, 127.68],
+  ['日本', '일본', 'japan', 36.20, 138.25],
 ];
 
 // FIX fix15: 短連結主動切換為 ID — Worker 已部署在 map-resolve.tsai0215.workers.dev，做 HEAD + redirect:manual 取得 Location。
