@@ -131,7 +131,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
       <p class="note">Yahoo! MAP 是日本在地人常用的地圖（圖資最詳細）。網頁連結只會置中地圖，不會顯示圖釘（Yahoo 不支援 URL 圖釘參數）。如需圖釘，請用上方 Google / Naver。無經緯度時請用店名搜尋備援。Yahoo App 連結未驗證，僅提供網頁版。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-19-fix34</p>
+  <p class="note" style="text-align:center">v2026-10-19-fix35</p>
 </div>
 
 <script>
@@ -587,7 +587,8 @@ function parseInput(){
     }
   }
   // Bare "lat,lng" — assume Google order lat,lng
-  m = raw.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+  // FIX fix35: Google Maps App「複製經緯度」會複製成帶括號的格式 "(24.9152425, 121.2070935)"，舊正則要求開頭結尾都是數字，括號會導致解析失敗。改為允許前後括號。
+  m = raw.match(/^\(?\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)?$/);
   if(m){
     const a=parseFloat(m[1]), b=parseFloat(m[2]);
     // If first looks like Mercator meters (>180), treat as X,Y
