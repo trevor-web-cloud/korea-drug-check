@@ -7,84 +7,113 @@
 <meta name="description" content="Naver / Yahoo JP / Google 地圖轉換：貼上任一邊連結，自動算出其他兩邊。座標通用 WGS84，只有 Naver 網址的 c= 是 Web Mercator (EPSG:3857) 公尺座標。">
 <style>
 /* FIX fix16: 簡化頁面 — 只顯示必要按鈕，隱藏連結文字、複製按鈕、座標副按鈕與範例（JS 仍更新它們，僅不顯示）。 */
-#googleLink,#googleApp,#naverLink,#naverApp,#naverAppAndroidText,#googleCoordOpen,#naverCoordOpen,#exampleBtn{display:none!important}
+#googleLink,#googleApp,#naverLink,#naverApp,#naverAppAndroidText,#yahooLink,#googleCoordOpen,#naverCoordOpen,#exampleBtn{display:none!important}
 *{box-sizing:border-box}
-:root{--google:#1a73e8;--naver:#03c75a;--yahoo:#720e9e;--bg:#f6f7f9;--card:#fff;--line:#e2e6eb;--text:#1a1d21;--muted:#667085}
-body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif;line-height:1.5}
-header{padding:20px 16px 12px;max-width:1080px;margin:0 auto}
-h1{font-size:22px;margin:0 0 6px}
-.sub{color:var(--muted);font-size:14px;margin:0}
+:root{--google:#1a73e8;--naver:#03c75a;--yahoo:#720e9e;--bg:#f6f7f9;--card:#fff;--line:#d0d5dd;--text:#101828;--muted:#475467}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif;line-height:1.55}
+header{padding:22px 16px 10px;max-width:1080px;margin:0 auto}
+h1{font-size:27px;line-height:1.3;margin:0 0 8px}
+.sub{color:var(--muted);font-size:17px;margin:0}
 .sub b{color:var(--text)}
-.wrap{max-width:1080px;margin:0 auto;padding:0 16px 28px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:14px}
-label{display:block;font-size:13px;color:var(--muted);margin:12px 0 4px}
-input,textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;font-size:16px;background:#fff;color:var(--text)}
-input:focus,textarea:focus{outline:2px solid #a8c7fa;border-color:#a8c7fa}
-textarea{min-height:68px;resize:vertical}
-.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-button,.btn{appearance:none;border:0;border-radius:999px;padding:10px 16px;font-size:15px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px 32px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:14px}
+label{display:block;font-size:16px;color:var(--muted);margin:14px 0 6px;font-weight:600}
+input,textarea{width:100%;padding:14px;border:2px solid var(--line);border-radius:12px;font-size:18px;background:#fff;color:var(--text)}
+input:focus,textarea:focus,button:focus-visible,a:focus-visible,summary:focus-visible{outline:4px solid #fdb022;outline-offset:2px;border-color:#1a73e8}
+textarea{min-height:104px;resize:vertical}
+.row{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+button,.btn{appearance:none;border:0;border-radius:999px;padding:14px 20px;min-height:56px;font-size:18px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-align:center}
 .btn-primary{background:#111;color:#fff}
-.btn-ghost{background:#eef2f6;color:#111}
+.btn-ghost{background:#eef2f6;color:#111;border:1px solid var(--line)}
 .btn-google{background:var(--google);color:#fff}
 .btn-naver{background:var(--naver);color:#fff}
 .btn-yahoo{background:var(--yahoo);color:#fff}
 .panel-head.yahoo{background:var(--yahoo)}
-.btn-small{padding:7px 12px;font-size:13px}
+.btn-small{padding:13px 18px;font-size:17px;min-height:54px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;position:relative}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
-.panel-head{padding:14px 16px;color:#fff;font-weight:800;display:flex;justify-content:space-between;align-items:center}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.panel-head{padding:16px;color:#fff;font-size:20px;font-weight:800;display:flex;justify-content:space-between;align-items:center}
 .panel-head.google{background:var(--google)}
 .panel-head.naver{background:var(--naver)}
-.panel-body{padding:6px 16px 16px}
-.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;font-size:14px;background:#f6f7f9;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
-.linkrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.note{font-size:13px;color:var(--muted);margin:8px 0 0}
-details.guide{border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-top:14px;background:var(--card)}
-details.guide summary{font-weight:700;font-size:15px;cursor:pointer}
-details.guide ol,details.guide ul{font-size:14px;margin:8px 0;padding-left:20px}
-details.guide li{margin:6px 0}
-details.guide code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
-.badge{font-size:12px;background:rgba(255,255,255,.22);padding:4px 8px;border-radius:999px}
+.panel-body{padding:10px 16px 18px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;font-size:15px;background:#f6f7f9;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.linkrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.note{font-size:15px;color:var(--muted);margin:9px 0 0}
+.step-title{font-size:21px;margin:2px 0 8px}
+.step-heading{font-size:22px;margin:22px 0 0}
+.ready{margin-top:16px;padding:16px;border-radius:14px;background:#dcfae6;border:2px solid #067647;color:#05603a;font-size:19px;font-weight:700}
+.ready span{display:block;margin-top:4px;font-size:17px;font-weight:600}
+.advanced{margin:4px 0 14px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#f9fafb}
+.advanced summary{font-size:16px;font-weight:700;cursor:pointer;padding:6px 0}
+.advanced input{margin-top:10px}
+.mini-help{margin-top:10px}
+.mini-help summary{font-size:16px;font-weight:700;cursor:pointer;padding:8px 0}
+details.guide{border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-top:16px;background:var(--card);font-size:16px}
+details.guide summary{font-weight:700;font-size:18px;cursor:pointer;padding:6px 0}
+details.guide ol,details.guide ul{font-size:16px;margin:8px 0;padding-left:24px}
+details.guide li{margin:8px 0}
+details.guide code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
+.badge{font-size:13px;background:rgba(255,255,255,.22);padding:5px 9px;border-radius:999px}
 .vs{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;z-index:2;border:3px solid var(--bg)}
-.status{font-size:13px;margin-top:10px;min-height:20px}
-.status.ok{color:#067647}.status.err{color:#b42318}
-h2{font-size:16px;margin:14px 0 4px}
-ol,ul{margin:8px 0;padding-left:20px;font-size:14px}
-code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
+.status{font-size:17px;margin-top:14px;min-height:28px;font-weight:600}
+.status:empty{min-height:0;margin-top:0}
+.status.ok{color:#067647}.status.err{color:#b42318;background:#fef3f2;border-radius:10px;padding:10px 12px}
+h2{font-size:18px;margin:14px 0 4px}
+ol,ul{margin:8px 0;padding-left:22px;font-size:16px}
+code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
 @media(max-width:760px){
+  .wrap{padding:0 10px 28px}
+  .card{padding:16px 14px}
   .grid{grid-template-columns:1fr}
   .vs{display:none}
-  h1{font-size:20px}
+  h1{font-size:24px}
+  .row button{flex:1 1 100%}
+  .linkrow .btn{flex:1 1 100%}
+  .panel-head{font-size:19px}
 }
 </style>
 </head>
 <body>
 <header>
   <h1>Naver Yahoo JP Google 地圖轉換</h1>
+  <p class="sub"><b>不用懂座標。</b>照著第 1、2、3 步做就可以。</p>
 </header>
 
 <div class="wrap">
   <div class="card">
-    <textarea id="paste" placeholder="貼上 Google / Naver / Yahoo JP 連結、座標或 Plus Code"></textarea>
-    <p class="note">支援：Google / Naver 短連結（maps.app.goo.gl / naver.me）與 Yahoo JP 短連結（yahoo.jp），貼上後自動展開解析；也可直接貼經緯度、完整連結或 Plus Code（完整碼直接貼，短碼加城市名）。</p>
+    <h2 class="step-title">第 1 步：把地圖連結貼在這裡</h2>
+    <textarea id="paste" aria-label="貼上地圖連結" placeholder="在這裡貼上連結"></textarea>
+    <p class="note">可以把 Google、Naver 或 Yahoo 的整段分享文字貼上來，不用自己挑出連結。</p>
+    <details class="mini-help">
+      <summary>不知道可以貼什麼？點這裡看</summary>
+      <p class="note">地圖分享連結、短連結、經緯度，或 Plus Code 都可以。Plus Code 如果只有短碼，請在後面加上城市名，例如「5RJG+F6 金海市」。</p>
+    </details>
+    <h2 class="step-title" style="margin-top:16px">第 2 步：按大按鈕</h2>
     <div class="row">
-      <button class="btn-primary" id="parseBtn" type="button">解析並對照 →</button>
+      <button class="btn-primary" id="pasteBtn" type="button">📋 貼上並開始轉換</button>
+      <button class="btn-ghost" id="parseBtn" type="button">已經貼好了，開始轉換</button>
       <button class="btn-ghost" id="exampleBtn" type="button">填入範例</button>
-      <button class="btn-ghost" id="clearBtn" type="button">清除</button>
-      <button class="btn-ghost" id="expandBtn" type="button" style="display:none">在新分頁打開短連結展開 →</button>
+      <button class="btn-ghost" id="clearBtn" type="button">全部清除，重新開始</button>
+      <button class="btn-ghost" id="expandBtn" type="button" style="display:none">打開短連結 →</button>
     </div>
-    <div class="status" id="parseStatus"></div>
-    <input id="name" placeholder="店名 / 地址" autocomplete="off" style="margin-top:10px">
+    <div class="status" id="parseStatus" role="status" aria-live="polite"></div>
+    <div class="ready" id="readyBox" role="status" aria-live="polite" hidden>✅ 已經準備好了<span id="readyText">請往下做第 3 步，點一個地圖按鈕。</span></div>
+    <label for="name">地點名稱（不用填也可以）</label>
+    <input id="name" placeholder="例如：飯店或景點名稱" autocomplete="off">
   </div>
 
+  <h2 class="step-heading">第 3 步：點一個地圖打開</h2>
   <div class="grid">
     <div class="vs">⇄</div>
     <!-- LEFT: Google -->
     <section class="panel" aria-label="Google Maps">
       <div class="panel-head google"><span>Google Maps</span></div>
       <div class="panel-body">
-        <input id="lat" inputmode="decimal" placeholder="緯度" style="margin-bottom:8px">
-        <input id="lng" inputmode="decimal" placeholder="經度">
+        <details class="advanced">
+          <summary>進階：查看或更改經緯度（一般不用點）</summary>
+          <input id="lat" inputmode="decimal" placeholder="緯度" aria-label="Google 緯度">
+          <input id="lng" inputmode="decimal" placeholder="經度" aria-label="Google 經度">
+        </details>
         <div class="mono" id="googleLink">—</div>
         <div class="linkrow">
           <a class="btn btn-google btn-small" id="googleOpen" href="#" target="_blank" rel="noopener">在 Google Maps 開啟</a>
@@ -103,8 +132,11 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
     <section class="panel" aria-label="Naver Map">
       <div class="panel-head naver"><span>Naver Map</span></div>
       <div class="panel-body">
-        <input id="mx" inputmode="decimal" placeholder="X" style="margin-bottom:8px">
-        <input id="my" inputmode="decimal" placeholder="Y">
+        <details class="advanced">
+          <summary>進階：查看或更改座標（一般不用點）</summary>
+          <input id="mx" inputmode="decimal" placeholder="X" aria-label="Naver X 座標">
+          <input id="my" inputmode="decimal" placeholder="Y" aria-label="Naver Y 座標">
+        </details>
         <div class="mono" id="naverLink">—</div>
         <div class="linkrow">
           <a class="btn btn-naver btn-small" id="naverOpen" href="#" target="_blank" rel="noopener">在 Naver 開啟</a>
@@ -128,10 +160,10 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:13px}
         <a class="btn btn-yahoo btn-small" id="yahooOpen" href="#" target="_blank" rel="noopener">在 Yahoo! MAP 開啟</a>
         <a class="btn btn-ghost btn-small" id="yahooNameFallback" href="#" target="_blank" rel="noopener" style="display:none">備援：店名搜尋</a>
       </div>
-      <p class="note">Yahoo! MAP 是日本在地人常用的地圖（圖資最詳細）。網頁連結只會置中地圖，不會顯示圖釘（Yahoo 不支援 URL 圖釘參數）。如需圖釘，請用上方 Google / Naver。無經緯度時請用店名搜尋備援。Yahoo App 連結未驗證，僅提供網頁版。</p>
+      <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-19-fix35</p>
+  <p class="note" style="text-align:center">v2026-10-20-fix36</p>
 </div>
 
 <script>
@@ -142,7 +174,8 @@ const els = {paste:$('paste'),name:$('name'),lat:$('lat'),lng:$('lng'),mx:$('mx'
   googleAppIOS:$('googleAppIOS'),googleAppAndroid:$('googleAppAndroid'),googleNameFallback:$('googleNameFallback'),
   naverLink:$('naverLink'),naverApp:$('naverApp'),naverOpen:$('naverOpen'),naverCoordOpen:$('naverCoordOpen'),naverAppOpen:$('naverAppOpen'),
   naverAppAndroid:$('naverAppAndroid'),naverAppAndroidText:$('naverAppAndroidText'),naverNameFallback:$('naverNameFallback'),
-  yahooLink:$('yahooLink'),yahooOpen:$('yahooOpen'),yahooNameFallback:$('yahooNameFallback'),status:$('parseStatus')};
+  yahooLink:$('yahooLink'),yahooOpen:$('yahooOpen'),yahooNameFallback:$('yahooNameFallback'),status:$('parseStatus'),
+  readyBox:$('readyBox'),readyText:$('readyText')};
 let syncing = false;
 let currentPinId = '';
 // FIX fix17: Google 的 ID 是 ftid（Google 地點頁 / ?q= 跳轉連結裡的 ftid=0x... 參數），與 Naver pinId 對應。
@@ -152,6 +185,9 @@ let currentGoogleId = '';
 // 座標與店名從同一條連結一起解析出來時，coordsValidForName=true，座標優先；
 // 使用者手動改店名時，舊座標不再保證是這間店的，coordsValidForName=false，店名搜尋優先（避免南浦洞舊座標誤開）。
 let coordsValidForName = false;
+// FIX fix36: 長輩模式完成提示 — 只有成功找到座標、ID 或可用店名時才顯示綠色「已經準備好了」，避免使用者猜下一步。
+let hasReadyResult = false;
+let readyMessage = '';
 
 function wgsToMerc(lng,lat){
   const x = lng * R / 180;
@@ -167,6 +203,10 @@ function fmt(n,d){ return Number(n).toFixed(d); }
 function setStatus(msg,ok){ els.status.textContent = msg||''; els.status.className='status '+(ok?'ok':'err'); }
 
 function updateLinks(){
+  if(els.readyBox){
+    els.readyBox.hidden = !hasReadyResult;
+    if(hasReadyResult) els.readyText.textContent = readyMessage || '請往下做第 3 步，點一個地圖按鈕。';
+  }
   const lat = parseFloat(els.lat.value), lng = parseFloat(els.lng.value);
   const name = els.name.value.trim();
   const hasCoords = isFinite(lat) && isFinite(lng);
@@ -303,6 +343,8 @@ function updateFromLatLng(lat,lng,msg){
   els.mx.value = fmt(x,2); els.my.value = fmt(y,2);
   // FIX fix13: 座標被明確設定（解析連結或手動輸入），視為是目前這間店的，座標優先。
   coordsValidForName = true;
+  hasReadyResult = true;
+  readyMessage = els.name.value.trim() ? '地點：'+els.name.value.trim()+'。請往下做第 3 步，點一個地圖按鈕。' : '位置已經找到。請往下做第 3 步，點一個地圖按鈕。';
   syncing=false; updateLinks(); if(msg) setStatus(msg,true);
 }
 function updateFromXY(x,y,msg){
@@ -311,6 +353,8 @@ function updateFromXY(x,y,msg){
   const [lng,lat]=mercToWgs(x,y);
   els.lat.value = fmt(lat,6); els.lng.value = fmt(lng,6);
   coordsValidForName = true;
+  hasReadyResult = true;
+  readyMessage = els.name.value.trim() ? '地點：'+els.name.value.trim()+'。請往下做第 3 步，點一個地圖按鈕。' : '位置已經找到。請往下做第 3 步，點一個地圖按鈕。';
   syncing=false; updateLinks(); if(msg) setStatus(msg,true);
 }
 
@@ -473,7 +517,8 @@ async function resolveShortLink(shortUrl){
 }
 function parseInput(){
   const raw = els.paste.value.trim();
-  if(!raw){ setStatus('請先貼上連結或座標。',false); return; }
+  hasReadyResult = false; readyMessage = '';
+  if(!raw){ updateLinks(); setStatus('還沒有貼上內容。請先點白色大框框，把連結貼進去。',false); return; }
   // FIX fix17: 解析新輸入時先清空舊 ID，避免殘留上一個地點的 ftid / pinId 被誤用。
   currentPinId = ''; currentGoogleId = '';
   const expandBtn = $('expandBtn');
@@ -508,14 +553,14 @@ function parseInput(){
     updateLinks();
     // FIX fix14: 短連結主動切換為 ID — 先試 Worker 自動解析（取 Location 裡的 pinId + 座標），
     // 成功就直接用展開後的完整連結重新解析，ID/座標自動填上；Worker 未部署或失敗時，退回手動展開流程。
-    setStatus('正在主動解析短連結取 ID…（透過解析服務取得跳轉目標）',false);
+    setStatus('正在處理，請稍等一下…',false);
     if(expandBtn){ expandBtn.style.display=''; expandBtn.onclick=()=>{ window.open(cleanUrl,'_blank','noopener'); }; }
     resolveShortLink(cleanUrl).then(loc=>{
       if(loc){
         els.paste.value = loc;
         parseInput();
       }else{
-        setStatus('自動解析失敗，請按「展開」手動取完整連結再貼回來。'+(newlyExtracted ? '已取出店名「'+els.name.value+'」。' : ''),false);
+        setStatus('自動處理沒有成功。請點「打開短連結」，等新頁面打開後，再把最上面的完整連結複製回來貼上。'+(newlyExtracted ? '已先找到名稱「'+els.name.value+'」。' : ''),false);
       }
     });
     return;
@@ -581,6 +626,8 @@ function parseInput(){
       // 否則 Naver 主按鈕會誤用殘留南浦座標當「座標」開啟，且 X/Y 欄會誤顯示南浦值。ID 未找到時主按鈕應為「ID 未找到」，備援按鈕才顯示店名搜尋。
       coordsValidForName = false;
       els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value='';
+      hasReadyResult = true;
+      readyMessage = currentGoogleId ? '地點：'+qDec+'。請往下做第 3 步，點 Google 地圖按鈕。' : '已找到名稱：'+qDec+'。請往下點有「店名搜尋備援」或「App」的按鈕。';
       if(currentGoogleId) setStatus('已解析：'+qDec+'（Google ID 已取出）',true);
       else setStatus('已取出店名「'+qDec+'」：Google ID 未找到，請用備援店名搜尋。',true);
       updateLinks(); return;
@@ -602,7 +649,7 @@ function parseInput(){
   if(m){
     const decoded = decodeURIComponent(m[1].replace(/\+/g,' '));
     if(!/^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(decoded)){
-      els.name.value = decoded; coordsValidForName = false; els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value=''; setStatus('已取出搜尋名稱，請再確認。',true); updateLinks(); return;
+      els.name.value = decoded; coordsValidForName = false; els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value=''; hasReadyResult = true; readyMessage = '已找到名稱：'+decoded+'。請往下點有「店名搜尋備援」或「App」的按鈕。'; setStatus('已取出搜尋名稱，請再確認。',true); updateLinks(); return;
     }
   }
   // Google /place/<店名>/ 展開連結：取出店名 + Plus Code 解碼
@@ -641,7 +688,7 @@ function parseInput(){
     // 無參考可還原 → 拒絕，不產生錯誤座標（fix23/24 邏輯）。
     coordsValidForName = false;
     els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value='';
-    setStatus('這是短碼 Plus Code「'+shortPcm[0]+'」：需參考位置才能還原，請在短碼後面加上城市名（例如「5RJG+FVG 金海市」）或先貼一個附近地點的經緯度。',false);
+    setStatus('還差一個城市名。請在短碼後面加上城市名，例如「5RJG+F6 金海市」或「V6X6+RC 桃園市」，再按一次開始轉換。',false);
     updateLinks(); return;
   }
   // Plus Code: 8Q7C5RJG+F63（完整碼）— 在 data 裡是 20s8Q7C5RJG+F63
@@ -656,20 +703,36 @@ function parseInput(){
     els.name.value = placeName;
     coordsValidForName = false;
     els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value='';
+    hasReadyResult = true;
+    readyMessage = '已找到名稱：'+placeName+'。請往下點有「店名搜尋備援」或「App」的按鈕。';
     setStatus('已取出店名「'+placeName+'」：此連結沒有座標 / Plus Code。',true);
     updateLinks(); return;
   }
-  setStatus('解析不到座標：短連結（maps.app.goo.gl / naver.me / yahoo.jp）需先在瀏覽器打開展開，複製跳轉後的完整連結再貼。完整連結通常含 @緯度,經度 或 !3d緯度!4d經度 或 c= X,Y，或 /place/店名 + Plus Code。',false);
+  setStatus('看不懂這段內容。請確認貼的是地圖的分享連結，或改貼經緯度、Plus Code。',false);
 }
 
 els.lat.addEventListener('input',()=>{ const la=parseFloat(els.lat.value), ln=parseFloat(els.lng.value); if(isFinite(la)&&isFinite(ln)&&Math.abs(la)<=90&&Math.abs(ln)<=180) updateFromLatLng(la,ln); });
 els.lng.addEventListener('input',()=>{ const la=parseFloat(els.lat.value), ln=parseFloat(els.lng.value); if(isFinite(la)&&isFinite(ln)&&Math.abs(la)<=90&&Math.abs(ln)<=180) updateFromLatLng(la,ln); });
 els.mx.addEventListener('input',()=>{ const x=parseFloat(els.mx.value), y=parseFloat(els.my.value); if(isFinite(x)&&isFinite(y)&&Math.abs(x)<=R&&Math.abs(y)<=R) updateFromXY(x,y); });
 els.my.addEventListener('input',()=>{ const x=parseFloat(els.mx.value), y=parseFloat(els.my.value); if(isFinite(x)&&isFinite(y)&&Math.abs(x)<=R&&Math.abs(y)<=R) updateFromXY(x,y); });
-els.name.addEventListener('input',()=>{ coordsValidForName=false; updateLinks(); });
+els.name.addEventListener('input',()=>{ coordsValidForName=false; hasReadyResult=false; readyMessage=''; updateLinks(); });
+// FIX fix36: 長輩模式 — 使用者把內容貼進框框後自動開始，不必再找第二顆按鈕；剪貼簿按鈕則在同一個手勢內讀取並轉換。
+els.paste.addEventListener('paste',()=>{ window.setTimeout(parseInput,80); });
+$('pasteBtn').addEventListener('click', async ()=>{
+  try{
+    if(!navigator.clipboard || !navigator.clipboard.readText) throw new Error('clipboard unavailable');
+    const text = await navigator.clipboard.readText();
+    if(!text || !text.trim()) throw new Error('clipboard empty');
+    els.paste.value = text;
+    parseInput();
+  }catch(e){
+    els.paste.focus();
+    setStatus('請長按上方白色大框框，看到「貼上」後點一下；貼好後網頁會自動開始轉換。',false);
+  }
+});
 $('parseBtn').addEventListener('click',parseInput);
 $('exampleBtn').addEventListener('click',()=>{ els.name.value='남포역'; updateFromLatLng(35.097883,129.034663,'已填入範例：南浦站 남포역 35.097883,129.034663'); });
-$('clearBtn').addEventListener('click',()=>{ els.paste.value=''; els.name.value=''; els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value=''; currentPinId=''; currentGoogleId=''; coordsValidForName=false; updateLinks(); setStatus('',true); });
+$('clearBtn').addEventListener('click',()=>{ els.paste.value=''; els.name.value=''; els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value=''; currentPinId=''; currentGoogleId=''; coordsValidForName=false; hasReadyResult=false; readyMessage=''; updateLinks(); setStatus('',true); els.paste.focus(); });
 document.querySelectorAll('[data-copy]').forEach(btn=>{
   btn.addEventListener('click', async ()=>{
     const key = btn.getAttribute('data-copy');
@@ -703,7 +766,7 @@ updateLinks(); setStatus('',true);
 <ul>
 <li><strong>完整碼</strong>：直接貼 <code>8Q7C5RJG+F63</code> 就好，不用加城市名。</li>
 <li><strong>短碼</strong>：一定要加上城市名，例如貼 <code>5RJG+F6 金海市</code>。只貼短碼 <code>5RJG+F6</code> 會提示需要參考位置，不會產生座標。</li>
-<li>貼上後按「解析並對照」，轉換頁會自動還原短碼 → 長碼 → 經緯度，兩邊都能用座標圖釘開。</li>
+<li>貼上後網頁會自動開始轉換；如果沒有自動開始，請按「已經貼好了，開始轉換」。成功後往下點一個地圖按鈕即可。</li>
 </ul>
 <h2>注意事項</h2>
 <ul>
