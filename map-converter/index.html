@@ -163,7 +163,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-20-fix36</p>
+  <p class="note" style="text-align:center">v2026-10-20-fix37</p>
 </div>
 
 <script>
@@ -732,7 +732,7 @@ $('pasteBtn').addEventListener('click', async ()=>{
 });
 $('parseBtn').addEventListener('click',parseInput);
 $('exampleBtn').addEventListener('click',()=>{ els.name.value='남포역'; updateFromLatLng(35.097883,129.034663,'已填入範例：南浦站 남포역 35.097883,129.034663'); });
-$('clearBtn').addEventListener('click',()=>{ els.paste.value=''; els.name.value=''; els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value=''; currentPinId=''; currentGoogleId=''; coordsValidForName=false; hasReadyResult=false; readyMessage=''; updateLinks(); setStatus('',true); els.paste.focus(); });
+$('clearBtn').addEventListener('click',()=>{ els.paste.value=''; els.name.value=''; els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value=''; currentPinId=''; currentGoogleId=''; coordsValidForName=false; hasReadyResult=false; readyMessage=''; document.querySelectorAll('details.advanced').forEach(d=>{ d.open=false; }); updateLinks(); setStatus('',true); els.paste.focus(); });
 document.querySelectorAll('[data-copy]').forEach(btn=>{
   btn.addEventListener('click', async ()=>{
     const key = btn.getAttribute('data-copy');
