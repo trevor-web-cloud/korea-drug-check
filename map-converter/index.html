@@ -163,7 +163,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-20-fix37</p>
+  <p class="note" style="text-align:center">v2026-10-20-fix38</p>
 </div>
 
 <script>
@@ -336,7 +336,7 @@ function updateLinks(){
   }
 }
 
-function updateFromLatLng(lat,lng,msg){
+function updateFromLatLng(lat,lng,msg,readyOverride){
   if(syncing) return; syncing=true;
   els.lat.value = fmt(lat,6); els.lng.value = fmt(lng,6);
   const [x,y]=wgsToMerc(lng,lat);
@@ -344,7 +344,7 @@ function updateFromLatLng(lat,lng,msg){
   // FIX fix13: 座標被明確設定（解析連結或手動輸入），視為是目前這間店的，座標優先。
   coordsValidForName = true;
   hasReadyResult = true;
-  readyMessage = els.name.value.trim() ? '地點：'+els.name.value.trim()+'。請往下做第 3 步，點一個地圖按鈕。' : '位置已經找到。請往下做第 3 步，點一個地圖按鈕。';
+  readyMessage = readyOverride || (els.name.value.trim() ? '地點：'+els.name.value.trim()+'。請往下做第 3 步，點一個地圖按鈕。' : '位置已經找到。請往下做第 3 步，點一個地圖按鈕。');
   syncing=false; updateLinks(); if(msg) setStatus(msg,true);
 }
 function updateFromXY(x,y,msg){
@@ -385,6 +385,26 @@ function plusCodeDecode(code){
   return [lat+latCell/2, lng+lngCell/2];
 }
 
+// FIX fix38: Plus Code 代表的是一塊矩形範圍，不是精確點；解碼座標是範圍中心。
+// 精度必須依完整碼總字數計算：10 字約 14×13 公尺（中心與原點最多約 9–10 公尺），
+// 11 字才約 3×3 公尺。舊版不分長度一律寫「約 3m」，會讓使用者誤以為解析座標失準。
+function plusCodePrecision(code, centerLat){
+  const digits = code.toUpperCase().replace(/[^23456789CFGHJMPQRVWX]/g,'').length;
+  let latDeg = 0.000125, lngDeg = 0.000125;
+  if(digits <= 10){
+    latDeg = lngDeg = 20 / Math.pow(20, Math.max(0, Math.floor(digits/2)-1));
+  }else{
+    for(let i=10;i<digits;i++){ latDeg /= 5; lngDeg /= 4; }
+  }
+  const heightM = latDeg * 110574;
+  const widthM = lngDeg * 111320 * Math.cos(centerLat * Math.PI/180);
+  return {digits, widthM, heightM, maxM: Math.hypot(widthM, heightM)/2};
+}
+function plusCodeNotice(code, centerLat){
+  const p = plusCodePrecision(code, centerLat);
+  return '這是大概位置：'+code+' 代表約 '+Math.round(p.widthM)+'×'+Math.round(p.heightM)+' 公尺的範圍，圖釘放在正中間，和真正的店家最多可能差約 '+Math.ceil(p.maxM)+' 公尺。要精準找店，請改貼店家的分享連結。';
+}
+
 // FIX fix25: App 只顯示短碼 Plus Code（例如 5RJG+FVG），短碼需參考位置才能解碼。實作短碼還原：
 // 用參考經緯度編出完整碼，取前綴補上短碼缺的前幾字，解碼後若與參考距離太遠，嘗試鄰近 8 格取最近者。
 function plusCodeEncode(lat,lng){
@@ -397,9 +417,7 @@ function plusCodeEncode(lat,lng){
     la -= laI * res; ln -= lnI * res;
     res /= 20;
   }
-  // 完整碼：前 8 字 + '+' + 後 2 字（取第 6 對的前 2 字當 grid，這裡只取 2 字已足夠定位到 ~3m）
-  // 為了與 decode 對齊，grid 取 2 字（第 6 對的 2 字）。
-  // 注意：encode 的第 6 對是 grid 的第一字；這裡簡化取 2 字。
+  // 此函式只供短碼還原取前綴：回傳標準 10 字 pair code（約 14 公尺格），不作精確座標使用。
   return code.slice(0,8) + '+' + code.slice(8,10);
 }
 function recoverShortCode(shortCode, refLat, refLng){
@@ -681,7 +699,8 @@ function parseInput(){
     if(ref){
       const rec = recoverShortCode(shortPcm[0], ref[0], ref[1]);
       if(rec){
-        updateFromLatLng(rec.xy[0], rec.xy[1], '已解析短碼 Plus Code「'+shortPcm[0]+'」（參考：'+refLabel+'，還原為 '+rec.full+'）。');
+        const notice = plusCodeNotice(rec.full, rec.xy[0]);
+        updateFromLatLng(rec.xy[0], rec.xy[1], '已解析短碼 Plus Code「'+shortPcm[0]+'」（參考：'+refLabel+'，還原為 '+rec.full+'）。注意：這是大概位置，不是店門口。', notice+'請往下做第 3 步，點一個地圖按鈕看大概位置。');
         return;
       }
     }
@@ -696,7 +715,9 @@ function parseInput(){
   if(pcm){
     const [clat, clng] = plusCodeDecode(pcm[1]);
     if(placeName) els.name.value = placeName;
-    updateFromLatLng(clat, clng, '已解析 Google 地點頁：取出店名「'+(placeName||'')+'」+ Plus Code '+pcm[1]+' 解碼為座標（約 3m 格子中心，請以店名搜尋再確認）。');
+    const notice = plusCodeNotice(pcm[1], clat);
+    const sourceText = placeName ? '已解析 Google 地點頁：取出店名「'+placeName+'」+ Plus Code '+pcm[1]+'。' : '已解析 Plus Code '+pcm[1]+'。';
+    updateFromLatLng(clat, clng, sourceText+'注意：這是大概位置，不是店門口。', notice+'請往下做第 3 步，點一個地圖按鈕看大概位置。');
     return;
   }
   if(placeName){
@@ -772,7 +793,7 @@ updateLinks(); setStatus('',true);
 <ul>
 <li>App 顯示的都是<strong>短碼</strong>，務必連城市名一起貼。</li>
 <li>短碼的格子字不同就是不同位置：<code>F6</code> 是飯店、<code>FVG</code> 是旁邊公園，相差約 150 公尺。請確認是從地點卡片複製的碼，不是長按空地拿到的碼。</li>
-<li>Plus Code 解出來的是格子中心點（約 3 公尺範圍），不是精確圖釘。到現場請以店名再確認。</li>
+<li>Plus Code 代表一塊範圍，不是精確圖釘；轉換頁放的是範圍中心。<code>+</code> 後面 2 字、還原後共 10 字的碼，範圍約 14 公尺見方，中心和店家最多可能差約 10 公尺；<code>+</code> 後面 3 字、還原後共 11 字的碼，範圍約 3 公尺見方，落差才約 2 公尺。要精準找店，請改貼店家的分享連結，或到現場再以店名、招牌確認。</li>
 </ul>
 </details>
 </body>
