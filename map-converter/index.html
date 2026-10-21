@@ -163,7 +163,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-20-fix38</p>
+  <p class="note" style="text-align:center">v2026-10-21-fix39</p>
 </div>
 
 <script>
@@ -347,14 +347,14 @@ function updateFromLatLng(lat,lng,msg,readyOverride){
   readyMessage = readyOverride || (els.name.value.trim() ? '地點：'+els.name.value.trim()+'。請往下做第 3 步，點一個地圖按鈕。' : '位置已經找到。請往下做第 3 步，點一個地圖按鈕。');
   syncing=false; updateLinks(); if(msg) setStatus(msg,true);
 }
-function updateFromXY(x,y,msg){
+function updateFromXY(x,y,msg,readyOverride){
   if(syncing) return; syncing=true;
   els.mx.value = fmt(x,2); els.my.value = fmt(y,2);
   const [lng,lat]=mercToWgs(x,y);
   els.lat.value = fmt(lat,6); els.lng.value = fmt(lng,6);
   coordsValidForName = true;
   hasReadyResult = true;
-  readyMessage = els.name.value.trim() ? '地點：'+els.name.value.trim()+'。請往下做第 3 步，點一個地圖按鈕。' : '位置已經找到。請往下做第 3 步，點一個地圖按鈕。';
+  readyMessage = readyOverride || (els.name.value.trim() ? '地點：'+els.name.value.trim()+'。請往下做第 3 步，點一個地圖按鈕。' : '位置已經找到。請往下做第 3 步，點一個地圖按鈕。');
   syncing=false; updateLinks(); if(msg) setStatus(msg,true);
 }
 
@@ -398,11 +398,49 @@ function plusCodePrecision(code, centerLat){
   }
   const heightM = latDeg * 110574;
   const widthM = lngDeg * 111320 * Math.cos(centerLat * Math.PI/180);
-  return {digits, widthM, heightM, maxM: Math.hypot(widthM, heightM)/2};
+  return {digits, latDeg, lngDeg, widthM, heightM, maxM: Math.hypot(widthM, heightM)/2};
 }
 function plusCodeNotice(code, centerLat){
   const p = plusCodePrecision(code, centerLat);
   return '這是大概位置：'+code+' 代表約 '+Math.round(p.widthM)+'×'+Math.round(p.heightM)+' 公尺的範圍，圖釘放在正中間，和真正的店家最多可能差約 '+Math.ceil(p.maxM)+' 公尺。要精準找店，請改貼店家的分享連結。';
+}
+
+// FIX fix39: 同一段文字同時有精確連結座標與 Plus Code 時，必須交叉比對。
+// 若精確座標落在 Plus Code 格子外，兩者不是同一位置，不能只用「格子中心誤差」解釋。
+// 例：Naver 明洞餃子本店 37.5634829,126.9851666 應編為 …+93；使用者貼的 HX7P+92 中心與它相差 10.47m，
+// 且精確點在 +92 格子東側外約 3.7m，超過 10 字碼理論最大中心誤差 8.84m。
+function plusCodeMismatch(text, exactLat, exactLng){
+  if(!text) return null;
+  let shownCode = '', fullCode = '', center = null;
+  const fullMatch = text.match(/\b[23456789CFGHJMPQRVWX]{8}\+[23456789CFGHJMPQRVWX]{2,3}\b/i);
+  if(fullMatch){
+    shownCode = fullMatch[0].toUpperCase(); fullCode = shownCode;
+    center = plusCodeDecode(fullCode);
+  }else{
+    const shortMatch = text.match(/\b[23456789CFGHJMPQRVWX]{2,7}\+[23456789CFGHJMPQRVWX]{2,3}\b/i);
+    if(!shortMatch) return null;
+    shownCode = shortMatch[0].toUpperCase();
+    const rec = recoverShortCode(shownCode, exactLat, exactLng);
+    if(!rec) return null;
+    fullCode = rec.full; center = rec.xy;
+  }
+  const p = plusCodePrecision(fullCode, center[0]);
+  const latHalf = p.latDeg/2, lngHalf = p.lngDeg/2;
+  const dLat = exactLat - center[0], dLng = exactLng - center[1];
+  if(Math.abs(dLat) <= latHalf + 1e-12 && Math.abs(dLng) <= lngHalf + 1e-12) return null;
+  const metersPerLat = 110574;
+  const metersPerLng = 111320 * Math.cos(center[0] * Math.PI/180);
+  const distanceM = Math.hypot(dLat * metersPerLat, dLng * metersPerLng);
+  let direction = '', outsideM = 0;
+  if(dLng > lngHalf){ direction = '東'; outsideM = (dLng - lngHalf) * metersPerLng; }
+  else if(dLng < -lngHalf){ direction = '西'; outsideM = (-dLng - lngHalf) * metersPerLng; }
+  else if(dLat > latHalf){ direction = '北'; outsideM = (dLat - latHalf) * metersPerLat; }
+  else if(dLat < -latHalf){ direction = '南'; outsideM = (-dLat - latHalf) * metersPerLat; }
+  const detail = '同時貼上的 Plus Code '+shownCode+'（還原為 '+fullCode+'）與連結座標不一致：連結點在 Plus Code 格子'+direction+'側外約 '+outsideM.toFixed(1)+' 公尺，格子中心與連結點相差約 '+distanceM.toFixed(1)+' 公尺，已超過這個碼最多約 '+p.maxM.toFixed(1)+' 公尺的中心誤差。';
+  return {
+    status: '⚠ '+detail+'這次以連結的精確座標為準；Plus Code 可能是附近另一點或另一家地圖的圖釘。',
+    ready: '⚠ 兩個位置不完全一樣。'+detail+'這次以連結的精確座標為準，請往下做第 3 步，點地圖按鈕。'
+  };
 }
 
 // FIX fix25: App 只顯示短碼 Plus Code（例如 5RJG+FVG），短碼需參考位置才能解碼。實作短碼還原：
@@ -575,7 +613,10 @@ function parseInput(){
     if(expandBtn){ expandBtn.style.display=''; expandBtn.onclick=()=>{ window.open(cleanUrl,'_blank','noopener'); }; }
     resolveShortLink(cleanUrl).then(loc=>{
       if(loc){
-        els.paste.value = loc;
+        // FIX fix39: 原始分享文字若同時附 Plus Code，展開短連結時必須保留它，
+        // 重新解析後才能用精確連結座標交叉比對；直接覆蓋會把不一致證據弄丟。
+        const plusInRaw = raw.match(/\b[23456789CFGHJMPQRVWX]{8}\+[23456789CFGHJMPQRVWX]{2,3}\b/i) || raw.match(/\b[23456789CFGHJMPQRVWX]{2,7}\+[23456789CFGHJMPQRVWX]{2,3}\b/i);
+        els.paste.value = loc + (plusInRaw && !loc.includes(plusInRaw[0]) ? '\n'+plusInRaw[0] : '');
         parseInput();
       }else{
         setStatus('自動處理沒有成功。請點「打開短連結」，等新頁面打開後，再把最上面的完整連結複製回來貼上。'+(newlyExtracted ? '已先找到名稱「'+els.name.value+'」。' : ''),false);
@@ -606,7 +647,8 @@ function parseInput(){
       const isKorean = /[\uAC00-\uD7A3]/.test(els.name.value);
       const pinNote = currentPinId ? '（ID '+currentPinId+'）' : '';
       const langNote = (!isKorean && els.name.value) ? '（非韓文名，已轉 ID）' : '';
-      updateFromLatLng(la, ln, '已解析：'+(els.name.value||'')+pinNote+langNote);
+      const mismatch = plusCodeMismatch(raw, la, ln);
+      updateFromLatLng(la, ln, '已解析：'+(els.name.value||'')+pinNote+langNote+(mismatch ? ' '+mismatch.status : ''), mismatch ? mismatch.ready : undefined);
       return;
     }
   }
@@ -615,7 +657,9 @@ function parseInput(){
   if(m){
     const x=parseFloat(m[1]), y=parseFloat(m[2]);
     if(Math.abs(x)<=20037508.34 && Math.abs(y)<=20037508.34){
-      updateFromXY(x,y,'已解析 Naver c= → 換算為 Google 經緯度。');
+      const [mismatchLng,mismatchLat] = mercToWgs(x,y);
+      const mismatch = plusCodeMismatch(raw, mismatchLat, mismatchLng);
+      updateFromXY(x,y,'已解析 Naver c= → 換算為 Google 經緯度。'+(mismatch ? ' '+mismatch.status : ''), mismatch ? mismatch.ready : undefined);
       return;
     }
   }
@@ -624,13 +668,27 @@ function parseInput(){
   let m3 = raw.match(/!3d(-?\d+(?:\.\d+)?)/), m4 = raw.match(/!4d(-?\d+(?:\.\d+)?)/);
   if(m3 && m4){
     const lat = parseFloat(m3[1]), lng = parseFloat(m4[1]);
-    if(Math.abs(lat)<=90 && Math.abs(lng)<=180){ updateFromLatLng(lat,lng,'已解析 Google !3d緯度 !4d經度。'); return; }
+    if(Math.abs(lat)<=90 && Math.abs(lng)<=180){
+      const mismatch = plusCodeMismatch(raw, lat, lng);
+      updateFromLatLng(lat,lng,'已解析 Google !3d緯度 !4d經度。'+(mismatch ? ' '+mismatch.status : ''), mismatch ? mismatch.ready : undefined);
+      return;
+    }
   }
   // Google @lat,lng  or  ?q=lat,lng / ?query=lat,lng / api=1&query=lat,lng / ?ll= / ?center= / ?destination=
   m = raw.match(/@(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
-  if(m){ updateFromLatLng(parseFloat(m[1]),parseFloat(m[2]),'已解析 Google @緯度,經度。'); return; }
+  if(m){
+    const lat = parseFloat(m[1]), lng = parseFloat(m[2]);
+    const mismatch = plusCodeMismatch(raw, lat, lng);
+    updateFromLatLng(lat,lng,'已解析 Google @緯度,經度。'+(mismatch ? ' '+mismatch.status : ''), mismatch ? mismatch.ready : undefined);
+    return;
+  }
   m = raw.match(/[?&](?:q|query|ll|center|destination|saddr|daddr)\s*=\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/i);
-  if(m){ updateFromLatLng(parseFloat(m[1]),parseFloat(m[2]),'已解析 Google ?q=緯度,經度。'); return; }
+  if(m){
+    const lat = parseFloat(m[1]), lng = parseFloat(m[2]);
+    const mismatch = plusCodeMismatch(raw, lat, lng);
+    updateFromLatLng(lat,lng,'已解析 Google ?q=緯度,經度。'+(mismatch ? ' '+mismatch.status : ''), mismatch ? mismatch.ready : undefined);
+    return;
+  }
   // FIX fix8: Google goo.gl 展開後的 maps.google.com?q=<店名+地址>（非座標）：
   // 例 ?q=南韓 Gyeongsangnam-do, Miryang-si, ... 三浪津生態文化公園&ftid=...
   // FIX fix17: 同時取出 ftid（Google ID），Google 主按鈕用 ID 搜尋，不退回店名搜尋。
