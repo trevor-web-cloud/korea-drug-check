@@ -209,6 +209,14 @@ rows.push(row('N7', '無店名時 Naver App 連結 name 不可為座標字串（
   const nm = m ? decodeURIComponent(m[1]) : '';
   check(c, 'app name label', !!nm && !/^\d+\.\d+,\d+\.\d+$/.test(nm), href.slice(0, 90));
 }));
+rows.push(row('N8', '中文店名不可傳給 Naver App 圖釘 name（fix48 實機回報）', async (c) => {
+  await pasteAndParse('https://maps.app.goo.gl/8jUa4Jxcuvq4KEk78');
+  const href = E('naverAppOpen').href;
+  const m = href.match(/[?&]name=([^&]*)/);
+  const nm = m ? decodeURIComponent(m[1]) : '';
+  check(c, 'name is neutral label', nm === '좌표 위치', href.slice(0, 110));
+  check(c, 'coords in app href', href.includes('lat=33.4824'), href.slice(0, 110));
+}));
 rows.push(row('K6', '無店名（只有 Plus Code）→找地點走地址備援（fixture）', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');
   check(c, 'coords decoded', Math.abs(parseFloat(E('lat').value) - 35.0985625) < 0.001, E('lat').value);

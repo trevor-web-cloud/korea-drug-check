@@ -174,7 +174,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-22-fix47</p>
+  <p class="note" style="text-align:center">v2026-10-22-fix48</p>
 </div>
 
 <script>
@@ -327,9 +327,13 @@ function updateLinks(){
   // Naver App：有店名 → nmap://search / intent://search；無店名有座標 → nmap://place / intent://place
   // FIX fix47: 無店名時 name 不可塞座標字串（實機回報：App 把 "35.098562,129.030938" 當搜尋字串 → No results）。
   // 改用已確認候選的標題，或正式標籤「좌표 위치」。
-  const nAppCoord = hasCoords ? 'nmap://place?lat='+nLatS+'&lng='+nLngS+'&name='+encodeURIComponent(name||(naverOverride?naverOverride.title:'')||'좌표 위치')+'&appname='+APPNAME : '';
+  // FIX fix48: nmap place 的 name 名義上是標籤，但 App 可能拿它重新對應地點：
+  // 傳 Google 連結的中文店名（如「明洞饺子1号店」）會跳到 App 認定的那家，與已選地標不同（實機回報）。
+  // 座標才是本體 — name 只用：已確認候選標題 > 與座標同源的韓文店名 > 中性標籤「좌표 위치」；非韓文名不傳。
+  const appPlaceName = (naverOverride && naverOverride.title) ? naverOverride.title : (/[\uAC00-\uD7A3]/.test(name) ? name : '좌표 위치');
+  const nAppCoord = hasCoords ? 'nmap://place?lat='+nLatS+'&lng='+nLngS+'&name='+encodeURIComponent(appPlaceName)+'&appname='+APPNAME : '';
   const nAppName = hasName ? 'nmap://search?query='+encodeURIComponent(name)+'&appname='+APPNAME : '';
-  const nAppAndroidCoord = hasCoords ? 'intent://place?lat='+nLatS+'&lng='+nLngS+'&name='+encodeURIComponent(name||(naverOverride?naverOverride.title:'')||'좌표 위치')+'&appname='+APPNAME+'#Intent;scheme=nmap;package=com.nhn.android.nmap;S.browser_fallback_url='+encodeURIComponent('https://play.google.com/store/apps/details?id=com.nhn.android.nmap')+';end' : '';
+  const nAppAndroidCoord = hasCoords ? 'intent://place?lat='+nLatS+'&lng='+nLngS+'&name='+encodeURIComponent(appPlaceName)+'&appname='+APPNAME+'#Intent;scheme=nmap;package=com.nhn.android.nmap;S.browser_fallback_url='+encodeURIComponent('https://play.google.com/store/apps/details?id=com.nhn.android.nmap')+';end' : '';
   const nAppAndroidName = hasName ? 'intent://search?query='+encodeURIComponent(name)+'&appname='+APPNAME+'#Intent;scheme=nmap;package=com.nhn.android.nmap;S.browser_fallback_url='+encodeURIComponent('https://play.google.com/store/apps/details?id=com.nhn.android.nmap')+';end' : '';
   els.naverLink.textContent = (naverOverride ? '✅ 已確認 Naver 地點：'+naverOverride.title+'（與原座標相距約 '+Math.round(naverOverride.distanceM)+' 公尺）\n' : '') + (hasName ? '店名/地址搜尋：'+nSearch : '') + (hasCoords ? (hasName||naverOverride ? '\n' : '') + '座標：'+nCoordWeb : '') + (currentPinId ? '\n地點連結（place ID，不受語言影響）：https://map.naver.com/p/entry/place/'+currentPinId : '') + (!hasName ? '\n（無店名/地址時，請用上面座標連結或 App 圖釘連結）' : '');
   // FIX fix40: 找最近 Naver 地點 — 有有效座標 + 韓文店名 + 尚未有 pinId/已確認候選時才顯示。
