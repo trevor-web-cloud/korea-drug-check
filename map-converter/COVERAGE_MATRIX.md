@@ -62,4 +62,5 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 - 2026-10-22 實機回報（fix47 驗證後）：「選了正確地標，開 iPhone App 卻不一樣」→ 新增 N8；fix48 修復：App 圖釘 name 改為 已確認候選標題＞韓文店名＞中性標籤，非韓文名（Google 連結的中文名）不再傳給 App。
 - 2026-10-22 v2026-10-22-fix48（本地＋線上部署版各跑一次）：**41 列全 PASS**。待使用者實機重測同一地標確認。
 - 2026-10-22 實機回報（fix48 後）：「無法換一家」— 地址模式只有 1 個候選（地址本身），換一家繞回同一個。新增 K8；fix49：Worker /nearby 加 Kakao 類別搜尋（半徑 300m，8 類別，去重上限 12），候選 kind 分 address/place 分開文案。
+- 2026-10-22 v2026-10-22-fix49（本地）：**42 列全 PASS**。Worker fix49 已於 21:17 由使用者部署並實測：/nearby 南浦 → 13 筆（地址＋12 附近地點）、明洞 → 13 筆（含 명동교자 분점 與 1호점 兩家都在）、東京 → no_address；/local、/resolve 回歸正常。頁面線上版當時仍為 fix48（GitHub Pages 發布延遲，commit c525ca4 已在 GitHub），fix49 線上矩陣待發布完成後補跑。
 - 未測範圍：真機 App 點按（矩陣僅驗連結格式）— 2026-10-22 20:49–20:56 使用者 iPhone 實機截圖已驗證 fix47 三條流：找地點地址候選、Naver 網頁版開啟（藍圖釘＋地址面板）、iPhone App 開啟（紅圖釘＋地址面板）。Worker 線上行為（矩陣用 fixture；/local、/resolve、/nearby 已於 2026-10-22 另外實測通過）。
