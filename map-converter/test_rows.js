@@ -164,7 +164,7 @@ rows.push(row('K1', '候選流程（fixture 1 筆）＋確認', async (c) => {
   check(c, 'candidate text', E('naverCandidateText').textContent.includes('명동교자 분점') && E('naverCandidateText').textContent.includes('第 1 / 1 家') && E('naverCandidateText').textContent.includes('7 公尺'), E('naverCandidateText').textContent.slice(0, 90));
   E('naverCandidateYes').dispatch('click'); await flush();
   check(c, 'override label', E('naverOpen').textContent.includes('已確認地點'), E('naverOpen').textContent);
-  check(c, 'override href', /map\.naver\.com\/\?lat=37\.56345\d&lng=126\.98513\d&menu=location/.test(E('naverOpen').href), E('naverOpen').href);
+  check(c, 'override href (place → name page, fix50)', E('naverOpen').href === 'https://map.naver.com/p/search/' + encodeURIComponent('명동교자 분점'), E('naverOpen').href);
 }));
 rows.push(row('K2', '候選 2 筆換一家＋遠距警告', async (c) => {
   E('name').value = '김해가야테마파크';
@@ -216,6 +216,14 @@ rows.push(row('N8', '中文店名不可傳給 Naver App 圖釘 name（fix48 實�
   const nm = m ? decodeURIComponent(m[1]) : '';
   check(c, 'name is neutral label', nm === '좌표 위치', href.slice(0, 110));
   check(c, 'coords in app href', href.includes('lat=33.4824'), href.slice(0, 110));
+}));
+rows.push(row('N9', '確認附近店家後 Naver 網頁按鈕開店名頁（fix50 實機回報）', async (c) => {
+  await pasteAndParse('32XJ+C9 釜山 南韓');
+  E('naverFindBtn').dispatch('click'); await flush();
+  E('naverCandidateNext').dispatch('click'); await flush();
+  E('naverCandidateYes').dispatch('click'); await flush();
+  check(c, 'naver href is place page', E('naverOpen').href === 'https://map.naver.com/p/search/' + encodeURIComponent('다이소 부산남포점'), E('naverOpen').href);
+  check(c, 'google uses candidate coords', E('googleOpen').href.includes('35.0984'), E('googleOpen').href.slice(0, 80));
 }));
 rows.push(row('K6', '無店名（只有 Plus Code）→找地點走地址備援（fixture）', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');

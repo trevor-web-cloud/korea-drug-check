@@ -174,7 +174,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-22-fix49</p>
+  <p class="note" style="text-align:center">v2026-10-22-fix50</p>
 </div>
 
 <script>
@@ -348,7 +348,12 @@ function updateLinks(){
   // FIX fix22: 以經緯度為主 — 有有效座標 → 座標；無座標時才用 pinId；兩者皆無 → 「ID 未找到」，不退回店名搜尋。店名搜尋僅為備援按鈕（naverNameFallback）。
   const nPlace = currentPinId ? 'https://map.naver.com/p/entry/place/'+currentPinId : '';
   if(coordsPrimary){
-    els.naverOpen.href = nCoordWeb || '#';
+    // FIX fix50: 已確認的是「店家」(kind='place') 時，網頁按鈕改開店名頁 — 座標連結在 Naver 只置中/泛標示，
+    // 使用者實機回報「已選了正確店名，在 Naver 開啟卻沒圖釘」。店名是 Kakao 韓文原名，Naver 搜尋可直接命中該店面板＋紅圖釘。
+    // 地址候選（kind='address'）與未確認狀態維持座標連結（地址本身就是標示，fix47 實機驗證有藍圖釘＋地址面板）。
+    const confirmedPlaceWeb = (naverOverride && naverOverride.kind === 'place' && naverOverride.title)
+      ? 'https://map.naver.com/p/search/' + encodeURIComponent(naverOverride.title) : '';
+    els.naverOpen.href = confirmedPlaceWeb || nCoordWeb || '#';
     els.naverOpen.textContent = naverOverride ? '在 Naver 開啟 (已確認地點)' : '在 Naver 開啟 (座標)';
   }else if(nPlace){
     els.naverOpen.href = nPlace;

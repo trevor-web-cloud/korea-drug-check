@@ -51,6 +51,7 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 | K7 | 確認地址候選（fix47） | lat 欄位與 Google/Naver 連結全部改用確認座標 |
 | N8 | 中文店名＋座標（樂天 goo.gl）→App 圖釘（fix48） | nmap place 的 name 必須是中性標籤（不可傳中文名，App 會重新對應到別家）；確認候選後 name=候選標題 |
 | K8 | 地址模式換一家（fix49，fixture 地址＋2 地點） | 第 1 個是地址候選 → 換一家依序附近地點（第 2/3、3/3 家）→ 再換繞回地址 |
+| N9 | 確認附近店家後按 Naver 網頁鈕（fix50） | href 必須是店名頁 /p/search/{韓文原名}（有圖釘標示）；Google 仍用確認座標。地址候選確認後維持座標連結（K7） |
 
 結果欄在每次完整跑完後回填（日期＋頁尾版本＋PASS/FAIL）。
 
@@ -63,4 +64,6 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 - 2026-10-22 v2026-10-22-fix48（本地＋線上部署版各跑一次）：**41 列全 PASS**。待使用者實機重測同一地標確認。
 - 2026-10-22 實機回報（fix48 後）：「無法換一家」— 地址模式只有 1 個候選（地址本身），換一家繞回同一個。新增 K8；fix49：Worker /nearby 加 Kakao 類別搜尋（半徑 300m，8 類別，去重上限 12），候選 kind 分 address/place 分開文案。
 - 2026-10-22 v2026-10-22-fix49（本地）：**42 列全 PASS**。Worker fix49 已於 21:17 由使用者部署並實測：/nearby 南浦 → 13 筆（地址＋12 附近地點）、明洞 → 13 筆（含 명동교자 분점 與 1호점 兩家都在）、東京 → no_address；/local、/resolve 回歸正常。頁面線上版當時仍為 fix48（GitHub Pages 發布延遲，commit c525ca4 已在 GitHub），fix49 線上矩陣待發布完成後補跑。
+- 2026-10-22 實機回報（fix49 Worker 後）：已選正確店名（確認店家候選），按「在 Naver 開啟」無標示、沒圖釘 — 網頁鈕仍用座標連結。新增 N9 並調整 K1 預期；fix50：已確認店家（kind='place'）時網頁鈕改開 /p/search/{韓文原名} 店名頁；地址候選維持座標連結。
+- 2026-10-22 v2026-10-22-fix50（本地）：**43 列全 PASS**。
 - 未測範圍：真機 App 點按（矩陣僅驗連結格式）— 2026-10-22 20:49–20:56 使用者 iPhone 實機截圖已驗證 fix47 三條流：找地點地址候選、Naver 網頁版開啟（藍圖釘＋地址面板）、iPhone App 開啟（紅圖釘＋地址面板）。Worker 線上行為（矩陣用 fixture；/local、/resolve、/nearby 已於 2026-10-22 另外實測通過）。
