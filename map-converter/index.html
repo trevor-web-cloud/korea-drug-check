@@ -174,7 +174,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-22-fix40</p>
+  <p class="note" style="text-align:center">v2026-10-22-fix41</p>
 </div>
 
 <script>
@@ -368,9 +368,9 @@ function updateLinks(){
   }
 }
 
-function updateFromLatLng(lat,lng,msg,readyOverride){
+function updateFromLatLng(lat,lng,msg,readyOverride,opts){
   if(syncing) return; syncing=true;
-  els.lat.value = fmt(lat,6); els.lng.value = fmt(lng,6);
+  if(!(opts&&opts.keepLatLng)){ els.lat.value = fmt(lat,6); els.lng.value = fmt(lng,6); }
   const [x,y]=wgsToMerc(lng,lat);
   els.mx.value = fmt(x,2); els.my.value = fmt(y,2);
   // FIX fix13: 座標被明確設定（解析連結或手動輸入），視為是目前這間店的，座標優先。
@@ -379,9 +379,9 @@ function updateFromLatLng(lat,lng,msg,readyOverride){
   readyMessage = readyOverride || (els.name.value.trim() ? '地點：'+els.name.value.trim()+'。請往下做第 3 步，點一個地圖按鈕。' : '位置已經找到。請往下做第 3 步，點一個地圖按鈕。');
   syncing=false; updateLinks(); if(msg) setStatus(msg,true);
 }
-function updateFromXY(x,y,msg,readyOverride){
+function updateFromXY(x,y,msg,readyOverride,opts){
   if(syncing) return; syncing=true;
-  els.mx.value = fmt(x,2); els.my.value = fmt(y,2);
+  if(!(opts&&opts.keepXY)){ els.mx.value = fmt(x,2); els.my.value = fmt(y,2); }
   const [lng,lat]=mercToWgs(x,y);
   els.lat.value = fmt(lat,6); els.lng.value = fmt(lng,6);
   coordsValidForName = true;
@@ -825,10 +825,15 @@ function parseInput(){
   setStatus('看不懂這段內容。請確認貼的是地圖的分享連結，或改貼經緯度、Plus Code。',false);
 }
 
-els.lat.addEventListener('input',()=>{ const la=parseFloat(els.lat.value), ln=parseFloat(els.lng.value); if(isFinite(la)&&isFinite(ln)&&Math.abs(la)<=90&&Math.abs(ln)<=180) updateFromLatLng(la,ln); });
-els.lng.addEventListener('input',()=>{ const la=parseFloat(els.lat.value), ln=parseFloat(els.lng.value); if(isFinite(la)&&isFinite(ln)&&Math.abs(la)<=90&&Math.abs(ln)<=180) updateFromLatLng(la,ln); });
-els.mx.addEventListener('input',()=>{ const x=parseFloat(els.mx.value), y=parseFloat(els.my.value); if(isFinite(x)&&isFinite(y)&&Math.abs(x)<=R&&Math.abs(y)<=R) updateFromXY(x,y); });
-els.my.addEventListener('input',()=>{ const x=parseFloat(els.mx.value), y=parseFloat(els.my.value); if(isFinite(x)&&isFinite(y)&&Math.abs(x)<=R&&Math.abs(y)<=R) updateFromXY(x,y); });
+els.lat.addEventListener('input',()=>{ const la=parseFloat(els.lat.value), ln=parseFloat(els.lng.value); if(isFinite(la)&&isFinite(ln)&&Math.abs(la)<=90&&Math.abs(ln)<=180) updateFromLatLng(la,ln,undefined,undefined,{keepLatLng:true}); });
+els.lng.addEventListener('input',()=>{ const la=parseFloat(els.lat.value), ln=parseFloat(els.lng.value); if(isFinite(la)&&isFinite(ln)&&Math.abs(la)<=90&&Math.abs(ln)<=180) updateFromLatLng(la,ln,undefined,undefined,{keepLatLng:true}); });
+els.mx.addEventListener('input',()=>{ const x=parseFloat(els.mx.value), y=parseFloat(els.my.value); if(isFinite(x)&&isFinite(y)&&Math.abs(x)<=R&&Math.abs(y)<=R) updateFromXY(x,y,undefined,undefined,{keepXY:true}); });
+els.my.addEventListener('input',()=>{ const x=parseFloat(els.mx.value), y=parseFloat(els.my.value); if(isFinite(x)&&isFinite(y)&&Math.abs(x)<=R&&Math.abs(y)<=R) updateFromXY(x,y,undefined,undefined,{keepXY:true}); });
+// fix41: 打字中不回寫正在編輯的欄位（中間值會被格式化弄壞）；離開欄位（change）時才正規化顯示
+els.lat.addEventListener('change',()=>{ const la=parseFloat(els.lat.value), ln=parseFloat(els.lng.value); if(isFinite(la)&&isFinite(ln)&&Math.abs(la)<=90&&Math.abs(ln)<=180) updateFromLatLng(la,ln); });
+els.lng.addEventListener('change',()=>{ const la=parseFloat(els.lat.value), ln=parseFloat(els.lng.value); if(isFinite(la)&&isFinite(ln)&&Math.abs(la)<=90&&Math.abs(ln)<=180) updateFromLatLng(la,ln); });
+els.mx.addEventListener('change',()=>{ const x=parseFloat(els.mx.value), y=parseFloat(els.my.value); if(isFinite(x)&&isFinite(y)&&Math.abs(x)<=R&&Math.abs(y)<=R) updateFromXY(x,y); });
+els.my.addEventListener('change',()=>{ const x=parseFloat(els.mx.value), y=parseFloat(els.my.value); if(isFinite(x)&&isFinite(y)&&Math.abs(x)<=R&&Math.abs(y)<=R) updateFromXY(x,y); });
 els.name.addEventListener('input',()=>{ coordsValidForName=false; hasReadyResult=false; readyMessage=''; updateLinks(); });
 // FIX fix36: 長輩模式 — 使用者把內容貼進框框後自動開始，不必再找第二顆按鈕；剪貼簿按鈕則在同一個手勢內讀取並轉換。
 els.paste.addEventListener('paste',()=>{ window.setTimeout(parseInput,80); });
