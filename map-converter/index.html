@@ -174,7 +174,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-22-fix42</p>
+  <p class="note" style="text-align:center">v2026-10-22-fix43</p>
 </div>
 
 <script>
@@ -311,14 +311,17 @@ function updateLinks(){
   const [nx,ny] = hasCoords ? wgsToMerc(nLng,nLat) : [NaN,NaN];
   const nxS = hasCoords ? fmt(nx,2) : '', nyS = hasCoords ? fmt(ny,2) : '';
   // FIX 2026-10-18: Naver /p/search/「緯度,經度」會 No results found，勿再產生。
-  const nCoordWeb = hasCoords ? 'https://map.naver.com/p?c='+nxS+','+nyS+',15,0,0,0,dh' : '';
+  // FIX fix43 (2026-10-22): 舊格式 map.naver.com/p?c={EPSG3857 X,Y},15,... 已被 Naver 改版棄用，
+  // 開啟後座標會被丟棄（URL 被改寫成 c=15.00,0,0,0,dh、地圖空白）。改用新版格式：
+  // ?c=15.00,0,0,0,dh&lng={lng}&lat={lat}（實測網址不被改寫、地圖正確置中；新版僅置中無圖釘）。
+  const nCoordWeb = hasCoords ? 'https://map.naver.com/p?c=15.00,0,0,0,dh&lng='+nLngS+'&lat='+nLatS : '';
   const nSearch = hasName ? 'https://map.naver.com/p/search/'+encodeURIComponent(name) : '';
   // Naver App：有店名 → nmap://search / intent://search；無店名有座標 → nmap://place / intent://place
   const nAppCoord = hasCoords ? 'nmap://place?lat='+nLatS+'&lng='+nLngS+'&name='+encodeURIComponent(name||nLatS+','+nLngS)+'&appname='+APPNAME : '';
   const nAppName = hasName ? 'nmap://search?query='+encodeURIComponent(name)+'&appname='+APPNAME : '';
   const nAppAndroidCoord = hasCoords ? 'intent://place?lat='+nLatS+'&lng='+nLngS+'&name='+encodeURIComponent(name||nLatS+','+nLngS)+'&appname='+APPNAME+'#Intent;scheme=nmap;package=com.nhn.android.nmap;S.browser_fallback_url='+encodeURIComponent('https://play.google.com/store/apps/details?id=com.nhn.android.nmap')+';end' : '';
   const nAppAndroidName = hasName ? 'intent://search?query='+encodeURIComponent(name)+'&appname='+APPNAME+'#Intent;scheme=nmap;package=com.nhn.android.nmap;S.browser_fallback_url='+encodeURIComponent('https://play.google.com/store/apps/details?id=com.nhn.android.nmap')+';end' : '';
-  els.naverLink.textContent = (naverOverride ? '✅ 已確認 Naver 地點：'+naverOverride.title+'（與原座標相距約 '+Math.round(naverOverride.distanceM)+' 公尺）\n' : '') + (hasName ? '店名/地址搜尋：'+nSearch : '') + (hasCoords ? (hasName||naverOverride ? '\n' : '') + '座標 (c=)：'+nCoordWeb : '') + (currentPinId ? '\n地點連結（place ID，不受語言影響）：https://map.naver.com/p/entry/place/'+currentPinId : '') + (!hasName ? '\n（無店名/地址時，Naver 不提供座標搜尋連結，請用上面 c= 或 App 圖釘連結）' : '');
+  els.naverLink.textContent = (naverOverride ? '✅ 已確認 Naver 地點：'+naverOverride.title+'（與原座標相距約 '+Math.round(naverOverride.distanceM)+' 公尺）\n' : '') + (hasName ? '店名/地址搜尋：'+nSearch : '') + (hasCoords ? (hasName||naverOverride ? '\n' : '') + '座標：'+nCoordWeb : '') + (currentPinId ? '\n地點連結（place ID，不受語言影響）：https://map.naver.com/p/entry/place/'+currentPinId : '') + (!hasName ? '\n（無店名/地址時，請用上面座標連結或 App 圖釘連結）' : '');
   // FIX fix40: 找最近 Naver 地點 — 有有效座標 + 韓文店名 + 尚未有 pinId/已確認候選時才顯示。
   if(els.naverFindBtn){
     const canFind = hasCoords && coordsPrimary && /[\uAC00-\uD7A3]/.test(name) && !currentPinId && !naverOverride;
