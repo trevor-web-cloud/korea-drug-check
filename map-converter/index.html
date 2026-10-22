@@ -42,6 +42,8 @@ button,.btn{appearance:none;border:0;border-radius:999px;padding:14px 20px;min-h
 .step-title{font-size:21px;margin:2px 0 8px}
 .step-heading{font-size:22px;margin:22px 0 0}
 .ready{margin-top:16px;padding:16px;border-radius:14px;background:#dcfae6;border:2px solid #067647;color:#05603a;font-size:19px;font-weight:700}
+.candidate{margin:10px 0;padding:14px;border-radius:14px;background:#fff7d6;border:2px solid #b54708;color:#7a2e0e;font-size:17px;font-weight:600}
+.candidate .cand-btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
 .ready span{display:block;margin-top:4px;font-size:17px;font-weight:600}
 .advanced{margin:4px 0 14px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#f9fafb}
 .advanced summary{font-size:16px;font-weight:700;cursor:pointer;padding:6px 0}
@@ -137,6 +139,15 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
           <input id="mx" inputmode="decimal" placeholder="X" aria-label="Naver X 座標">
           <input id="my" inputmode="decimal" placeholder="Y" aria-label="Naver Y 座標">
         </details>
+        <button class="btn btn-naver" id="naverFindBtn" type="button" style="display:none;width:100%;margin:6px 0">🔍 找最近的 Naver 地點</button>
+        <div class="candidate" id="naverCandidateBox" hidden>
+          <div id="naverCandidateText">—</div>
+          <div class="cand-btns">
+            <button class="btn btn-naver" id="naverCandidateYes" type="button">就是這家</button>
+            <button class="btn btn-ghost" id="naverCandidateNext" type="button">不是，換一家</button>
+            <button class="btn btn-ghost" id="naverCandidateClose" type="button">關閉</button>
+          </div>
+        </div>
         <div class="mono" id="naverLink">—</div>
         <div class="linkrow">
           <a class="btn btn-naver btn-small" id="naverOpen" href="#" target="_blank" rel="noopener">在 Naver 開啟</a>
@@ -163,7 +174,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-21-fix39</p>
+  <p class="note" style="text-align:center">v2026-10-22-fix40</p>
 </div>
 
 <script>
@@ -173,6 +184,8 @@ const els = {paste:$('paste'),name:$('name'),lat:$('lat'),lng:$('lng'),mx:$('mx'
   googleLink:$('googleLink'),googleApp:$('googleApp'),googleOpen:$('googleOpen'),googleCoordOpen:$('googleCoordOpen'),
   googleAppIOS:$('googleAppIOS'),googleAppAndroid:$('googleAppAndroid'),googleNameFallback:$('googleNameFallback'),
   naverLink:$('naverLink'),naverApp:$('naverApp'),naverOpen:$('naverOpen'),naverCoordOpen:$('naverCoordOpen'),naverAppOpen:$('naverAppOpen'),
+  naverFindBtn:$('naverFindBtn'),naverCandidateBox:$('naverCandidateBox'),naverCandidateText:$('naverCandidateText'),
+  naverCandidateYes:$('naverCandidateYes'),naverCandidateNext:$('naverCandidateNext'),naverCandidateClose:$('naverCandidateClose'),
   naverAppAndroid:$('naverAppAndroid'),naverAppAndroidText:$('naverAppAndroidText'),naverNameFallback:$('naverNameFallback'),
   yahooLink:$('yahooLink'),yahooOpen:$('yahooOpen'),yahooNameFallback:$('yahooNameFallback'),status:$('parseStatus'),
   readyBox:$('readyBox'),readyText:$('readyText')};
@@ -181,6 +194,12 @@ let currentPinId = '';
 // FIX fix17: Google 的 ID 是 ftid（Google 地點頁 / ?q= 跳轉連結裡的 ftid=0x... 參數），與 Naver pinId 對應。
 // 找 ID 失敗時，兩邊主按鈕都不退回店名搜尋，改顯示「ID 未找到」；店名搜尋降為明確標示的備援按鈕。
 let currentGoogleId = '';
+// FIX fix40: Naver 官方地區搜尋 API 只能回傳候選店名/地址/座標，沒有 place ID。
+// 流程：以韓文店名查詢 → 以距離排序 → 使用者一鍵確認 → Naver 按鈕改用該候選在 Naver 資料中的座標。
+let naverCandidates = [];
+let naverCandidateIdx = 0;
+let naverOverride = null; // {title,address,lat,lng,distanceM} 已確認的 Naver 候選座標
+const LOCAL_WORKER = 'https://map-resolve.tsai0215.workers.dev/local';
 // FIX fix13: 不以店名/地名為主 — 座標/ID 優先，但必須是「這間店的」座標才優先。
 // 座標與店名從同一條連結一起解析出來時，coordsValidForName=true，座標優先；
 // 使用者手動改店名時，舊座標不再保證是這間店的，coordsValidForName=false，店名搜尋優先（避免南浦洞舊座標誤開）。
@@ -230,6 +249,8 @@ function updateLinks(){
     if(els.naverAppAndroid){ els.naverAppAndroid.href='#'; els.naverAppAndroid.textContent='Android App'; }
     if(els.googleNameFallback) els.googleNameFallback.style.display='none';
     if(els.naverNameFallback) els.naverNameFallback.style.display='none';
+    if(els.naverFindBtn) els.naverFindBtn.style.display='none';
+    if(els.naverCandidateBox) els.naverCandidateBox.hidden=true;
     // FIX fix30: 清空時也重置 Yahoo 按鈕。
     if(els.yahooLink) els.yahooLink.textContent='—';
     if(els.yahooOpen){ els.yahooOpen.href='#'; els.yahooOpen.textContent='在 Yahoo! MAP 開啟'; }
@@ -283,22 +304,33 @@ function updateLinks(){
 
   const [x,y] = hasCoords ? wgsToMerc(lng,lat) : [NaN,NaN];
   const xS = hasCoords ? fmt(x,2) : '', yS = hasCoords ? fmt(y,2) : '';
+  // FIX fix40: 已確認 Naver 候選時，Naver 連結改用候選在 Naver 資料中的座標（Google 欄位座標不動）。
+  const nLat = naverOverride ? naverOverride.lat : lat;
+  const nLng = naverOverride ? naverOverride.lng : lng;
+  const nLatS = hasCoords ? fmt(nLat,6) : '', nLngS = hasCoords ? fmt(nLng,6) : '';
+  const [nx,ny] = hasCoords ? wgsToMerc(nLng,nLat) : [NaN,NaN];
+  const nxS = hasCoords ? fmt(nx,2) : '', nyS = hasCoords ? fmt(ny,2) : '';
   // FIX 2026-10-18: Naver /p/search/「緯度,經度」會 No results found，勿再產生。
-  const nCoordWeb = hasCoords ? 'https://map.naver.com/p?c='+xS+','+yS+',15,0,0,0,dh' : '';
+  const nCoordWeb = hasCoords ? 'https://map.naver.com/p?c='+nxS+','+nyS+',15,0,0,0,dh' : '';
   const nSearch = hasName ? 'https://map.naver.com/p/search/'+encodeURIComponent(name) : '';
   // Naver App：有店名 → nmap://search / intent://search；無店名有座標 → nmap://place / intent://place
-  const nAppCoord = hasCoords ? 'nmap://place?lat='+latS+'&lng='+lngS+'&name='+encodeURIComponent(name||latS+','+lngS)+'&appname='+APPNAME : '';
+  const nAppCoord = hasCoords ? 'nmap://place?lat='+nLatS+'&lng='+nLngS+'&name='+encodeURIComponent(name||nLatS+','+nLngS)+'&appname='+APPNAME : '';
   const nAppName = hasName ? 'nmap://search?query='+encodeURIComponent(name)+'&appname='+APPNAME : '';
-  const nAppAndroidCoord = hasCoords ? 'intent://place?lat='+latS+'&lng='+lngS+'&name='+encodeURIComponent(name||latS+','+lngS)+'&appname='+APPNAME+'#Intent;scheme=nmap;package=com.nhn.android.nmap;S.browser_fallback_url='+encodeURIComponent('https://play.google.com/store/apps/details?id=com.nhn.android.nmap')+';end' : '';
+  const nAppAndroidCoord = hasCoords ? 'intent://place?lat='+nLatS+'&lng='+nLngS+'&name='+encodeURIComponent(name||nLatS+','+nLngS)+'&appname='+APPNAME+'#Intent;scheme=nmap;package=com.nhn.android.nmap;S.browser_fallback_url='+encodeURIComponent('https://play.google.com/store/apps/details?id=com.nhn.android.nmap')+';end' : '';
   const nAppAndroidName = hasName ? 'intent://search?query='+encodeURIComponent(name)+'&appname='+APPNAME+'#Intent;scheme=nmap;package=com.nhn.android.nmap;S.browser_fallback_url='+encodeURIComponent('https://play.google.com/store/apps/details?id=com.nhn.android.nmap')+';end' : '';
-  els.naverLink.textContent = (hasName ? '店名/地址搜尋：'+nSearch : '') + (hasCoords ? (hasName ? '\n' : '') + '座標 (c=)：'+nCoordWeb : '') + (currentPinId ? '\n地點連結（place ID，不受語言影響）：https://map.naver.com/p/entry/place/'+currentPinId : '') + (!hasName ? '\n（無店名/地址時，Naver 不提供座標搜尋連結，請用上面 c= 或 App 圖釘連結）' : '');
+  els.naverLink.textContent = (naverOverride ? '✅ 已確認 Naver 地點：'+naverOverride.title+'（與原座標相距約 '+Math.round(naverOverride.distanceM)+' 公尺）\n' : '') + (hasName ? '店名/地址搜尋：'+nSearch : '') + (hasCoords ? (hasName||naverOverride ? '\n' : '') + '座標 (c=)：'+nCoordWeb : '') + (currentPinId ? '\n地點連結（place ID，不受語言影響）：https://map.naver.com/p/entry/place/'+currentPinId : '') + (!hasName ? '\n（無店名/地址時，Naver 不提供座標搜尋連結，請用上面 c= 或 App 圖釘連結）' : '');
+  // FIX fix40: 找最近 Naver 地點 — 有有效座標 + 韓文店名 + 尚未有 pinId/已確認候選時才顯示。
+  if(els.naverFindBtn){
+    const canFind = hasCoords && coordsPrimary && /[\uAC00-\uD7A3]/.test(name) && !currentPinId && !naverOverride;
+    els.naverFindBtn.style.display = canFind ? '' : 'none';
+  }
   els.naverApp.textContent = (hasName ? '店名搜尋：'+nAppName : '') + (hasCoords ? (hasName ? '\n' : '') + '座標圖釘：'+nAppCoord : '');
   if(els.naverAppAndroidText) els.naverAppAndroidText.textContent = (hasName ? '店名搜尋：'+nAppAndroidName : '') + (hasCoords ? (hasName ? '\n' : '') + '座標圖釘：'+nAppAndroidCoord : '');
   // FIX fix22: 以經緯度為主 — 有有效座標 → 座標；無座標時才用 pinId；兩者皆無 → 「ID 未找到」，不退回店名搜尋。店名搜尋僅為備援按鈕（naverNameFallback）。
   const nPlace = currentPinId ? 'https://map.naver.com/p/entry/place/'+currentPinId : '';
   if(coordsPrimary){
     els.naverOpen.href = nCoordWeb || '#';
-    els.naverOpen.textContent = '在 Naver 開啟 (座標)';
+    els.naverOpen.textContent = naverOverride ? '在 Naver 開啟 (已確認地點)' : '在 Naver 開啟 (座標)';
   }else if(nPlace){
     els.naverOpen.href = nPlace;
     els.naverOpen.textContent = '在 Naver 開啟 (地點 ID)';
@@ -577,6 +609,9 @@ function parseInput(){
   if(!raw){ updateLinks(); setStatus('還沒有貼上內容。請先點白色大框框，把連結貼進去。',false); return; }
   // FIX fix17: 解析新輸入時先清空舊 ID，避免殘留上一個地點的 ftid / pinId 被誤用。
   currentPinId = ''; currentGoogleId = '';
+  // FIX fix40: 新輸入也要清掉上一個地點已確認的 Naver 候選，避免誤用到新地點。
+  naverOverride = null; naverCandidates = []; naverCandidateIdx = 0;
+  if(els.naverCandidateBox) els.naverCandidateBox.hidden = true;
   const expandBtn = $('expandBtn');
   // FIX fix6: 貼上整段分享文字（[NAVER Maps]\n店名\n地址\n短連結）時，必須先取出乾淨的 URL，
   // 否則 window.open(整段文字) 會被當成相對路徑，在 GitHub Pages 上開出 404。
@@ -797,6 +832,77 @@ els.my.addEventListener('input',()=>{ const x=parseFloat(els.mx.value), y=parseF
 els.name.addEventListener('input',()=>{ coordsValidForName=false; hasReadyResult=false; readyMessage=''; updateLinks(); });
 // FIX fix36: 長輩模式 — 使用者把內容貼進框框後自動開始，不必再找第二顆按鈕；剪貼簿按鈕則在同一個手勢內讀取並轉換。
 els.paste.addEventListener('paste',()=>{ window.setTimeout(parseInput,80); });
+// FIX fix40: 找最近的 Naver 地點（官方地區搜尋 API via Worker；無 place ID，只能取候選座標）
+function distanceMeters(aLat,aLng,bLat,bLng){
+  const p1=aLat*Math.PI/180, p2=bLat*Math.PI/180;
+  const dp=(bLat-aLat)*Math.PI/180, dl=(bLng-aLng)*Math.PI/180;
+  const h=Math.sin(dp/2)**2 + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+  return 2*6371000*Math.asin(Math.sqrt(h));
+}
+function normalizeNaverCoord(v){
+  let n = parseFloat(v);
+  if(!isFinite(n)) return NaN;
+  if(Math.abs(n) > 1000) n = n/1e7; // 地區搜尋 API 的 mapx/mapy 為小數點後 7 位的整數字串
+  return n;
+}
+function showNaverCandidate(){
+  const c = naverCandidates[naverCandidateIdx];
+  if(!c){ els.naverCandidateBox.hidden = true; return; }
+  const far = c.distanceM > 200 ? '⚠ 距離超過 200 公尺，可能不是同一家，請仔細確認。' : '';
+  els.naverCandidateText.textContent = '找到最接近的 Naver 地點（第 '+(naverCandidateIdx+1)+' / '+naverCandidates.length+' 家）：'+c.title+'\n地址：'+(c.roadAddress||c.address||'—')+'\n與目前座標相距約 '+Math.round(c.distanceM)+' 公尺。'+far+'\n如果就是這家，請按「就是這家」，Naver 按鈕會改用這家在 Naver 的位置。';
+  els.naverCandidateBox.hidden = false;
+}
+async function findNearestNaver(){
+  const name = els.name.value.trim();
+  const lat = parseFloat(els.lat.value), lng = parseFloat(els.lng.value);
+  if(!isFinite(lat) || !isFinite(lng)){ setStatus('還沒有座標，請先完成第 1、2 步。',false); return; }
+  if(!/[\uAC00-\uD7A3]/.test(name)){ setStatus('找 Naver 地點需要韓文店名。請先把店名改成韓文原名再試。',false); return; }
+  setStatus('正在向 Naver 查最近的地點，請稍等…',true);
+  els.naverCandidateBox.hidden = true;
+  try{
+    const ctrl = new AbortController();
+    const timer = setTimeout(()=>ctrl.abort(), 12000);
+    const res = await fetch(LOCAL_WORKER+'?q='+encodeURIComponent(name)+'&display=5', {signal: ctrl.signal});
+    clearTimeout(timer);
+    const data = await res.json();
+    if(data && data.error === 'not_configured'){
+      setStatus('Naver 搜尋還沒設定完成：請先在 Cloudflare 的 map-resolve 加上 NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 兩個 Secret。',false);
+      return;
+    }
+    if(!data || !Array.isArray(data.items)){ setStatus('Naver 搜尋失敗，請稍後再試。',false); return; }
+    naverCandidates = data.items.map(it=>({
+      title: it.title || '',
+      address: it.address || '',
+      roadAddress: it.roadAddress || '',
+      lat: normalizeNaverCoord(it.mapy),
+      lng: normalizeNaverCoord(it.mapx),
+    })).filter(c=>isFinite(c.lat) && isFinite(c.lng))
+      .map(c=>({...c, distanceM: distanceMeters(lat,lng,c.lat,c.lng)}))
+      .sort((a,b)=>a.distanceM-b.distanceM);
+    if(!naverCandidates.length){ setStatus('Naver 找不到「'+name+'」，請確認是韓文原名，或換個寫法再試。',false); return; }
+    naverCandidateIdx = 0;
+    showNaverCandidate();
+    setStatus('找到 '+naverCandidates.length+' 家候選，已選出最近的一家，請在 Naver 區確認。',true);
+  }catch(e){
+    setStatus('連不上 Naver 搜尋服務，請檢查網路後再試。',false);
+  }
+}
+if(els.naverFindBtn) els.naverFindBtn.addEventListener('click', findNearestNaver);
+if(els.naverCandidateNext) els.naverCandidateNext.addEventListener('click', ()=>{
+  if(!naverCandidates.length) return;
+  naverCandidateIdx = (naverCandidateIdx+1) % naverCandidates.length;
+  showNaverCandidate();
+});
+if(els.naverCandidateClose) els.naverCandidateClose.addEventListener('click', ()=>{ els.naverCandidateBox.hidden = true; });
+if(els.naverCandidateYes) els.naverCandidateYes.addEventListener('click', ()=>{
+  const c = naverCandidates[naverCandidateIdx];
+  if(!c) return;
+  naverOverride = c;
+  els.naverCandidateBox.hidden = true;
+  updateLinks();
+  setStatus('已確認 Naver 地點：'+c.title+'。Naver 按鈕已改用這家在 Naver 的位置（與原座標相距約 '+Math.round(c.distanceM)+' 公尺）。',true);
+});
+
 $('pasteBtn').addEventListener('click', async ()=>{
   try{
     if(!navigator.clipboard || !navigator.clipboard.readText) throw new Error('clipboard unavailable');
@@ -811,7 +917,7 @@ $('pasteBtn').addEventListener('click', async ()=>{
 });
 $('parseBtn').addEventListener('click',parseInput);
 $('exampleBtn').addEventListener('click',()=>{ els.name.value='남포역'; updateFromLatLng(35.097883,129.034663,'已填入範例：南浦站 남포역 35.097883,129.034663'); });
-$('clearBtn').addEventListener('click',()=>{ els.paste.value=''; els.name.value=''; els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value=''; currentPinId=''; currentGoogleId=''; coordsValidForName=false; hasReadyResult=false; readyMessage=''; document.querySelectorAll('details.advanced').forEach(d=>{ d.open=false; }); updateLinks(); setStatus('',true); els.paste.focus(); });
+$('clearBtn').addEventListener('click',()=>{ els.paste.value=''; els.name.value=''; els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value=''; currentPinId=''; currentGoogleId=''; naverOverride=null; naverCandidates=[]; naverCandidateIdx=0; if(els.naverCandidateBox) els.naverCandidateBox.hidden=true; coordsValidForName=false; hasReadyResult=false; readyMessage=''; document.querySelectorAll('details.advanced').forEach(d=>{ d.open=false; }); updateLinks(); setStatus('',true); els.paste.focus(); });
 document.querySelectorAll('[data-copy]').forEach(btn=>{
   btn.addEventListener('click', async ()=>{
     const key = btn.getAttribute('data-copy');
