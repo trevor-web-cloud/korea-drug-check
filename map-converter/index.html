@@ -174,7 +174,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-22-fix43</p>
+  <p class="note" style="text-align:center">v2026-10-22-fix44</p>
 </div>
 
 <script>
@@ -310,11 +310,12 @@ function updateLinks(){
   const nLatS = hasCoords ? fmt(nLat,6) : '', nLngS = hasCoords ? fmt(nLng,6) : '';
   const [nx,ny] = hasCoords ? wgsToMerc(nLng,nLat) : [NaN,NaN];
   const nxS = hasCoords ? fmt(nx,2) : '', nyS = hasCoords ? fmt(ny,2) : '';
-  // FIX 2026-10-18: Naver /p/search/「緯度,經度」會 No results found，勿再產生。
   // FIX fix43 (2026-10-22): 舊格式 map.naver.com/p?c={EPSG3857 X,Y},15,... 已被 Naver 改版棄用，
-  // 開啟後座標會被丟棄（URL 被改寫成 c=15.00,0,0,0,dh、地圖空白）。改用新版格式：
-  // ?c=15.00,0,0,0,dh&lng={lng}&lat={lat}（實測網址不被改寫、地圖正確置中；新版僅置中無圖釘）。
-  const nCoordWeb = hasCoords ? 'https://map.naver.com/p?c=15.00,0,0,0,dh&lng='+nLngS+'&lat='+nLatS : '';
+  // 開啟後座標會被丟棄（URL 被改寫成 c=15.00,0,0,0,dh、地圖空白）。
+  // FIX fix44 (2026-10-22): 改版後 /p/search/{lat},{lng} 行為已變（2026-10-18 舊測「No results」作廢）：
+  // 實測會跳轉 /p/entry/coordinates/… 並顯示紅色圖釘＋地址面板（濟州 33.492438,126.490813 → 도령로 126）。
+  // 使用者要求「圖釘保留」，故 Naver 網頁座標連結用此格式；?c=&lng=&lat= 格式僅置中無圖釘，不再使用。
+  const nCoordWeb = hasCoords ? 'https://map.naver.com/p/search/'+nLatS+','+nLngS : '';
   const nSearch = hasName ? 'https://map.naver.com/p/search/'+encodeURIComponent(name) : '';
   // Naver App：有店名 → nmap://search / intent://search；無店名有座標 → nmap://place / intent://place
   const nAppCoord = hasCoords ? 'nmap://place?lat='+nLatS+'&lng='+nLngS+'&name='+encodeURIComponent(name||nLatS+','+nLngS)+'&appname='+APPNAME : '';
