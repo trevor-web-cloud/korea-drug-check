@@ -129,32 +129,21 @@ export default {
       }
     }
 
-    // fix52: 韓文店名機翻成英文（只供辨認參考，不作搜尋用）。
-    // 來源 1：Google 免費翻譯端點（gtx，非官方）— 實測 Cloudflare 出口會被擋（回空），保留嘗試；
-    // 來源 2：MyMemory 免費 API（備援，品質實測相當）。兩者都失敗才回空字串，頁面靜默不顯示。
-    // 回傳 via 標明實際來源，供驗證。
+    // fix52: 韓文店名機翻成英文（只供辨認參考，不作搜尋用）。只用 MyMemory 免費 API：
+    // Google gtx 端點（非官方）會擋 Cloudflare 出口 IP（實測回空），使用者指示移除、只留 MyMemory。
+    // 失敗回空字串，頁面靜默不顯示。回傳 via 供驗證。
     if (u.pathname === '/translate') {
       const text = (u.searchParams.get('text') || '').slice(0, 100);
       if (!text) return new Response(JSON.stringify({ error: 'missing text' }), { status: 400, headers: cors });
       let en = '', via = '';
       try {
-        const gt = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=ko&tl=en&dt=t&q=' + encodeURIComponent(text));
-        if (gt.ok) {
-          const gj = await gt.json().catch(() => null);
-          en = gj && Array.isArray(gj[0]) ? gj[0].map(s => (s && s[0]) || '').join('').trim() : '';
-          if (en) via = 'gtx';
+        const mm = await fetch('https://api.mymemory.translated.net/get?langpair=ko%7Cen&q=' + encodeURIComponent(text));
+        if (mm.ok) {
+          const mj = await mm.json().catch(() => null);
+          const t = (mj && mj.responseData && mj.responseData.translatedText || '').trim();
+          if (t && !/MYMEMORY|WARNING|QUOTA|INVALID/i.test(t)) { en = t; via = 'mymemory'; }
         }
-      } catch (e) { /* 落到備援 */ }
-      if (!en) {
-        try {
-          const mm = await fetch('https://api.mymemory.translated.net/get?langpair=ko%7Cen&q=' + encodeURIComponent(text));
-          if (mm.ok) {
-            const mj = await mm.json().catch(() => null);
-            const t = (mj && mj.responseData && mj.responseData.translatedText || '').trim();
-            if (t && !/MYMEMORY|WARNING|QUOTA|INVALID/i.test(t)) { en = t; via = 'mymemory'; }
-          }
-        } catch (e) { /* 回空字串 */ }
-      }
+      } catch (e) { /* 回空字串 */ }
       return new Response(JSON.stringify({ en, via }), { headers: cors });
     }
 
