@@ -4,6 +4,8 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 
 自動測試：`node test_matrix.cjs`（Node 內以假 DOM 載入頁面 <script>，Worker 以真實回應 fixture 替身）。真機 App 點按不在本矩陣範圍（僅驗連結格式）。
 
+**固定規矩（使用者 2026-10-22 指示）：每次改版必跑——部署前跑本地版、部署後再對線上 HTML 跑一次；全列 PASS 才算完成，結果回填下方跑測紀錄。新功能或新回報先加列、再改碼。**
+
 | Row | 情境 | 預期 |
 |---|---|---|
 | G1 | Google /place/ 名稱+@座標（KR 明洞） | 取座標；三面板座標連結；Naver 為 /p/search/{lat},{lng} |
