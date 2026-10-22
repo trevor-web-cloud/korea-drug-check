@@ -1,4 +1,4 @@
-// Cloudflare Worker — map-resolve（fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查）
+// Cloudflare Worker — map-resolve（fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查 + fix49 附近地點）
 // 部署：貼到 Cloudflare Dashboard → Workers → map-resolve → Edit code 全文取代；
 //       另需在 Settings → Variables and Secrets 新增一個 Secret：
 //       KAKAO_REST_KEY（Kakao Local API 的 REST API 金鑰；金鑰只放 Worker Secret，不進前端）
@@ -89,10 +89,40 @@ export default {
           telephone: '',
           address: jibun,
           roadAddress: road,
+          kind: 'address',
           mapx: String(Math.round(parseFloat(sd.x) * 1e7)),
           mapy: String(Math.round(parseFloat(sd.y) * 1e7)),
         };
-        return new Response(JSON.stringify({ provider: 'kakao-address', total: 1, items: [item] }), { headers: cors });
+        // fix49: 只有地址一個候選時「換一家」沒得換 — 再用 Kakao 類別搜尋補上附近的實際地點
+        // （餐廳/咖啡廳/住宿/景點/超市/便利店/地鐵站/停車場，半徑 300m），讓使用者能挑到對的地標。
+        const CATS = ['FD6', 'CE7', 'AD5', 'AT4', 'MT1', 'CS2', 'SW8', 'PK6'];
+        const catLists = await Promise.all(CATS.map(async (code) => {
+          try {
+            const r = await fetch('https://dapi.kakao.com/v2/local/search/category.json?category_group_code=' + code + '&x=' + lng + '&y=' + lat + '&radius=300&sort=distance&size=5', { headers: h });
+            if (!r.ok) return [];
+            const d = await r.json();
+            return (d.documents || []).map(p => ({
+              title: p.place_name || '',
+              link: p.place_url || '',
+              category: p.category_name || '',
+              description: '',
+              telephone: p.phone || '',
+              address: p.address_name || '',
+              roadAddress: p.road_address_name || '',
+              kind: 'place',
+              mapx: String(Math.round(parseFloat(p.x) * 1e7)),
+              mapy: String(Math.round(parseFloat(p.y) * 1e7)),
+            }));
+          } catch (e) { return []; }
+        }));
+        const seen = new Set([item.title + '|' + item.mapx + '|' + item.mapy]);
+        const places = [];
+        for (const list of catLists) for (const p of list) {
+          const key = p.title + '|' + p.mapx + '|' + p.mapy;
+          if (p.title && !seen.has(key)) { seen.add(key); places.push(p); }
+        }
+        const items = [item, ...places.slice(0, 12)];
+        return new Response(JSON.stringify({ provider: 'kakao-address', total: items.length, items }), { headers: cors });
       } catch (e) {
         return new Response(JSON.stringify({ error: 'fetch_failed' }), { status: 502, headers: cors });
       }

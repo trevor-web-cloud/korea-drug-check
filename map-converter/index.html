@@ -174,7 +174,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-22-fix48</p>
+  <p class="note" style="text-align:center">v2026-10-22-fix49</p>
 </div>
 
 <script>
@@ -899,8 +899,10 @@ function showNaverCandidate(){
   if(!c){ els.naverCandidateBox.hidden = true; return; }
   const far = c.distanceM > 200 ? '⚠ 距離超過 200 公尺，可能不是同一家，請仔細確認。' : '';
   // FIX fix47: 地址模式（無店名→座標反查）文案不同：這不是店家，是查證過的韓國地址座標。
-  els.naverCandidateText.textContent = candidateSource === 'address'
-    ? '用目前座標查到的韓國地址：'+c.title+'\n與目前座標相距約 '+Math.round(c.distanceM)+' 公尺。'+far+'\n如果位置正確，請按「就是這家」，所有地圖按鈕會改用這個查證過的座標（比 Plus Code 的大概位置準）。'
+  // FIX fix49: 地址模式的候選混有附近實際地點（kind='place'），與地址候選（kind='address'）文案分開；
+  // 舊版 Worker 只有單一地址候選時 kind 可能缺失，非 'place' 一律當地址候選顯示。
+  els.naverCandidateText.textContent = (candidateSource === 'address' && c.kind !== 'place')
+    ? '用目前座標查到的韓國地址：'+c.title+'\n與目前座標相距約 '+Math.round(c.distanceM)+' 公尺。'+far+'\n如果位置正確，請按「就是這家」，所有地圖按鈕會改用這個查證過的座標（比 Plus Code 的大概位置準）。不對的話，按「不是，換一家」看附近的地點。'
     : '找到最接近的地點（第 '+(naverCandidateIdx+1)+' / '+naverCandidates.length+' 家）：'+c.title+'\n地址：'+(c.roadAddress||c.address||'—')+'\n與目前座標相距約 '+Math.round(c.distanceM)+' 公尺。'+far+'\n如果就是這家，請按「就是這家」，所有地圖按鈕會改用這家查證過的座標。';
   els.naverCandidateBox.hidden = false;
 }
@@ -937,6 +939,7 @@ async function findNearestNaver(){
       title: it.title || '',
       address: it.address || '',
       roadAddress: it.roadAddress || '',
+      kind: it.kind || (byName ? 'place' : 'address'),
       lat: normalizeNaverCoord(it.mapy),
       lng: normalizeNaverCoord(it.mapx),
     })).filter(c=>isFinite(c.lat) && isFinite(c.lng))
@@ -945,7 +948,7 @@ async function findNearestNaver(){
     if(!naverCandidates.length){ setStatus(byName ? '找不到「'+name+'」的候選地點，請確認是韓文原名，或換個寫法再試。' : '這個座標附近查不到地點資料。',false); return; }
     naverCandidateIdx = 0;
     showNaverCandidate();
-    setStatus(byName ? '找到 '+naverCandidates.length+' 家候選，已選出最近的一家，請在 Naver 區確認。' : '已用座標查到韓國地址，請在 Naver 區確認。',true);
+    setStatus(byName ? '找到 '+naverCandidates.length+' 家候選，已選出最近的一家，請在 Naver 區確認。' : '已用座標查到韓國地址與附近地點，請在 Naver 區確認；不對可按「不是，換一家」。',true);
   }catch(e){
     setStatus('連不上附近地點搜尋服務，請檢查網路後再試。',false);
   }

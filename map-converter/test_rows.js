@@ -225,6 +225,17 @@ rows.push(row('K6', '無店名（只有 Plus Code）→找地點走地址備援�
   check(c, 'address candidate box', E('naverCandidateBox').hidden === false, String(E('naverCandidateBox').hidden));
   check(c, 'address candidate text', E('naverCandidateText').textContent.includes('부산'), E('naverCandidateText').textContent.slice(0, 90));
 }));
+rows.push(row('K8', '地址模式可換一家：地址→附近地點→再換→繞回（fix49）', async (c) => {
+  await pasteAndParse('32XJ+C9 釜山 南韓');
+  E('naverFindBtn').dispatch('click'); await flush();
+  check(c, 'first is address', E('naverCandidateText').textContent.includes('查到的韓國地址') && E('naverCandidateText').textContent.includes('구덕로'), E('naverCandidateText').textContent.slice(0, 90));
+  E('naverCandidateNext').dispatch('click'); await flush();
+  check(c, 'second is place 2/3', E('naverCandidateText').textContent.includes('第 2 / 3 家') && E('naverCandidateText').textContent.includes('다이소'), E('naverCandidateText').textContent.slice(0, 90));
+  E('naverCandidateNext').dispatch('click'); await flush();
+  check(c, 'third is place 3/3', E('naverCandidateText').textContent.includes('第 3 / 3 家') && E('naverCandidateText').textContent.includes('남포역'), E('naverCandidateText').textContent.slice(0, 90));
+  E('naverCandidateNext').dispatch('click'); await flush();
+  check(c, 'cycles to address', E('naverCandidateText').textContent.includes('查到的韓國地址'), E('naverCandidateText').textContent.slice(0, 90));
+}));
 rows.push(row('K7', '確認地址候選→全部面板改用確認座標', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');
   E('naverFindBtn').dispatch('click'); await flush();
