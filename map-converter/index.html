@@ -866,7 +866,7 @@ async function findNearestNaver(){
     clearTimeout(timer);
     const data = await res.json();
     if(data && data.error === 'not_configured'){
-      setStatus('Naver 搜尋還沒設定完成：請先在 Cloudflare 的 map-resolve 加上 NAVER_API_KEY_ID / NAVER_API_KEY 兩個 Secret（NAVER API Hub 金鑰）。',false);
+      setStatus('附近地點搜尋還沒設定完成：請先在 Cloudflare 的 map-resolve 加上金鑰 Secret（KAKAO_REST_KEY 或 NAVER_API_KEY_ID / NAVER_API_KEY）。',false);
       return;
     }
     if(!data || !Array.isArray(data.items)){ setStatus('Naver 搜尋失敗，請稍後再試。',false); return; }
