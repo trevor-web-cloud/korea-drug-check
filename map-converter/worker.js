@@ -129,22 +129,43 @@ export default {
       }
     }
 
-    // fix52: 韓文店名機翻成英文（只供辨認參考，不作搜尋用）。只用 MyMemory 免費 API：
-    // Google gtx 端點（非官方）會擋 Cloudflare 出口 IP（實測回空），使用者指示移除、只留 MyMemory。
-    // 失敗回空字串，頁面靜默不顯示。回傳 via 供驗證。
+    // fix52: 韓文店名機翻成英文（只供辨認參考，不作搜尋用）。依序嘗試多個免費來源，回傳 dbg 供診斷
+    //（Cloudflare 共用出口 IP 會被部分端點擋下或吃光 IP 額度，需看實際回應才知道哪條通）：
+    //   1) MyMemory（若有 env.TRANSLATE_EMAIL，額度改綁信箱而非共用 IP）
+    //   2) Google gtx @ translate.google.com  3) Google gtx @ translate.googleapis.com
+    // 全部失敗回空字串，頁面靜默不顯示。
     if (u.pathname === '/translate') {
       const text = (u.searchParams.get('text') || '').slice(0, 100);
       if (!text) return new Response(JSON.stringify({ error: 'missing text' }), { status: 400, headers: cors });
+      const dbg = {};
       let en = '', via = '';
       try {
-        const mm = await fetch('https://api.mymemory.translated.net/get?langpair=ko%7Cen&q=' + encodeURIComponent(text));
+        const de = env && env.TRANSLATE_EMAIL ? '&de=' + encodeURIComponent(env.TRANSLATE_EMAIL) : '';
+        const mm = await fetch('https://api.mymemory.translated.net/get?langpair=ko%7Cen&q=' + encodeURIComponent(text) + de);
+        dbg.mm = 'http_' + mm.status;
         if (mm.ok) {
           const mj = await mm.json().catch(() => null);
           const t = (mj && mj.responseData && mj.responseData.translatedText || '').trim();
           if (t && !/MYMEMORY|WARNING|QUOTA|INVALID/i.test(t)) { en = t; via = 'mymemory'; }
+          else if (t) dbg.mm += ':' + t.slice(0, 60);
         }
-      } catch (e) { /* 回空字串 */ }
-      return new Response(JSON.stringify({ en, via }), { headers: cors });
+      } catch (e) { dbg.mm = 'throw'; }
+      if (!en) {
+        for (const pair of [['gt1', 'translate.google.com'], ['gt2', 'translate.googleapis.com']]) {
+          const tag = pair[0], host = pair[1];
+          try {
+            const gt = await fetch('https://' + host + '/translate_a/single?client=gtx&sl=ko&tl=en&dt=t&q=' + encodeURIComponent(text));
+            dbg[tag] = 'http_' + gt.status;
+            if (gt.ok) {
+              const gj = await gt.json().catch(() => null);
+              const t = gj && Array.isArray(gj[0]) ? gj[0].map(s => (s && s[0]) || '').join('').trim() : '';
+              if (t) { en = t; via = tag; break; }
+              dbg[tag] += ':empty';
+            }
+          } catch (e) { dbg[tag] = 'throw'; }
+        }
+      }
+      return new Response(JSON.stringify({ en, via, dbg }), { headers: cors });
     }
 
     // fix14: 短連結解析
