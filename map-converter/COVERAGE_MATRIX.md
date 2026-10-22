@@ -45,3 +45,8 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 | K5 | Worker 未設定（fixture not_configured） | 狀態顯示設定未完成 |
 
 結果欄在每次完整跑完後回填（日期＋頁尾版本＋PASS/FAIL）。
+
+## 跑測紀錄
+- 2026-10-22 v2026-10-22-fix45（本地）：36 列，32 PASS / 4 FAIL — G7（?ftid= 連結按鈕 #）、N2（place ID 連結按鈕 #）、C3（999,999 誤當 X/Y）、T5（純文字店名不清舊座標）。
+- 2026-10-22 v2026-10-22-fix46（本地＋線上部署版各跑一次）：**36 列全 PASS**。fix46 修復：updateLinks 空狀態早退加入 ID 判斷＋ID-only 解析分支、裸座標範圍/X/Y 合理性檢查、純文字店名 fall-through。
+- 未測範圍：真機 App 點按（nmap://、comgooglemaps:// 僅驗格式）、Worker 線上行為（矩陣用 fixture；/local 與 /resolve 已於 2026-10-22 另外實測通過）。
