@@ -225,6 +225,14 @@ rows.push(row('N9', '確認附近店家後 Naver 網頁按鈕開店名頁（fix5
   check(c, 'naver href is place page', E('naverOpen').href === 'https://map.naver.com/p/search/' + encodeURIComponent('다이소 부산남포점'), E('naverOpen').href);
   check(c, 'google uses candidate coords', E('googleOpen').href.includes('35.0984'), E('googleOpen').href.slice(0, 80));
 }));
+rows.push(row('K9', '候選框附原本名稱對照行（fix51：英文名連結→地址模式候選）', async (c) => {
+  await pasteAndParse('https://www.google.com/maps/place/Brosis+Hotel/@35.0986,129.0309,17z');
+  check(c, 'place name parsed with @coords', E('name').value === 'Brosis Hotel', E('name').value);
+  E('naverFindBtn').dispatch('click'); await flush();
+  check(c, 'ref line shown', E('naverCandidateText').textContent.includes('你原本查的是：Brosis Hotel'), E('naverCandidateText').textContent.slice(0, 60));
+  E('naverCandidateNext').dispatch('click'); await flush();
+  check(c, 'ref line kept on place candidate', E('naverCandidateText').textContent.includes('你原本查的是：Brosis Hotel'), E('naverCandidateText').textContent.slice(0, 60));
+}));
 rows.push(row('K6', '無店名（只有 Plus Code）→找地點走地址備援（fixture）', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');
   check(c, 'coords decoded', Math.abs(parseFloat(E('lat').value) - 35.0985625) < 0.001, E('lat').value);

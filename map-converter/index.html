@@ -174,7 +174,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-22-fix50</p>
+  <p class="note" style="text-align:center">v2026-10-22-fix51</p>
 </div>
 
 <script>
@@ -722,12 +722,16 @@ function parseInput(){
       return;
     }
   }
+  // FIX fix51: /place/<店名>/ 是 Google 地點連結的標準格式，店名要在座標分支 return 前先帶上，
+  // 否則 /place/<店名>/@座標 與 /place/<店名>/data=!3d!4d 的店名會被丟掉（矩陣 K9 抓到：名稱欄空白、候選框無從對照）。
+  const googlePlaceName = (()=>{ const pm2 = raw.match(/\/place\/([^\/\?#]+)/); if(!pm2) return ''; try{ const dn = decodeURIComponent(pm2[1].replace(/\+/g,' ')); return (dn && !/^[\d.,\s-]+$/.test(dn) && !/^data=/i.test(dn)) ? dn : ''; }catch(e){ return ''; } })();
   // Google place data: !3d lat !4d lng  (expanded share links often use this, not @lat,lng)
   // Also handle reversed order just in case.
   let m3 = raw.match(/!3d(-?\d+(?:\.\d+)?)/), m4 = raw.match(/!4d(-?\d+(?:\.\d+)?)/);
   if(m3 && m4){
     const lat = parseFloat(m3[1]), lng = parseFloat(m4[1]);
     if(Math.abs(lat)<=90 && Math.abs(lng)<=180){
+      if(googlePlaceName) els.name.value = googlePlaceName;
       const mismatch = plusCodeMismatch(raw, lat, lng);
       updateFromLatLng(lat,lng,'已解析 Google !3d緯度 !4d經度。'+(mismatch ? ' '+mismatch.status : ''), mismatch ? mismatch.ready : undefined);
       return;
@@ -737,6 +741,7 @@ function parseInput(){
   m = raw.match(/@(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
   if(m){
     const lat = parseFloat(m[1]), lng = parseFloat(m[2]);
+    if(googlePlaceName) els.name.value = googlePlaceName;
     const mismatch = plusCodeMismatch(raw, lat, lng);
     updateFromLatLng(lat,lng,'已解析 Google @緯度,經度。'+(mismatch ? ' '+mismatch.status : ''), mismatch ? mismatch.ready : undefined);
     return;
@@ -906,9 +911,13 @@ function showNaverCandidate(){
   // FIX fix47: 地址模式（無店名→座標反查）文案不同：這不是店家，是查證過的韓國地址座標。
   // FIX fix49: 地址模式的候選混有附近實際地點（kind='place'），與地址候選（kind='address'）文案分開；
   // 舊版 Worker 只有單一地址候選時 kind 可能缺失，非 'place' 一律當地址候選顯示。
-  els.naverCandidateText.textContent = (candidateSource === 'address' && c.kind !== 'place')
+  // FIX fix51: 附上使用者原本貼的名稱（多為英文/中文）對照 — Kakao 候選只有韓文名（來源無英文字段），
+  // 不懂韓文的使用者靠這行＋距離核對是不是同一家。名稱欄與候選標題相同時不重複顯示。
+  const srcName = els.name.value.trim();
+  const refLine = (srcName && srcName !== c.title) ? '你原本查的是：' + srcName + '\n' : '';
+  els.naverCandidateText.textContent = refLine + ((candidateSource === 'address' && c.kind !== 'place')
     ? '用目前座標查到的韓國地址：'+c.title+'\n與目前座標相距約 '+Math.round(c.distanceM)+' 公尺。'+far+'\n如果位置正確，請按「就是這家」，所有地圖按鈕會改用這個查證過的座標（比 Plus Code 的大概位置準）。不對的話，按「不是，換一家」看附近的地點。'
-    : '找到最接近的地點（第 '+(naverCandidateIdx+1)+' / '+naverCandidates.length+' 家）：'+c.title+'\n地址：'+(c.roadAddress||c.address||'—')+'\n與目前座標相距約 '+Math.round(c.distanceM)+' 公尺。'+far+'\n如果就是這家，請按「就是這家」，所有地圖按鈕會改用這家查證過的座標。';
+    : '找到最接近的地點（第 '+(naverCandidateIdx+1)+' / '+naverCandidates.length+' 家）：'+c.title+'\n地址：'+(c.roadAddress||c.address||'—')+'\n與目前座標相距約 '+Math.round(c.distanceM)+' 公尺。'+far+'\n如果就是這家，請按「就是這家」，所有地圖按鈕會改用這家查證過的座標。');
   els.naverCandidateBox.hidden = false;
 }
 async function findNearestNaver(){
