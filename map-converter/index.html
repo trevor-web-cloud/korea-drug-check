@@ -174,7 +174,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-22-fix53</p>
+  <p class="note" style="text-align:center">v2026-10-22-fix54</p>
 </div>
 
 <script>
@@ -909,16 +909,18 @@ function normalizeNaverCoord(v){
 // 回 429 限流（fix52d 診斷：MyMemory 與 Google 兩主機皆 429）。兩端點都有 Access-Control-Allow-Origin: *，
 // 瀏覽器可直呼；來源順序 gtx → MyMemory。
 const translateCache = {};
-function translateTitle(title){
+// FIX fix54: 雙來源並列（使用者要求增加 Google 機翻）— Google 與 MyMemory 都呼叫，各自失敗回 ''；
+// 顯示時 Google 一行、MyMemory 一行（與 Google 相同時不重複），來源標明供對照。
+function translateBoth(title){
   if(Object.prototype.hasOwnProperty.call(translateCache, title)) return Promise.resolve(translateCache[title]);
-  const save = en => { translateCache[title] = en || ''; return translateCache[title]; };
-  const gtx = fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=ko&tl=en&dt=t&q=' + encodeURIComponent(title), { signal: AbortSignal.timeout(6000) })
+  const safe = p => p.catch(() => '');
+  const gtxP = fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=ko&tl=en&dt=t&q=' + encodeURIComponent(title), { signal: AbortSignal.timeout(6000) })
     .then(r => r.ok ? r.json() : null)
-    .then(gj => { const t = gj && Array.isArray(gj[0]) ? gj[0].map(s => (s && s[0]) || '').join('').trim() : ''; if(!t) throw new Error('empty'); return t; });
-  const mm = () => fetch('https://api.mymemory.translated.net/get?langpair=ko%7Cen&q=' + encodeURIComponent(title), { signal: AbortSignal.timeout(6000) })
+    .then(gj => { const t = gj && Array.isArray(gj[0]) ? gj[0].map(s => (s && s[0]) || '').join('').trim() : ''; return t || ''; });
+  const mmP = fetch('https://api.mymemory.translated.net/get?langpair=ko%7Cen&q=' + encodeURIComponent(title), { signal: AbortSignal.timeout(6000) })
     .then(r => r.ok ? r.json() : null)
-    .then(mj => { const t = (mj && mj.responseData && mj.responseData.translatedText || '').trim(); if(!t || /MYMEMORY|WARNING|QUOTA|INVALID/i.test(t)) throw new Error('empty'); return t; });
-  return gtx.catch(() => mm()).then(save).catch(() => save(''));
+    .then(mj => { const t = (mj && mj.responseData && mj.responseData.translatedText || '').trim(); return (t && !/MYMEMORY|WARNING|QUOTA|INVALID/i.test(t)) ? t : ''; });
+  return Promise.all([safe(gtxP), safe(mmP)]).then(([g, m]) => { const v = { gtx: g, mm: m }; translateCache[title] = v; return v; });
 }
 function showNaverCandidate(){
   const c = naverCandidates[naverCandidateIdx];
@@ -936,13 +938,16 @@ function showNaverCandidate(){
     : '找到最接近的地點（第 '+(naverCandidateIdx+1)+' / '+naverCandidates.length+' 家）：'+c.title+'\n地址：'+(c.roadAddress||c.address||'—')+'\n與目前座標相距約 '+Math.round(c.distanceM)+' 公尺。'+far+'\n如果就是這家，請按「就是這家」，所有地圖按鈕會改用這家查證過的座標。');
   els.naverCandidateBox.hidden = false;
   // FIX fix52: 店家候選（kind='place'）附機翻英文參考行；地址候選不翻。非同步補上，切換候選後只認標題相同者，避免貼到別家。
+  // FIX fix54: 雙來源（Google＋MyMemory）並列，來源標明；譯文相同只顯示一行。
   if(c.kind === 'place' && /[\uAC00-\uD7A3]/.test(c.title)){
     const shownTitle = c.title;
     const baseText = els.naverCandidateText.textContent;
-    translateTitle(shownTitle).then(en => {
-      if(en && en !== shownTitle && naverCandidates[naverCandidateIdx] && naverCandidates[naverCandidateIdx].title === shownTitle){
-        els.naverCandidateText.textContent = baseText + '\n英文參考（機翻，非官方名）：' + en;
-      }
+    translateBoth(shownTitle).then(tr => {
+      if(!tr || !(naverCandidates[naverCandidateIdx] && naverCandidates[naverCandidateIdx].title === shownTitle)) return;
+      const lines = [];
+      if(tr.gtx && tr.gtx !== shownTitle) lines.push('英文參考（Google 機翻，非官方名）：' + tr.gtx);
+      if(tr.mm && tr.mm !== shownTitle && tr.mm !== tr.gtx) lines.push('英文參考（MyMemory 機翻，非官方名）：' + tr.mm);
+      if(lines.length) els.naverCandidateText.textContent = baseText + '\n' + lines.join('\n');
     });
   }
 }

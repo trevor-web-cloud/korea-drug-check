@@ -56,7 +56,9 @@ global.fetch = async (url) => {
     const TR = { '다이소 부산남포점': 'Daiso Busan Nampo Branch', '명동교자 분점': 'Myeongdong Gyoja Branch' };
     body = [[[TR[t] || '', t, null, null, 3]]];
   } else if (u.includes('mymemory')) {
-    body = { responseData: { translatedText: '' } };
+    const t = decodeURIComponent((u.match(/[?&]q=([^&]*)/) || [])[1] || '').replace(/\+/g, ' ');
+    const TRM = { '다이소 부산남포점': 'Daiso Busan Nampo', '명동교자 분점': 'Myeongdong Gyoja Branch' };
+    body = { responseData: { translatedText: TRM[t] || '' } };
   } else if (u.includes('/local')) {
     const q = decodeURIComponent((u.match(/[?&]q=([^&]*)/) || [])[1] || '');
     for (const [key, val] of LOCAL_FIXTURES) if (q.includes(key)) { body = val; break; }
