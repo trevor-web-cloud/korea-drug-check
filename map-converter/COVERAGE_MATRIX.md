@@ -75,5 +75,5 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 - 2026-10-22 fix52 後續（Worker 翻譯來源根治）：fix52c（只留 MyMemory）部署後仍回空；fix52d 診斷版實測三來源自 Cloudflare 出口**全部 HTTP 429**（MyMemory、translate.google.com、translate.googleapis.com）— 免費翻譯端點對 Cloudflare 共用出口 IP 全面限流，與端點無關。fix53 改架構：翻譯由**頁面直呼**（使用者裝置 IP，非機房 IP；兩端點皆有 Access-Control-Allow-Origin: *），順序 gtx→MyMemory（lazy 備援，避免未處理 rejection）；Worker /translate 從此不被頁面使用（保留備而不用）。矩陣替身同步改為外部端點形狀。
 - 2026-10-22 v2026-10-22-fix53（本地＋線上部署版）：**45 列全 PASS**；使用者 iPhone 實機確認候選框有出現機翻英文行，fix52/53 收工。Worker /translate 保留在已部署版本中但頁面不再呼叫，無需再更動 Worker。
 - 2026-10-22 使用者要求「翻譯增加 Google 機翻」：fix53 本已 Google 優先（標籤未標來源，使用者以為只有 MyMemory）；fix54 改雙來源並列顯示並標明來源，譯文相同只顯示一行。K10 同步更新（fixture 兩來源譯文刻意不同，驗證並列）。
-- 2026-10-22 v2026-10-22-fix54（本地）：**45 列全 PASS**。
+- 2026-10-22 v2026-10-22-fix54（本地＋線上部署版）：**45 列全 PASS**（Pages 發布延遲，2026-10-23 凌晨補跑線上版確認）。
 - 未測範圍：真機 App 點按（矩陣僅驗連結格式）— 2026-10-22 20:49–20:56 使用者 iPhone 實機截圖已驗證 fix47 三條流：找地點地址候選、Naver 網頁版開啟（藍圖釘＋地址面板）、iPhone App 開啟（紅圖釘＋地址面板）。Worker 線上行為（矩陣用 fixture；/local、/resolve、/nearby 已於 2026-10-22 另外實測通過）。
