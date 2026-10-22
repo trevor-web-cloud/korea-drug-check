@@ -174,7 +174,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-22-fix51</p>
+  <p class="note" style="text-align:center">v2026-10-22-fix52</p>
 </div>
 
 <script>
@@ -904,6 +904,16 @@ function normalizeNaverCoord(v){
   if(Math.abs(n) > 1000) n = n/1e7; // 地區搜尋 API 的 mapx/mapy 為小數點後 7 位的整數字串
   return n;
 }
+// FIX fix52: 店名機翻（韓→英）只供辨認參考。經 Worker /translate 轉 Google 免費端點；結果快取，失敗回空字串靜默處理。
+const TRANSLATE_WORKER = 'https://map-resolve.tsai0215.workers.dev/translate';
+const translateCache = {};
+function translateTitle(title){
+  if(Object.prototype.hasOwnProperty.call(translateCache, title)) return Promise.resolve(translateCache[title]);
+  return fetch(TRANSLATE_WORKER + '?text=' + encodeURIComponent(title), { signal: AbortSignal.timeout(6000) })
+    .then(r => r.json())
+    .then(d => { const en = (d && d.en) || ''; translateCache[title] = en; return en; })
+    .catch(() => { translateCache[title] = ''; return ''; });
+}
 function showNaverCandidate(){
   const c = naverCandidates[naverCandidateIdx];
   if(!c){ els.naverCandidateBox.hidden = true; return; }
@@ -919,6 +929,16 @@ function showNaverCandidate(){
     ? '用目前座標查到的韓國地址：'+c.title+'\n與目前座標相距約 '+Math.round(c.distanceM)+' 公尺。'+far+'\n如果位置正確，請按「就是這家」，所有地圖按鈕會改用這個查證過的座標（比 Plus Code 的大概位置準）。不對的話，按「不是，換一家」看附近的地點。'
     : '找到最接近的地點（第 '+(naverCandidateIdx+1)+' / '+naverCandidates.length+' 家）：'+c.title+'\n地址：'+(c.roadAddress||c.address||'—')+'\n與目前座標相距約 '+Math.round(c.distanceM)+' 公尺。'+far+'\n如果就是這家，請按「就是這家」，所有地圖按鈕會改用這家查證過的座標。');
   els.naverCandidateBox.hidden = false;
+  // FIX fix52: 店家候選（kind='place'）附機翻英文參考行；地址候選不翻。非同步補上，切換候選後只認標題相同者，避免貼到別家。
+  if(c.kind === 'place' && /[\uAC00-\uD7A3]/.test(c.title)){
+    const shownTitle = c.title;
+    const baseText = els.naverCandidateText.textContent;
+    translateTitle(shownTitle).then(en => {
+      if(en && en !== shownTitle && naverCandidates[naverCandidateIdx] && naverCandidates[naverCandidateIdx].title === shownTitle){
+        els.naverCandidateText.textContent = baseText + '\n英文參考（機翻，非官方名）：' + en;
+      }
+    });
+  }
 }
 async function findNearestNaver(){
   const name = els.name.value.trim();

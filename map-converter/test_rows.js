@@ -233,6 +233,13 @@ rows.push(row('K9', '候選框附原本名稱對照行（fix51：英文名連結
   E('naverCandidateNext').dispatch('click'); await flush();
   check(c, 'ref line kept on place candidate', E('naverCandidateText').textContent.includes('你原本查的是：Brosis Hotel'), E('naverCandidateText').textContent.slice(0, 60));
 }));
+rows.push(row('K10', '店家候選附機翻英文參考、地址候選不附（fix52）', async (c) => {
+  await pasteAndParse('32XJ+C9 釜山 南韓');
+  E('naverFindBtn').dispatch('click'); await flush();
+  check(c, 'address candidate has no translation', !E('naverCandidateText').textContent.includes('英文參考'), E('naverCandidateText').textContent.slice(0, 50));
+  E('naverCandidateNext').dispatch('click'); await flush();
+  check(c, 'place candidate shows translation', E('naverCandidateText').textContent.includes('英文參考（機翻，非官方名）：Daiso Busan Nampo Branch'), E('naverCandidateText').textContent.slice(-90));
+}));
 rows.push(row('K6', '無店名（只有 Plus Code）→找地點走地址備援（fixture）', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');
   check(c, 'coords decoded', Math.abs(parseFloat(E('lat').value) - 35.0985625) < 0.001, E('lat').value);

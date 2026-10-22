@@ -1,4 +1,4 @@
-// Cloudflare Worker — map-resolve（fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查 + fix49 附近地點）
+// Cloudflare Worker — map-resolve（fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查 + fix49 附近地點 + fix52 機翻）
 // 部署：貼到 Cloudflare Dashboard → Workers → map-resolve → Edit code 全文取代；
 //       另需在 Settings → Variables and Secrets 新增一個 Secret：
 //       KAKAO_REST_KEY（Kakao Local API 的 REST API 金鑰；金鑰只放 Worker Secret，不進前端）
@@ -8,6 +8,7 @@
 //        （正規化為 title/address/roadAddress/mapx/mapy；座標來源是 Kakao，確認後頁面以該座標開 Naver）
 //   GET /nearby?lat={緯度}&lng={經度} → fix47 無店名備援：coord2address 取韓國道路地址，
 //        再以 address 搜尋取該地址的官方座標，回傳單一候選（title=道路地址）
+//   GET /translate?text={韓文} → {"en":"..."}（fix52：Google 免費翻譯端點轉發，韓→英，只供辨認參考）
 export default {
   async fetch(request, env) {
     const cors = {
@@ -125,6 +126,22 @@ export default {
         return new Response(JSON.stringify({ provider: 'kakao-address', total: items.length, items }), { headers: cors });
       } catch (e) {
         return new Response(JSON.stringify({ error: 'fetch_failed' }), { status: 502, headers: cors });
+      }
+    }
+
+    // fix52: 韓文店名機翻成英文（只供辨認參考，不作搜尋用）。走 Google 免費翻譯端點（gtx，非官方）；
+    // 失敗一律回空字串，頁面靜默不顯示，不影響其他功能。
+    if (u.pathname === '/translate') {
+      const text = (u.searchParams.get('text') || '').slice(0, 100);
+      if (!text) return new Response(JSON.stringify({ error: 'missing text' }), { status: 400, headers: cors });
+      try {
+        const gt = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=ko&tl=en&dt=t&q=' + encodeURIComponent(text));
+        if (!gt.ok) return new Response(JSON.stringify({ en: '' }), { headers: cors });
+        const gj = await gt.json().catch(() => null);
+        const en = gj && Array.isArray(gj[0]) ? gj[0].map(s => (s && s[0]) || '').join('').trim() : '';
+        return new Response(JSON.stringify({ en }), { headers: cors });
+      } catch (e) {
+        return new Response(JSON.stringify({ en: '' }), { headers: cors });
       }
     }
 
