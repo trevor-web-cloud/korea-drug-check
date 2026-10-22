@@ -71,5 +71,5 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 - 2026-10-22 使用者要求：候選框附原本名稱對照行（Kakao 無英文字段，逐家附英文不可行；以使用者貼入的原名對照）。新增 K9，首跑抓到既有解析缺口：/place/<店名>/@座標 與 !3d/!4d 連結的店名在座標分支 return 前被丟掉（名稱欄空白）— fix51 一併修復（座標分支先帶上 /place/ 店名）。
 - 2026-10-22 v2026-10-22-fix51（本地＋線上部署版）：**44 列全 PASS**。
 - 2026-10-22 使用者要求：候選店名即時機翻英文（只供辨認、不供搜尋，與先前否決的「翻成韓文去搜」不同）。先實測 Google 免費翻譯端點對真實店名：브로시스호텔→Brosis Hotel（與官方英文名一致）、명동교자 분점→Myeongdong Gyoja Branch、롯데마트 제주점→Lotte Mart Jeju Branch，可用。新增 K10；fix52：Worker 加 /translate 轉發、頁面店家候選非同步附英譯行（快取、失敗靜默、切換候選防貼錯家）。
-- 2026-10-22 v2026-10-22-fix52（本地）：**45 列全 PASS**。Worker 待使用者部署後實測 /translate。
+- 2026-10-22 v2026-10-22-fix52（本地＋線上部署版）：**45 列全 PASS**。Worker fix52 部署後實測：/local、/nearby、/resolve 正常，但 /translate 回空 — Google gtx 端點擋 Cloudflare 出口（VM 直連正常）。Worker 改雙來源：gtx 優先、失敗自動切 MyMemory（實測品質相當：브로시스호텔→Brosis Hotel），回傳 via 標明來源；待使用者重新部署 Worker 後驗證。
 - 未測範圍：真機 App 點按（矩陣僅驗連結格式）— 2026-10-22 20:49–20:56 使用者 iPhone 實機截圖已驗證 fix47 三條流：找地點地址候選、Naver 網頁版開啟（藍圖釘＋地址面板）、iPhone App 開啟（紅圖釘＋地址面板）。Worker 線上行為（矩陣用 fixture；/local、/resolve、/nearby 已於 2026-10-22 另外實測通過）。

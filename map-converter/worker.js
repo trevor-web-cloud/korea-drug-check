@@ -129,20 +129,33 @@ export default {
       }
     }
 
-    // fix52: 韓文店名機翻成英文（只供辨認參考，不作搜尋用）。走 Google 免費翻譯端點（gtx，非官方）；
-    // 失敗一律回空字串，頁面靜默不顯示，不影響其他功能。
+    // fix52: 韓文店名機翻成英文（只供辨認參考，不作搜尋用）。
+    // 來源 1：Google 免費翻譯端點（gtx，非官方）— 實測 Cloudflare 出口會被擋（回空），保留嘗試；
+    // 來源 2：MyMemory 免費 API（備援，品質實測相當）。兩者都失敗才回空字串，頁面靜默不顯示。
+    // 回傳 via 標明實際來源，供驗證。
     if (u.pathname === '/translate') {
       const text = (u.searchParams.get('text') || '').slice(0, 100);
       if (!text) return new Response(JSON.stringify({ error: 'missing text' }), { status: 400, headers: cors });
+      let en = '', via = '';
       try {
         const gt = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=ko&tl=en&dt=t&q=' + encodeURIComponent(text));
-        if (!gt.ok) return new Response(JSON.stringify({ en: '' }), { headers: cors });
-        const gj = await gt.json().catch(() => null);
-        const en = gj && Array.isArray(gj[0]) ? gj[0].map(s => (s && s[0]) || '').join('').trim() : '';
-        return new Response(JSON.stringify({ en }), { headers: cors });
-      } catch (e) {
-        return new Response(JSON.stringify({ en: '' }), { headers: cors });
+        if (gt.ok) {
+          const gj = await gt.json().catch(() => null);
+          en = gj && Array.isArray(gj[0]) ? gj[0].map(s => (s && s[0]) || '').join('').trim() : '';
+          if (en) via = 'gtx';
+        }
+      } catch (e) { /* 落到備援 */ }
+      if (!en) {
+        try {
+          const mm = await fetch('https://api.mymemory.translated.net/get?langpair=ko%7Cen&q=' + encodeURIComponent(text));
+          if (mm.ok) {
+            const mj = await mm.json().catch(() => null);
+            const t = (mj && mj.responseData && mj.responseData.translatedText || '').trim();
+            if (t && !/MYMEMORY|WARNING|QUOTA|INVALID/i.test(t)) { en = t; via = 'mymemory'; }
+          }
+        } catch (e) { /* 回空字串 */ }
       }
+      return new Response(JSON.stringify({ en, via }), { headers: cors });
     }
 
     // fix14: 短連結解析
