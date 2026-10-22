@@ -59,4 +59,5 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 - 2026-10-22 實機回報（使用者 iPhone 截圖，輸入 32XJ+C9 釜山）：新増 N6/N7/K6/K7 四列，在 fix46 上 N7/K6/K7 FAIL（N6 待格式定案）— 缺陷：(1) /p/search/{座標} 被 Naver 伺服器對 iPhone 轉成 App 文字搜尋 → No results；(2) 無店名時 nmap name 塞座標字串；(3) 無韓文名時找地點是死路；(4) 確認候選只改 Naver、Google 仍是 Plus Code 中心點。
 - 2026-10-22 v2026-10-22-fix47（本地＋線上部署版各跑一次）：**40 列全 PASS**（新增 N6/N7/K6/K7）。fix47 修復：Naver 網頁座標連結改官方接手格式 ?lat=&lng=&menu=location；無韓文名改走 Worker /nearby 地址備援；確認候選升級全部面板座標；App 連結 name 改用候選標題或「좌표 위치」。
 - 2026-10-22 實機回報（fix47 驗證後）：「選了正確地標，開 iPhone App 卻不一樣」→ 新增 N8；fix48 修復：App 圖釘 name 改為 已確認候選標題＞韓文店名＞中性標籤，非韓文名（Google 連結的中文名）不再傳給 App。
+- 2026-10-22 v2026-10-22-fix48（本地＋線上部署版各跑一次）：**41 列全 PASS**。待使用者實機重測同一地標確認。
 - 未測範圍：真機 App 點按（矩陣僅驗連結格式）— 2026-10-22 20:49–20:56 使用者 iPhone 實機截圖已驗證 fix47 三條流：找地點地址候選、Naver 網頁版開啟（藍圖釘＋地址面板）、iPhone App 開啟（紅圖釘＋地址面板）。Worker 線上行為（矩陣用 fixture；/local、/resolve、/nearby 已於 2026-10-22 另外實測通過）。
