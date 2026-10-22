@@ -40,15 +40,20 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 | T3 | 手動逐字輸入 lat/lng（fix41） | 欄位不損壞、連結同步 |
 | T4 | 手動逐字輸入 X/Y（fix41） | 欄位不損壞、lat/lng 正確 |
 | T5 | 有座標狀態再貼純店名解析 | 座標被清空（fix18/19） |
-| K1 | 韓文名＋座標→找最近地點（fixture 1 筆） | 候選盒顯示最近 1 家、距離約 7m；確認後 Naver 改用候選座標 |
+| K1 | 韓文名＋座標→找最近地點（fixture 1 筆） | 候選盒顯示最近 1 家、距離約 7m；確認後全部面板改用候選座標（fix47） |
 | K2 | 候選 2 筆（fixture）→換一家 | 第 2 家顯示且 >200m 警告出現；再換回第 1 家 |
-| K3 | 非韓文名 | 找地點按鈕不顯示 |
+| K3 | 中文店名→找地點（fix47） | 走地址備援（/nearby fixture），候選框出現（取代 fix45 的韓文死路） |
 | K4 | 搜尋回空結果（fixture） | 狀態顯示找不到 |
 | K5 | Worker 未設定（fixture not_configured） | 狀態顯示設定未完成 |
+| N6 | Naver 網頁座標連結格式（fix47） | 必須是 map.naver.com/?lat=&lng=&menu=location（官方接手格式）；不可用 /p/search/{座標}（iPhone 會被 Naver 伺服器轉成 App 文字搜尋） |
+| N7 | 無店名時的 Naver App 連結（實機回報） | nmap://place 的 name 參數不可是座標字串（App 會當搜尋字串） |
+| K6 | 無店名（只有 Plus Code）→找地點（fix47） | 走 /nearby 地址備援，候選框出現地址候選 |
+| K7 | 確認地址候選（fix47） | lat 欄位與 Google/Naver 連結全部改用確認座標 |
 
 結果欄在每次完整跑完後回填（日期＋頁尾版本＋PASS/FAIL）。
 
 ## 跑測紀錄
 - 2026-10-22 v2026-10-22-fix45（本地）：36 列，32 PASS / 4 FAIL — G7（?ftid= 連結按鈕 #）、N2（place ID 連結按鈕 #）、C3（999,999 誤當 X/Y）、T5（純文字店名不清舊座標）。
 - 2026-10-22 v2026-10-22-fix46（本地＋線上部署版各跑一次）：**36 列全 PASS**。fix46 修復：updateLinks 空狀態早退加入 ID 判斷＋ID-only 解析分支、裸座標範圍/X/Y 合理性檢查、純文字店名 fall-through。
-- 未測範圍：真機 App 點按（nmap://、comgooglemaps:// 僅驗格式）、Worker 線上行為（矩陣用 fixture；/local 與 /resolve 已於 2026-10-22 另外實測通過）。
+- 2026-10-22 實機回報（使用者 iPhone 截圖，輸入 32XJ+C9 釜山）：新増 N6/N7/K6/K7 四列，在 fix46 上 N7/K6/K7 FAIL（N6 待格式定案）— 缺陷：(1) /p/search/{座標} 被 Naver 伺服器對 iPhone 轉成 App 文字搜尋 → No results；(2) 無店名時 nmap name 塞座標字串；(3) 無韓文名時找地點是死路；(4) 確認候選只改 Naver、Google 仍是 Plus Code 中心點。
+- 未測範圍：真機 App 點按（nmap://、comgooglemaps:// 僅驗格式）、Worker 線上行為（矩陣用 fixture；/local 與 /resolve 已於 2026-10-22 另外實測通過；/nearby 待新版 Worker 部署後實測）。

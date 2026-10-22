@@ -45,6 +45,8 @@ global.fetch = async (url) => {
     else if (target.includes('8jUa4Jxcuvq4KEk78')) body = { status: 302, location: LOTTE_RESOLVED };
     else if (target.includes('SAMRANGJIN')) body = { status: 302, location: SAMRANGJIN_RESOLVED };
     else if (target.includes('yahoo')) body = { status: 302, location: YAHOO_RESOLVED };
+  } else if (u.includes('/nearby')) {
+    body = { provider: 'kakao-address', total: 1, items: [{ title: '부산 중구 구덕로 34번길 5', address: '부산 중구 남포동2가 24-1', roadAddress: '부산 중구 구덕로 34번길 5', mapx: '1290310500', mapy: '350987000', link: '', category: '', telephone: '' }] };
   } else if (u.includes('/local')) {
     const q = decodeURIComponent((u.match(/[?&]q=([^&]*)/) || [])[1] || '');
     for (const [key, val] of LOCAL_FIXTURES) if (q.includes(key)) { body = val; break; }

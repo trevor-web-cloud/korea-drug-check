@@ -6,6 +6,8 @@
 //   GET /resolve?url={短連結}  → {"status":307,"location":"..."}（HEAD + redirect:manual 取 Location）
 //   GET /local?q={韓文關鍵字} → Kakao Local 키워드 장소 검색 的候選地點
 //        （正規化為 title/address/roadAddress/mapx/mapy；座標來源是 Kakao，確認後頁面以該座標開 Naver）
+//   GET /nearby?lat={緯度}&lng={經度} → fix47 無店名備援：coord2address 取韓國道路地址，
+//        再以 address 搜尋取該地址的官方座標，回傳單一候選（title=道路地址）
 export default {
   async fetch(request, env) {
     const cors = {
@@ -43,6 +45,54 @@ export default {
           mapy: String(Math.round(parseFloat(d.y) * 1e7)),
         }));
         return new Response(JSON.stringify({ provider: 'kakao', total: items.length, items }), { headers: cors });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: 'fetch_failed' }), { status: 502, headers: cors });
+      }
+    }
+
+    // fix47: 無店名備援 — 座標 → 韓國地址 → 地址官方座標（只支援韓國境內）
+    if (u.pathname === '/nearby') {
+      const lat = parseFloat(u.searchParams.get('lat'));
+      const lng = parseFloat(u.searchParams.get('lng'));
+      if (!isFinite(lat) || !isFinite(lng)) {
+        return new Response(JSON.stringify({ error: 'missing lat/lng' }), { status: 400, headers: cors });
+      }
+      if (!env || !env.KAKAO_REST_KEY) {
+        return new Response(JSON.stringify({ error: 'not_configured' }), { status: 503, headers: cors });
+      }
+      const h = { 'Authorization': 'KakaoAK ' + env.KAKAO_REST_KEY };
+      try {
+        const aRes = await fetch('https://dapi.kakao.com/v2/local/geo/coord2address.json?x=' + lng + '&y=' + lat, { headers: h });
+        if (!aRes.ok) {
+          return new Response(JSON.stringify({ error: 'kakao_api_status_' + aRes.status }), { status: 502, headers: cors });
+        }
+        const aData = await aRes.json();
+        const doc = (aData.documents || [])[0];
+        const road = doc && doc.road_address ? (doc.road_address.address_name || '') : '';
+        const jibun = doc && doc.address ? (doc.address.address_name || '') : '';
+        const query = road || jibun;
+        if (!query) return new Response(JSON.stringify({ error: 'no_address' }), { headers: cors });
+        const sRes = await fetch('https://dapi.kakao.com/v2/local/search/address.json?query=' + encodeURIComponent(query), { headers: h });
+        if (!sRes.ok) {
+          return new Response(JSON.stringify({ error: 'kakao_api_status_' + sRes.status }), { status: 502, headers: cors });
+        }
+        const sData = await sRes.json();
+        const sd = (sData.documents || [])[0];
+        if (!sd || !isFinite(parseFloat(sd.x)) || !isFinite(parseFloat(sd.y))) {
+          return new Response(JSON.stringify({ error: 'no_address' }), { headers: cors });
+        }
+        const item = {
+          title: road || query,
+          link: '',
+          category: '',
+          description: '',
+          telephone: '',
+          address: jibun,
+          roadAddress: road,
+          mapx: String(Math.round(parseFloat(sd.x) * 1e7)),
+          mapy: String(Math.round(parseFloat(sd.y) * 1e7)),
+        };
+        return new Response(JSON.stringify({ provider: 'kakao-address', total: 1, items: [item] }), { headers: cors });
       } catch (e) {
         return new Response(JSON.stringify({ error: 'fetch_failed' }), { status: 502, headers: cors });
       }

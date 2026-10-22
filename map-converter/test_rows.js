@@ -6,7 +6,7 @@ const st = () => E('parseStatus').textContent;
 rows.push(row('G1', 'Google /place/ 名稱+@座標（KR）', async (c) => {
   await pasteAndParse('https://www.google.com/maps/place/%EB%AA%85%EB%8F%99%EA%B5%90%EC%9E%90/@37.5634829,126.9851666,17z');
   check(c, 'coords', near(latV(), 37.5634829, 1e-6) && near(lngV(), 126.9851666, 1e-6), E('lat').value + ',' + E('lng').value);
-  check(c, 'naver pin href', E('naverOpen').href === 'https://map.naver.com/p/search/' + E('lat').value + ',' + E('lng').value, E('naverOpen').href);
+  check(c, 'naver pin href', E('naverOpen').href === 'https://map.naver.com/?lat=' + E('lat').value + '&lng=' + E('lng').value + '&menu=location', E('naverOpen').href);
   check(c, 'google coord href', E('googleOpen').href.includes('api=1&query=' + encodeURIComponent(E('lat').value + ',' + E('lng').value)), E('googleOpen').href);
   check(c, 'yahoo href', E('yahooOpen').href === 'https://map.yahoo.co.jp/?lat=' + E('lat').value + '&lon=' + E('lng').value + '&z=17', E('yahooOpen').href);
 }));
@@ -31,7 +31,7 @@ rows.push(row('G5', 'goo.gl 短連結（樂天超市，fixture）', async (c) =>
   check(c, 'name', E('name').value.includes('樂天超市'), E('name').value);
   check(c, 'plus-code coords', near(latV(), 33.4824875, 2e-6) && near(lngV(), 126.4813906, 2e-6), E('lat').value + ',' + E('lng').value);
   check(c, 'google coord pin', E('googleOpen').textContent.includes('座標圖釘'), E('googleOpen').textContent);
-  check(c, 'naver pin href', E('naverOpen').href.startsWith('https://map.naver.com/p/search/33.4824'), E('naverOpen').href);
+  check(c, 'naver pin href', E('naverOpen').href.startsWith('https://map.naver.com/?lat=33.4824'), E('naverOpen').href);
 }));
 rows.push(row('G6', 'goo.gl 只有文字+ftid（fixture）', async (c) => {
   await pasteAndParse('https://maps.app.goo.gl/SAMRANGJIN');
@@ -52,7 +52,7 @@ rows.push(row('N1', 'naver.me 短連結（fixture）', async (c) => {
   await pasteAndParse('https://naver.me/FP8gOoAY');
   check(c, 'coords', near(latV(), 37.5634829, 1e-6) && near(lngV(), 126.9851666, 1e-6), E('lat').value + ',' + E('lng').value);
   check(c, 'pinId in text', E('naverLink').textContent.includes('18039088'), E('naverLink').textContent.slice(0, 80));
-  check(c, 'naver pin href', E('naverOpen').href.startsWith('https://map.naver.com/p/search/37.5634'), E('naverOpen').href);
+  check(c, 'naver pin href', E('naverOpen').href.startsWith('https://map.naver.com/?lat=37.5634'), E('naverOpen').href);
 }));
 rows.push(row('N2', 'Naver place ID 純連結', async (c) => {
   await pasteAndParse('https://map.naver.com/p/entry/place/15491493');
@@ -164,7 +164,7 @@ rows.push(row('K1', '候選流程（fixture 1 筆）＋確認', async (c) => {
   check(c, 'candidate text', E('naverCandidateText').textContent.includes('명동교자 분점') && E('naverCandidateText').textContent.includes('第 1 / 1 家') && E('naverCandidateText').textContent.includes('7 公尺'), E('naverCandidateText').textContent.slice(0, 90));
   E('naverCandidateYes').dispatch('click'); await flush();
   check(c, 'override label', E('naverOpen').textContent.includes('已確認地點'), E('naverOpen').textContent);
-  check(c, 'override href', /p\/search\/37\.56345\d,126\.98513\d/.test(E('naverOpen').href), E('naverOpen').href);
+  check(c, 'override href', /map\.naver\.com\/\?lat=37\.56345\d&lng=126\.98513\d&menu=location/.test(E('naverOpen').href), E('naverOpen').href);
 }));
 rows.push(row('K2', '候選 2 筆換一家＋遠距警告', async (c) => {
   E('name').value = '김해가야테마파크';
@@ -176,12 +176,12 @@ rows.push(row('K2', '候選 2 筆換一家＋遠距警告', async (c) => {
   E('naverCandidateNext').dispatch('click'); await flush();
   check(c, 'cycles back', E('naverCandidateText').textContent.includes('第 1 / 2 家'), '');
 }));
-rows.push(row('K3', '中文店名→按鈕顯示、點擊提示韓文（fix45）', async (c) => {
+rows.push(row('K3', '中文店名→走地址備援出現候選（fix47，取代 fix45 的韓文死路）', async (c) => {
   await pasteAndParse('https://maps.app.goo.gl/8jUa4Jxcuvq4KEk78');
   check(c, 'find btn visible', E('naverFindBtn').style.display === '', E('naverFindBtn').style.display);
   E('naverFindBtn').dispatch('click'); await flush();
-  check(c, 'korean-name prompt', st().includes('韓文店名'), st().slice(0, 60));
-  check(c, 'box stays hidden', E('naverCandidateBox').hidden === true, String(E('naverCandidateBox').hidden));
+  check(c, 'address candidate box', E('naverCandidateBox').hidden === false, String(E('naverCandidateBox').hidden));
+  check(c, 'address candidate text', E('naverCandidateText').textContent.includes('부산'), E('naverCandidateText').textContent.slice(0, 90));
 }));
 rows.push(row('K4', '搜尋空結果（fixture）', async (c) => {
   await pasteAndParse('37.5634829, 126.9851666');
@@ -194,4 +194,34 @@ rows.push(row('K5', 'Worker 未設定（fixture）', async (c) => {
   E('name').value = '설정안됨가게';
   E('naverFindBtn').dispatch('click'); await flush();
   check(c, 'not_configured status', st().includes('KAKAO_REST_KEY'), st().slice(0, 80));
+}));
+rows.push(row('N6', 'Naver 網頁座標連結必須是官方接手格式（不可用 /p/search/ 座標，fix47）', async (c) => {
+  await pasteAndParse('35.098562, 129.030938');
+  const href = E('naverOpen').href;
+  check(c, 'menu=location format', href === 'https://map.naver.com/?lat=35.098562&lng=129.030938&menu=location', href);
+  check(c, 'not search format', !href.includes('/p/search/'), href);
+}));
+rows.push(row('N7', '無店名時 Naver App 連結 name 不可為座標字串（2026-10-22 實機回報）', async (c) => {
+  await pasteAndParse('8Q7F32XJ+C9');
+  check(c, 'name field empty', E('name').value === '', E('name').value);
+  const href = E('naverAppOpen') ? E('naverAppOpen').href : '';
+  const m = href.match(/[?&]name=([^&]*)/);
+  const nm = m ? decodeURIComponent(m[1]) : '';
+  check(c, 'app name label', !!nm && !/^\d+\.\d+,\d+\.\d+$/.test(nm), href.slice(0, 90));
+}));
+rows.push(row('K6', '無店名（只有 Plus Code）→找地點走地址備援（fixture）', async (c) => {
+  await pasteAndParse('32XJ+C9 釜山 南韓');
+  check(c, 'coords decoded', Math.abs(parseFloat(E('lat').value) - 35.0985625) < 0.001, E('lat').value);
+  check(c, 'find btn visible', E('naverFindBtn').style.display === '', E('naverFindBtn').style.display);
+  E('naverFindBtn').dispatch('click'); await flush();
+  check(c, 'address candidate box', E('naverCandidateBox').hidden === false, String(E('naverCandidateBox').hidden));
+  check(c, 'address candidate text', E('naverCandidateText').textContent.includes('부산'), E('naverCandidateText').textContent.slice(0, 90));
+}));
+rows.push(row('K7', '確認地址候選→全部面板改用確認座標', async (c) => {
+  await pasteAndParse('32XJ+C9 釜山 南韓');
+  E('naverFindBtn').dispatch('click'); await flush();
+  E('naverCandidateYes').dispatch('click'); await flush();
+  check(c, 'lat field upgraded', Math.abs(parseFloat(E('lat').value) - 35.0987) < 1e-6, E('lat').value);
+  check(c, 'google href upgraded', E('googleOpen').href.includes('35.0987'), E('googleOpen').href.slice(0, 90));
+  check(c, 'naver href upgraded', E('naverOpen').href.includes('35.0987'), E('naverOpen').href.slice(0, 90));
 }));
