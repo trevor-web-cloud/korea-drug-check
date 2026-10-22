@@ -136,6 +136,16 @@ function hiraToKata(s){
   return s.replace(/[\u3041-\u3096]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60));
 }
 function normRoma(s){ return s.toLowerCase().replace(/([aiueo])\1+/g, '$1'); }
+function collapseKata(s){
+  var V = {'ア':'a','イ':'i','ウ':'u','エ':'e','オ':'o','カ':'a','キ':'i','ク':'u','ケ':'e','コ':'o','サ':'a','シ':'i','ス':'u','セ':'e','ソ':'o','タ':'a','チ':'i','ツ':'u','テ':'e','ト':'o','ナ':'a','ニ':'i','ヌ':'u','ネ':'e','ノ':'o','ハ':'a','ヒ':'i','フ':'u','ヘ':'e','ホ':'o','マ':'a','ミ':'i','ム':'u','メ':'e','モ':'o','ヤ':'a','ユ':'u','ヨ':'o','ラ':'a','リ':'i','ル':'u','レ':'e','ロ':'o','ワ':'a','ヲ':'o','ガ':'a','ギ':'i','グ':'u','ゲ':'e','ゴ':'o','ザ':'a','ジ':'i','ズ':'u','ゼ':'e','ゾ':'o','ダ':'a','ヂ':'i','ヅ':'u','デ':'e','ド':'o','バ':'a','ビ':'i','ブ':'u','ベ':'e','ボ':'o','パ':'a','ピ':'i','プ':'u','ペ':'e','ポ':'o'};
+  var out = '', prev = '';
+  for(var i = 0; i < s.length; i++){
+    var c = s[i];
+    if((c === 'ア' || c === 'イ' || c === 'ウ' || c === 'エ' || c === 'オ') && prev && V[prev] === V[c]) continue;
+    out += c; prev = c;
+  }
+  return out;
+}
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 // ---------- 検索 ----------
@@ -168,11 +178,12 @@ function doSearch(){
   if(mode === 'sub'){
     const kata = hiraToKata(romajiToKatakana(raw));
     const kataFlat = kata.replace(/ー/g, '');
+    const kataCol = collapseKata(kataFlat);
     const nq = normRoma(raw);
     const ql = raw.toLowerCase();
     hits = DATA.substances.filter(s => {
       const jaFlat = (s.ja || '').replace(/ー/g, '');
-      return (s.ja && (jaFlat.includes(kata) || jaFlat.includes(kataFlat))) ||
+      return (s.ja && (jaFlat.includes(kata) || jaFlat.includes(kataFlat) || jaFlat.includes(kataCol))) ||
              s.en.toLowerCase().includes(ql) ||
              normRoma(s.en).includes(nq) ||
              (s.zh && s.zh.includes(raw));
@@ -295,7 +306,7 @@ document.getElementById('q').addEventListener('input', function(){
 document.getElementById('q').addEventListener('keydown', function(e){
   if(e.key === 'Enter') doSearch();
 });
-document.getElementById('t-ver').textContent = 'v2026-10-22-c116557e57';
+document.getElementById('t-ver').textContent = 'v2026-10-22-c67e9d8de0';
 document.getElementById('t-update-date').textContent = META.date;
 document.getElementById('t-src').textContent =
   '韓国の規制成分リスト（481成分）および KEGG 医薬品データ（日本で承認・販売されている医薬品を含む）を基に作成｜2か月ごとに更新';
