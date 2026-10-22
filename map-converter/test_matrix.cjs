@@ -32,7 +32,7 @@ const LOCAL_FIXTURES = [
   ['분점', { provider: 'kakao', total: 1, items: [{ title: '명동교자 분점', address: '서울 중구 명동2가 33-4', roadAddress: '서울 중구 명동10길 8', mapx: '1269851365', mapy: '375634555', link: '', category: '', telephone: '' }] }],
   ['가야테마', { provider: 'kakao', total: 2, items: [
     { title: '김해가야테마파크', address: '경남 김해시 어방동 964', roadAddress: '경남 김해시 가야테마길 161', mapx: '1288937493', mapy: '352516350', link: '', category: '', telephone: '' },
-    { title: '김해가야테마파크 주차장', address: '경남 김해시 어방동 965', roadAddress: '경남 김해시 가야테마길 200', mapx: '1288940000', mapy: '352520000', link: '', category: '', telephone: '' }] }],
+    { title: '김해가야테마파크 주차장', address: '경남 김해시 어방동 965', roadAddress: '경남 김해시 가야테마길 200', mapx: '1288970000', mapy: '352520000', link: '', category: '', telephone: '' }] }],
   ['없는가게', { provider: 'kakao', total: 0, items: [] }],
   ['설정안됨', { error: 'not_configured' }],
 ];
