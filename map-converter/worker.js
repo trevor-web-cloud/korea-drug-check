@@ -1,4 +1,4 @@
-// Cloudflare Worker — map-resolve（fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查 + fix49 附近地點 + fix52 機翻）
+// Cloudflare Worker — map-resolve（fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查 + fix49 附近地點 + fix52 機翻 + fix55 附近地點距離排序）
 // 部署：貼到 Cloudflare Dashboard → Workers → map-resolve → Edit code 全文取代；
 //       另需在 Settings → Variables and Secrets 新增一個 Secret：
 //       KAKAO_REST_KEY（Kakao Local API 的 REST API 金鑰；金鑰只放 Worker Secret，不進前端）
@@ -111,6 +111,7 @@ export default {
               address: p.address_name || '',
               roadAddress: p.road_address_name || '',
               kind: 'place',
+              _d: parseFloat(p.distance),
               mapx: String(Math.round(parseFloat(p.x) * 1e7)),
               mapy: String(Math.round(parseFloat(p.y) * 1e7)),
             }));
@@ -122,6 +123,11 @@ export default {
           const key = p.title + '|' + p.mapx + '|' + p.mapy;
           if (p.title && !seen.has(key)) { seen.add(key); places.push(p); }
         }
+        // fix55: 原本照類別順序取 12 家，前面的類別（餐廳/咖啡廳）會把名額占滿，後面的類別整類被切掉
+        //（實例：濟州樂天超市 Plus Code 查附近，MT1 大型超市的 롯데마트 제주점 本體被擠出名單）。
+        // 改為全部合併後按距離排序再取 12 家，離查詢點最近的先留；_d 只是排序用，不回傳。
+        places.sort((a, b) => (isFinite(a._d) ? a._d : 1e12) - (isFinite(b._d) ? b._d : 1e12));
+        for (const p of places) delete p._d;
         const items = [item, ...places.slice(0, 12)];
         return new Response(JSON.stringify({ provider: 'kakao-address', total: items.length, items }), { headers: cors });
       } catch (e) {
