@@ -50,10 +50,13 @@ global.fetch = async (url) => {
       { title: '부산 중구 구덕로 34번길 5', address: '부산 중구 남포동2가 24-1', roadAddress: '부산 중구 구덕로 34번길 5', kind: 'address', mapx: '1290310500', mapy: '350987000', link: '', category: '', telephone: '' },
       { title: '다이소 부산남포점', address: '부산 중구 남포동2가 24-2', roadAddress: '부산 중구 구덕로 34', kind: 'place', mapx: '1290305000', mapy: '350984000', link: '', category: '', telephone: '' },
       { title: '남포역 부산1호선', address: '부산 중구 남포동1가 11', roadAddress: '부산 중구 중앙대로 지하 240', kind: 'place', mapx: '1290315000', mapy: '350978000', link: '', category: '', telephone: '' }] };
-  } else if (u.includes('/translate')) {
-    const t = decodeURIComponent((u.match(/[?&]text=([^&]*)/) || [])[1] || '').replace(/\+/g, ' ');
+  } else if (u.includes('translate.googleapis.com')) {
+    // fix53: 頁面直呼 gtx，回應形狀是巢狀陣列
+    const t = decodeURIComponent((u.match(/[?&]q=([^&]*)/) || [])[1] || '').replace(/\+/g, ' ');
     const TR = { '다이소 부산남포점': 'Daiso Busan Nampo Branch', '명동교자 분점': 'Myeongdong Gyoja Branch' };
-    body = { en: TR[t] || '' };
+    body = [[[TR[t] || '', t, null, null, 3]]];
+  } else if (u.includes('mymemory')) {
+    body = { responseData: { translatedText: '' } };
   } else if (u.includes('/local')) {
     const q = decodeURIComponent((u.match(/[?&]q=([^&]*)/) || [])[1] || '');
     for (const [key, val] of LOCAL_FIXTURES) if (q.includes(key)) { body = val; break; }

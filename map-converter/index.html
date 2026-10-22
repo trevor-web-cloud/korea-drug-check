@@ -174,7 +174,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-22-fix52</p>
+  <p class="note" style="text-align:center">v2026-10-22-fix53</p>
 </div>
 
 <script>
@@ -904,15 +904,21 @@ function normalizeNaverCoord(v){
   if(Math.abs(n) > 1000) n = n/1e7; // 地區搜尋 API 的 mapx/mapy 為小數點後 7 位的整數字串
   return n;
 }
-// FIX fix52: 店名機翻（韓→英）只供辨認參考。經 Worker /translate 轉 Google 免費端點；結果快取，失敗回空字串靜默處理。
-const TRANSLATE_WORKER = 'https://map-resolve.tsai0215.workers.dev/translate';
+// FIX fix52: 店名機翻（韓→英）只供辨認參考；結果快取，失敗回空字串靜默處理。
+// FIX fix53: 改由頁面直呼（使用者裝置的 IP）— 經 Worker 轉發時，Cloudflare 出口 IP 被所有免費翻譯端點
+// 回 429 限流（fix52d 診斷：MyMemory 與 Google 兩主機皆 429）。兩端點都有 Access-Control-Allow-Origin: *，
+// 瀏覽器可直呼；來源順序 gtx → MyMemory。
 const translateCache = {};
 function translateTitle(title){
   if(Object.prototype.hasOwnProperty.call(translateCache, title)) return Promise.resolve(translateCache[title]);
-  return fetch(TRANSLATE_WORKER + '?text=' + encodeURIComponent(title), { signal: AbortSignal.timeout(6000) })
-    .then(r => r.json())
-    .then(d => { const en = (d && d.en) || ''; translateCache[title] = en; return en; })
-    .catch(() => { translateCache[title] = ''; return ''; });
+  const save = en => { translateCache[title] = en || ''; return translateCache[title]; };
+  const gtx = fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=ko&tl=en&dt=t&q=' + encodeURIComponent(title), { signal: AbortSignal.timeout(6000) })
+    .then(r => r.ok ? r.json() : null)
+    .then(gj => { const t = gj && Array.isArray(gj[0]) ? gj[0].map(s => (s && s[0]) || '').join('').trim() : ''; if(!t) throw new Error('empty'); return t; });
+  const mm = () => fetch('https://api.mymemory.translated.net/get?langpair=ko%7Cen&q=' + encodeURIComponent(title), { signal: AbortSignal.timeout(6000) })
+    .then(r => r.ok ? r.json() : null)
+    .then(mj => { const t = (mj && mj.responseData && mj.responseData.translatedText || '').trim(); if(!t || /MYMEMORY|WARNING|QUOTA|INVALID/i.test(t)) throw new Error('empty'); return t; });
+  return gtx.catch(() => mm()).then(save).catch(() => save(''));
 }
 function showNaverCandidate(){
   const c = naverCandidates[naverCandidateIdx];
