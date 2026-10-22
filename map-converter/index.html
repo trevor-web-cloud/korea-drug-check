@@ -174,7 +174,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-22-fix41</p>
+  <p class="note" style="text-align:center">v2026-10-22-fix42</p>
 </div>
 
 <script>
@@ -871,7 +871,7 @@ async function findNearestNaver(){
     clearTimeout(timer);
     const data = await res.json();
     if(data && data.error === 'not_configured'){
-      setStatus('附近地點搜尋還沒設定完成：請先在 Cloudflare 的 map-resolve 加上金鑰 Secret（KAKAO_REST_KEY 或 NAVER_API_KEY_ID / NAVER_API_KEY）。',false);
+      setStatus('附近地點搜尋還沒設定完成：請先在 Cloudflare 的 map-resolve 加上 KAKAO_REST_KEY 這個 Secret。',false);
       return;
     }
     if(!data || !Array.isArray(data.items)){ setStatus('Naver 搜尋失敗，請稍後再試。',false); return; }
