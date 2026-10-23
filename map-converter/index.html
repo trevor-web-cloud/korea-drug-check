@@ -202,7 +202,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-22-fix60</p>
+  <p class="note" style="text-align:center">v2026-10-22-fix61</p>
 </div>
 
 <script>
@@ -701,17 +701,19 @@ function parseInput(){
   // FIX 2026-10-18: 短連結本身沒有座標，純前端無法直接解（CORS + 需跟隨跳轉）。
   // 先明確告知 + 提供一鍵在新分頁展開，展開後再複製網址列的完整連結回來貼。
   // 注意：展開按鈕必須開 cleanUrl，不是 raw，否則貼整段分享文字會 404。
-  if(/maps\.app\.goo\.gl|goo\.gl\/maps|naver\.me\/|yahoo\.jp\//i.test(cleanUrl) && !/[@?].*(\d+\.\d+|!3d|c=)/.test(cleanUrl)){
+  // FIX fix61: Kakao 分享短連結 kko.to 也納入（展開後是 map.kakao.com/link/map/… 或 place 連結，由 fix57 解析接手）。
+  if(/maps\.app\.goo\.gl|goo\.gl\/maps|naver\.me\/|yahoo\.jp\/|kko\.to\//i.test(cleanUrl) && !/[@?].*(\d+\.\d+|!3d|c=)/.test(cleanUrl)){
     // 分享整段文字時，順便取出店名（第 2 行），讓下方搜尋連結先可用
     // FIX fix7: 只有「這次」真的取出店名才說已取出；否則殘留的上一次店名會被誤說成這次取出的。
     // FIX fix9: App 分享都是短網址，短連結本身無座標，必須清空舊座標，
     // 否則座標欄殘留南浦洞預設值，點「座標圖釘」會誤開南浦洞。
     const lines = raw.split(/\n+/).map(s=>s.trim()).filter(Boolean);
     let nameLine = lines.find(s=>!/^\[NAVER|^\[Google|https?:\/\//i.test(s) && !/釜山|부산|市|区|洞|동|路|로|街|道/.test(s));
+    if(nameLine) nameLine = nameLine.replace(/^\[(KakaoMap|카카오맵)\]\s*/,'').trim() || nameLine;
     // FIX fix10: 分享文字可能被貼成「一行」（換行遺失），上面按行找會找不到店名。
     // 備援：從整段文字去掉 [NAVER Maps]、網址、地址部分，剩下的就是店名。
     if(!nameLine){
-      let one = raw.replace(/\[NAVER Maps\]|\[Google Maps\]/gi,' ').replace(/https?:\/\/[^\s]+/g,' ').replace(/\s+/g,' ').trim();
+      let one = raw.replace(/\[NAVER Maps\]|\[Google Maps\]|\[KakaoMap\]|\[카카오맵\]/gi,' ').replace(/https?:\/\/[^\s]+/g,' ').replace(/\s+/g,' ').trim();
       // 地址通常從 釜山/부산/市/区/洞/동/路/로/街/道 開始，切掉地址及之後的部分
       const addrIdx = one.search(/釜山|부산|市|区|洞|동|路|로|街|道/);
       if(addrIdx > 0) one = one.slice(0, addrIdx).trim();
@@ -750,7 +752,7 @@ function parseInput(){
   const ftidMatch = raw.match(/[?&]ftid\s*=\s*([^&]+)/i);
   if(ftidMatch){ try{ currentGoogleId = decodeURIComponent(ftidMatch[1]); }catch(e){ currentGoogleId = ftidMatch[1]; } }
   // FIX fix57: 取出 Kakao 地點 ID（place 連結或 link/map/{純數字}）。
-  const kakaoIdMatch = raw.match(/place\.map\.kakao\.com\/(\d+)/i) || raw.match(/map\.kakao\.com\/link\/map\/(\d+)(?:[?#]|$)/i);
+  const kakaoIdMatch = raw.match(/place\.map\.kakao\.com\/(\d+)/i) || raw.match(/map\.kakao\.com\/link\/map\/(\d+)(?:[?#]|$)/i) || raw.match(/applink\.map\.kakao\.com\/place\?[^\s]*?\bid=(\d+)/i);
   if(kakaoIdMatch) currentKakaoId = kakaoIdMatch[1];
   // FIX fix6: Naver 短連結展開後的跳轉網址本身就帶座標 + 店名：
   // map.naver.com/?title=兄弟潜水艇&pinId=...&lng=129.0972166&lat=35.1235958

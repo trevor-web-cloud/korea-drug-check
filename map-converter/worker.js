@@ -1,4 +1,4 @@
-// Cloudflare Worker — map-resolve（fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查 + fix49 附近地點 + fix52 機翻 + fix55 附近地點距離排序）
+// Cloudflare Worker — map-resolve（fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查 + fix49 附近地點 + fix52 機翻 + fix55 附近地點距離排序 + fix61 短連結 GET 重試）
 // 部署：貼到 Cloudflare Dashboard → Workers → map-resolve → Edit code 全文取代；
 //       另需在 Settings → Variables and Secrets 新增一個 Secret：
 //       KAKAO_REST_KEY（Kakao Local API 的 REST API 金鑰；金鑰只放 Worker Secret，不進前端）
@@ -180,8 +180,14 @@ export default {
       return new Response(JSON.stringify({ error: 'missing url' }), { status: 400, headers: cors });
     }
     try {
-      const res = await fetch(target, { method: 'HEAD', redirect: 'manual' });
-      const loc = res.headers.get('location') || '';
+      // fix61: Kakao 分享短連結 kko.to 拒絕 HEAD（回 405 無 Location）— HEAD 拿不到時改用 GET 重試一次。
+      let res = await fetch(target, { method: 'HEAD', redirect: 'manual' });
+      let loc = res.headers.get('location') || '';
+      if (!loc) {
+        const res2 = await fetch(target, { method: 'GET', redirect: 'manual' });
+        loc = res2.headers.get('location') || '';
+        if (loc) res = res2;
+      }
       return new Response(JSON.stringify({ status: res.status, location: loc }), { headers: cors });
     } catch (e) {
       return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: cors });

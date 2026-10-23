@@ -61,6 +61,7 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 | K11 | Kakao 連結輸入：座標（fix57） | map.kakao.com/link/map/{lat},{lng} 解析出座標，Naver/Kakao 按鈕同步 |
 | K12 | Kakao 連結輸入：名稱＋座標（fix57） | link/map/{名稱},{lat},{lng} 名稱與座標都取出，Google 可轉換 |
 | K13 | Kakao 連結輸入：place ID（fix57） | place.map.kakao.com/{id} 取出 Kakao ID，Kakao 鈕開該店頁面（空狀態早退需含 currentKakaoId，K13 抓到並修復） |
+| K14 | Kakao 分享文字 kko.to（fix61） | [KakaoMap] 分享文字→Worker 展開→applink id 取出 Kakao ID，店名去掉 [KakaoMap] 標籤 |
 
 結果欄在每次完整跑完後回填（日期＋頁尾版本＋PASS/FAIL）。
 
@@ -91,5 +92,7 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 - 2026-10-23 v2026-10-22-fix59（本地＋線上部署版）：**52 列全 PASS**。
 - 2026-10-23 使用者定步驟編號：確認地標為第 3 步、選地圖為第 4 步。fix60：確認地標區加「第 3 步：確認地標」標題；選地圖標題與全部 ready/狀態文案的「第 3 步」改「第 4 步」（共 10 處）。
 - 2026-10-23 v2026-10-22-fix60（本地＋線上部署版）：**52 列全 PASS**（線上 HTML 驗證步驟標題順序：第 3 步確認地標 → 第 4 步點地圖）。
+- 2026-10-23 使用者實貼 Kakao 分享文字「[KakaoMap] BROSIS HOTEL https://kko.to/qobmRiH-bl」：實查 kko.to 301→applink.map.kakao.com/place?id=338712143（BROSIS HOTEL 의 Kakao ID）；且 kko.to 拒絕 HEAD（405），Worker /resolve 原用 HEAD 取 Location 會失敗。fix61：Worker 改 HEAD 無 Location 時 GET 重試；頁面短連結分支納入 kko.to、kakaoIdMatch 加 applink id 格式、分享文字店名去 [KakaoMap] 標籤。新增 K14（用使用者原文）。
+- 2026-10-23 v2026-10-22-fix61（本地）：**53 列全 PASS**。Worker fix61 待使用者部署後以真連結實測。
 - 2026-10-23 實機回報：濟州樂天超市 Plus Code（8Q58FFJJ+XH）查附近，롯데마트 제주점 本體未出現。實查線上 /nearby：12 家名額被類別順序占滿（餐廳 5＋咖啡廳 5＋住宿 2），MT1 大型超市整類被 slice 切掉。Worker fix55：類別結果合併後按 Kakao distance 排序再取 12 家（頁面程式未改版，矩陣不涵蓋 Worker 邏輯，部署後以線上 /nearby 實測驗證）。2026-10-23 使用者部署後實測通過：濟州點名單第 5 為 롯데마트 제주점（第 6 為其停車場），南浦回歸正常（地址＋브로시스호텔＋남포정…）。fix55 僅改 Worker，頁面維持 fix54，使用者曾誤以為「fix55 尚未上傳」（看的是頁面頁尾）— 版本分屬兩邊，日後需講清。
 - 未測範圍：真機 App 點按（矩陣僅驗連結格式）— 2026-10-22 20:49–20:56 使用者 iPhone 實機截圖已驗證 fix47 三條流：找地點地址候選、Naver 網頁版開啟（藍圖釘＋地址面板）、iPhone App 開啟（紅圖釘＋地址面板）。Worker 線上行為（矩陣用 fixture；/local、/resolve、/nearby 已於 2026-10-22 另外實測通過）。

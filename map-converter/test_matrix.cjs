@@ -28,6 +28,7 @@ const NAVER_RESOLVED = 'https://map.naver.com/?lng=126.9851666&version=2&appMenu
 const LOTTE_RESOLVED = 'https://www.google.com/maps/place/%E6%A8%82%E5%A4%A9%E8%B6%85%E5%B8%82+%E6%BF%9F%E5%B7%9E%E5%BA%97/data=!3m1!4b1!4m4!3m3!1s0x350cfbaa5212613b:0x5bbf0d68a7dc6ce8!16s%2Fg%2F1vc7_kpy!20s8Q58FFJJ%2BXHR?entry=tts';
 const SAMRANGJIN_RESOLVED = 'https://www.google.com/maps/search/?api=1&query=%EC%82%BC%EB%9E%91%EC%A7%84%EC%83%9D%ED%83%9C%EB%AC%B8%ED%99%94%EA%B3%B5%EC%9B%90&ftid=0x3568bb1435d6becb%3A0x8aba633314c7db88';
 const YAHOO_RESOLVED = 'https://map.yahoo.co.jp/place/?lat=35.633670&lon=139.791520&z=17';
+const KAKAO_RESOLVED = 'https://applink.map.kakao.com/place?id=338712143&t_src=share&t_ch=copy_url&t_obj=place';
 const LOCAL_FIXTURES = [
   ['분점', { provider: 'kakao', total: 1, items: [{ title: '명동교자 분점', address: '서울 중구 명동2가 33-4', roadAddress: '서울 중구 명동10길 8', mapx: '1269851365', mapy: '375634555', link: 'http://place.map.kakao.com/18577297', category: '', telephone: '' }] }],
   ['가야테마', { provider: 'kakao', total: 2, items: [
@@ -45,6 +46,7 @@ global.fetch = async (url) => {
     else if (target.includes('8jUa4Jxcuvq4KEk78')) body = { status: 302, location: LOTTE_RESOLVED };
     else if (target.includes('SAMRANGJIN')) body = { status: 302, location: SAMRANGJIN_RESOLVED };
     else if (target.includes('yahoo')) body = { status: 302, location: YAHOO_RESOLVED };
+    else if (target.includes('qobmRiH')) body = { status: 301, location: KAKAO_RESOLVED };
   } else if (u.includes('/nearby')) {
     body = { provider: 'kakao-address', total: 3, items: [
       { title: '부산 중구 구덕로 34번길 5', address: '부산 중구 남포동2가 24-1', roadAddress: '부산 중구 구덕로 34번길 5', kind: 'address', mapx: '1290310500', mapy: '350987000', link: '', category: '', telephone: '' },

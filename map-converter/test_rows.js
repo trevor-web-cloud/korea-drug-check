@@ -292,6 +292,13 @@ rows.push(row('M4', '確認後找地標按鈕隱藏（只找一次，fix59）', 
   check(c, 'find hidden after confirm', E('findBtn').style.display === 'none', E('findBtn').style.display);
   check(c, 'candidate box hidden', E('candidateBox').hidden === true, String(E('candidateBox').hidden));
 }));
+rows.push(row('K14', 'Kakao 分享文字：kko.to 展開＋applink ID（fix61）', async (c) => {
+  await pasteAndParse('[KakaoMap] BROSIS HOTEL https://kko.to/qobmRiH-bl');
+  await flush();
+  check(c, 'name without tag', E('name').value === 'BROSIS HOTEL', E('name').value);
+  check(c, 'kakao id page', E('kakaoOpen').href === 'https://map.kakao.com/link/map/338712143', E('kakaoOpen').href);
+  check(c, 'status mentions kakao id', E('parseStatus').textContent.includes('Kakao ID 338712143'), E('parseStatus').textContent.slice(0, 60));
+}));
 rows.push(row('K6', '無店名（只有 Plus Code）→找地點走地址備援（fixture）', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');
   check(c, 'coords decoded', Math.abs(parseFloat(E('lat').value) - 35.0985625) < 0.001, E('lat').value);
