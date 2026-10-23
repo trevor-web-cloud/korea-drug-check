@@ -1,4 +1,4 @@
-// Cloudflare Worker — map-resolve（fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查 + fix49 附近地點 + fix52 機翻 + fix55 附近地點距離排序 + fix61 短連結 GET 重試）
+// Cloudflare Worker — map-resolve（fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查 + fix49 附近地點 + fix52 機翻 + fix55 附近地點距離排序 + fix61 短連結 GET 重試 + fix63 Kakao ID 撈座標）
 // 部署：貼到 Cloudflare Dashboard → Workers → map-resolve → Edit code 全文取代；
 //       另需在 Settings → Variables and Secrets 新增一個 Secret：
 //       KAKAO_REST_KEY（Kakao Local API 的 REST API 金鑰；金鑰只放 Worker Secret，不進前端）
@@ -18,6 +18,27 @@ export default {
     };
     if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
     const u = new URL(request.url);
+
+    // fix63: 用 Kakao 地點 ID 撈官方 place 頁的公開資料（og:title 店名 + OG 靜態地圖網址裡的 WGS84 座標），
+    // 讓「只有 Kakao ID」的分享連結也能補出座標 → Google/Naver 一起開啟（Kakao Local API 本身沒有用 ID 查座標的端點）。
+    async function scrapeKakaoPlace(id) {
+      try {
+        const r = await fetch('https://place.map.kakao.com/' + id, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        if (!r.ok) return null;
+        const html = await r.text();
+        const mm = html.match(/staticmap\/og\?type=place&srs=wgs84[^"']*?[?&]m=(-?\d+(?:\.\d+)?)%2C(-?\d+(?:\.\d+)?)/i);
+        if (!mm) return null;
+        const tm = html.match(/og:title"\s+content="([^"]*)"/);
+        return { id: String(id), name: tm ? tm[1] : '', lng: parseFloat(mm[1]), lat: parseFloat(mm[2]) };
+      } catch (e) { return null; }
+    }
+    if (u.pathname === '/place') {
+      const id = (u.searchParams.get('id') || '').trim();
+      if (!/^\d+$/.test(id)) return new Response(JSON.stringify({ error: 'missing id' }), { status: 400, headers: cors });
+      const p = await scrapeKakaoPlace(id);
+      if (!p) return new Response(JSON.stringify({ error: 'not_found' }), { status: 404, headers: cors });
+      return new Response(JSON.stringify(p), { headers: cors });
+    }
 
     // fix40: 附近地點搜尋（Kakao Local；回傳候選店名/地址/WGS84 座標）
     if (u.pathname === '/local') {
@@ -188,7 +209,13 @@ export default {
         loc = res2.headers.get('location') || '';
         if (loc) res = res2;
       }
-      return new Response(JSON.stringify({ status: res.status, location: loc }), { headers: cors });
+      const out = { status: res.status, location: loc };
+      // fix63: 展開結果若帶 Kakao 地點 ID，順手撈座標一起回傳，頁面一次到位（三家全開）。
+      if (loc) {
+        const km = loc.match(/applink\.map\.kakao\.com\/place\?[^\s]*?\bid=(\d+)/i) || loc.match(/place\.map\.kakao\.com\/(\d+)/i) || loc.match(/map\.kakao\.com\/link\/map\/(\d+)(?:[?#]|$)/i);
+        if (km) { const p = await scrapeKakaoPlace(km[1]); if (p) out.place = p; }
+      }
+      return new Response(JSON.stringify(out), { headers: cors });
     } catch (e) {
       return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: cors });
     }

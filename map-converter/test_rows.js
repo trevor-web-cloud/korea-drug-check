@@ -292,12 +292,73 @@ rows.push(row('M4', '確認後找地標按鈕隱藏（只找一次，fix59）', 
   check(c, 'find hidden after confirm', E('findBtn').style.display === 'none', E('findBtn').style.display);
   check(c, 'candidate box hidden', E('candidateBox').hidden === true, String(E('candidateBox').hidden));
 }));
-rows.push(row('K14', 'Kakao 分享文字：kko.to 展開＋applink ID（fix61）', async (c) => {
+rows.push(row('K14', 'Kakao 分享文字：kko.to 展開＋applink ID＋補座標（fix61/63）', async (c) => {
   await pasteAndParse('[KakaoMap] BROSIS HOTEL https://kko.to/qobmRiH-bl');
-  await flush();
-  check(c, 'name without tag', E('name').value === 'BROSIS HOTEL', E('name').value);
+  await flush(); await flush();
+  check(c, 'name upgraded to korean', E('name').value === '브로시스호텔', E('name').value);
+  check(c, 'coords filled', Math.abs(parseFloat(E('lat').value) - 35.0985955) < 0.00001, E('lat').value);
   check(c, 'kakao id page', E('kakaoOpen').href === 'https://map.kakao.com/link/map/338712143', E('kakaoOpen').href);
-  check(c, 'status mentions kakao id', E('parseStatus').textContent.includes('Kakao ID 338712143'), E('parseStatus').textContent.slice(0, 60));
+}));
+rows.push(row('X1', '互通：Google 輸入→Naver＋Kakao 可開', async (c) => {
+  await pasteAndParse('https://www.google.com/maps/search/?api=1&query=37.563437,126.985063');
+  check(c, 'google pin', E('googleOpen').href.includes('37.563437'), E('googleOpen').href.slice(0, 80));
+  check(c, 'naver opens', E('naverOpen').href.includes('lat=37.563437') && E('naverOpen').href.includes('menu=location'), E('naverOpen').href.slice(0, 90));
+  check(c, 'kakao opens', E('kakaoOpen').href === 'https://map.kakao.com/link/map/37.563437,126.985063', E('kakaoOpen').href);
+}));
+rows.push(row('X2', '互通：Naver 輸入→Google＋Kakao 可開', async (c) => {
+  await pasteAndParse('https://map.naver.com/v5/?c=14348386.54,4198130.13,15,0,0,0,dh');
+  check(c, 'google opens', E('googleOpen').href.includes('35.251635'), E('googleOpen').href.slice(0, 80));
+  check(c, 'kakao opens', E('kakaoOpen').href === 'https://map.kakao.com/link/map/35.251635,128.893749', E('kakaoOpen').href);
+  check(c, 'naver opens', E('naverOpen').href.includes('lat=35.251635'), E('naverOpen').href.slice(0, 90));
+}));
+rows.push(row('X3', '互通：Kakao 輸入（座標）→Google＋Naver 可開', async (c) => {
+  await pasteAndParse('https://map.kakao.com/link/map/%EB%AA%85%EB%8F%99%EA%B5%90%EC%9E%90,37.563483,126.985167');
+  check(c, 'google opens', E('googleOpen').href.includes('37.563483'), E('googleOpen').href.slice(0, 80));
+  check(c, 'naver opens', E('naverOpen').href.includes('lat=37.563483') && E('naverOpen').href.includes('menu=location'), E('naverOpen').href.slice(0, 90));
+  check(c, 'kakao opens', E('kakaoOpen').href.includes('37.563483'), E('kakaoOpen').href);
+}));
+rows.push(row('X4', '互通：Kakao 分享（只有 ID）→補座標後 Google＋Naver 可開（fix63）', async (c) => {
+  await pasteAndParse('[KakaoMap] BROSIS HOTEL https://kko.to/qobmRiH-bl');
+  await flush(); await flush();
+  check(c, 'google opens', E('googleOpen').href.includes('35.09859'), E('googleOpen').href.slice(0, 80));
+  check(c, 'naver opens', E('naverOpen').href.includes('lat=35.09859'), E('naverOpen').href.slice(0, 90));
+  check(c, 'kakao id page', E('kakaoOpen').href === 'https://map.kakao.com/link/map/338712143', E('kakaoOpen').href);
+}));
+rows.push(row('X5', '互通：直接貼 Kakao place 連結→補座標後三家可開（fix63）', async (c) => {
+  await pasteAndParse('https://place.map.kakao.com/338712143');
+  await flush(); await flush();
+  check(c, 'coords filled', Math.abs(parseFloat(E('lat').value) - 35.0985955) < 0.00001, E('lat').value);
+  check(c, 'google opens', E('googleOpen').href.includes('35.09859'), E('googleOpen').href.slice(0, 80));
+  check(c, 'naver opens', E('naverOpen').href.includes('lat=35.09859'), E('naverOpen').href.slice(0, 90));
+  check(c, 'kakao id page', E('kakaoOpen').href === 'https://map.kakao.com/link/map/338712143', E('kakaoOpen').href);
+}));
+rows.push(row('X6', '互通：Google ftid＋韓文名（無座標）→找地標→三家可開（fix64）', async (c) => {
+  await pasteAndParse('https://maps.app.goo.gl/SAMRANGJIN');
+  check(c, 'find visible without coords', E('findBtn').style.display === '', E('findBtn').style.display);
+  E('findBtn').dispatch('click'); await flush();
+  check(c, 'candidate by name', E('candidateText').textContent.includes('삼랑진생태문화공원'), E('candidateText').textContent.slice(0, 60));
+  E('candidateYes').dispatch('click'); await flush();
+  check(c, 'google opens', E('googleOpen').href.includes('35.3994'), E('googleOpen').href.slice(0, 80));
+  check(c, 'naver opens (place page)', E('naverOpen').href === 'https://map.naver.com/p/search/' + encodeURIComponent('삼랑진생태문화공원'), E('naverOpen').href.slice(0, 90));
+  check(c, 'kakao opens', E('kakaoOpen').href.includes('35.3994'), E('kakaoOpen').href);
+}));
+rows.push(row('X7', '互通：Naver 只有 ID→輸入韓文名→找地標→三家可開（fix64）', async (c) => {
+  await pasteAndParse('https://map.naver.com/p/entry/place/1943436990');
+  check(c, 'guidance shown', E('parseStatus').textContent.includes('韓文原名'), E('parseStatus').textContent.slice(0, 80));
+  typeInto(E('name'), '롯데호텔앤리조트 김해'); await flush();
+  check(c, 'find visible after name', E('findBtn').style.display === '', E('findBtn').style.display);
+  E('findBtn').dispatch('click'); await flush();
+  check(c, 'candidate by name', E('candidateText').textContent.includes('롯데호텔앤리조트 김해'), E('candidateText').textContent.slice(0, 60));
+  E('candidateYes').dispatch('click'); await flush();
+  check(c, 'google opens', E('googleOpen').href.includes('35.1917'), E('googleOpen').href.slice(0, 80));
+  check(c, 'kakao place page', E('kakaoOpen').href === 'https://map.kakao.com/link/map/27584217', E('kakaoOpen').href);
+}));
+rows.push(row('X8', '互通：naver.me 只有 ID（實例形狀）→Naver 可開＋引導補名（fix64）', async (c) => {
+  await pasteAndParse('https://naver.me/52R5JVa5');
+  await flush();
+  check(c, 'naver place link', E('naverOpen').href === 'https://map.naver.com/p/entry/place/1943436990', E('naverOpen').href);
+  check(c, 'guidance shown', E('parseStatus').textContent.includes('韓文原名'), E('parseStatus').textContent.slice(0, 80));
+  check(c, 'find hidden without name', E('findBtn').style.display === 'none', E('findBtn').style.display);
 }));
 rows.push(row('K6', '無店名（只有 Plus Code）→找地點走地址備援（fixture）', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');

@@ -58,6 +58,16 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 | M2 | Kakao 面板已確認店家（fix56） | 網頁鈕直開 /link/map/{placeID}（ID 自候選 place 連結取出）；App 鈕用確認座標 |
 | M3 | 確認地標獨立區全流程（fix59） | 獨立「確認地標」區找一次→確認；Naver 開店名頁、Kakao 開 place 頁，全部面板同步升級 |
 | M4 | 確認後只找一次（fix59） | 確認完成後「找地標」按鈕隱藏、候選框收起（canFind 含 !naverOverride） |
+| X1 | 互通：Google 輸入（fix63） | 座標連結貼入後，Naver（menu=location）＋Kakao（link/map）都能開啟 |
+| X2 | 互通：Naver 輸入（fix63） | c= 連結貼入後，Google 圖釘＋Kakao（link/map）都能開啟 |
+| X3 | 互通：Kakao 輸入（fix63） | link/map 連結貼入後，Google 圖釘＋Naver（menu=location）都能開啟 |
+| X4 | 互通：Kakao 分享只有 ID（fix63） | kko.to 分享→Worker 補座標→Google＋Naver 可開、Kakao 開 ID 頁 |
+| X5 | 互通：Kakao place 連結（fix63） | 直接貼 place 連結→/place 補座標→三家可開 |
+| X6 | 互通：Google ftid＋韓文名（fix64） | 無座標→找地標（店名查）→確認→三家可開（座標為 fixture 值） |
+| X7 | 互通：Naver 只有 ID（fix64） | 輸入韓文原名→找地標→確認→三家可開（座標為 fixture 值）；ID 狀態有引導文案 |
+| X8 | 互通：naver.me 只有 ID（fix64） | 實例形狀（52R5JVa5）：Naver 以 ID 開啟、狀態引導補韓文名、無名時找地標鈕不出現 |
+
+> 常規（使用者 2026-10-23 指示）：自我檢查（覆蓋矩陣）必須納入「三家是否可互通」——X 系列即為此設，三種連結貼入後都要能找地標、讓三家都能開啟；日後新增輸入形式或開啟方式時，先補 X 列再改碼。
 | K11 | Kakao 連結輸入：座標（fix57） | map.kakao.com/link/map/{lat},{lng} 解析出座標，Naver/Kakao 按鈕同步 |
 | K12 | Kakao 連結輸入：名稱＋座標（fix57） | link/map/{名稱},{lat},{lng} 名稱與座標都取出，Google 可轉換 |
 | K13 | Kakao 連結輸入：place ID（fix57） | place.map.kakao.com/{id} 取出 Kakao ID，Kakao 鈕開該店頁面（空狀態早退需含 currentKakaoId，K13 抓到並修復） |
@@ -96,5 +106,9 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 - 2026-10-23 v2026-10-22-fix61（本地＋線上部署版）：**53 列全 PASS**。Worker fix61 使用者部署後真連結實測通過：/resolve kko.to 回 301＋applink（id=338712143），與 Kakao 關鍵字搜尋 브로시스호텔 的 place 連結 ID 一致；naver.me 回歸正常。
 - 2026-10-23 使用者要求網頁說明同步：fix62 將標題/H1 改「Naver Kakao Yahoo JP Google 地圖轉換」、meta 描述與第 1 步說明改「Google、Naver、Kakao 或 Yahoo 的整段分享文字」。
 - 2026-10-23 v2026-10-22-fix62（本地＋線上部署版）：**53 列全 PASS**（線上驗證新說明文字已出現）。
+- 2026-10-23 使用者截圖回報：Kakao 分享（只有 ID）貼入後 Google/Naver 無法開啟。實查 Kakao place 頁的 OG 靜態地圖網址內嵌 WGS84 座標（m={lng},{lat}）、og:title 有韓文店名——可撈。fix63：Worker 加 /place?id= 撈取、/resolve 對 Kakao ID 連結附加 place 資料；頁面在 Kakao ID 狀態自動補座標（店名無韓文時換成韓文原名），三家全開。使用者同日定常規：自我檢查納入三家互通（新增 X1–X5）。
+- 2026-10-23 使用者實貼 naver.me/52R5JVa5（金海樂天飯店）：展開只有 pinId（無座標無店名）——Naver place 頁（map/pcmap 兩版）實查皆為空殼，伺服器端撈不到名與座標；Kakao API 撈取需要店名當鑰匙。fix64：找地標開放「無座標＋韓文店名」（/local 店名查，距離顯示改為補座標說明）；canFind 同步放寬；Naver 只有 ID 且名稱無韓文時，狀態列引導輸入韓文原名再找地標。Google ftid＋韓文名分享（X6 三浪津）同路由。新增 X6–X8（座標為 fixture 值）。
+- 2026-10-23 使用者實貼首爾市政府 naver.me/x525VEnc：展開帶座標＋pinId＋title（完整形），現行版即可全開；Kakao 官方座標（37.5668242,126.9786523，主建築）與 Naver 釘（37.5666103,126.9783882，太平路側）差約 24 公尺，屬各家釘位差。
+- 2026-10-23 v2026-10-22-fix64（本地，含 fix63）：**61 列全 PASS**。Worker fix63 待使用者部署後實測 /place。
 - 2026-10-23 實機回報：濟州樂天超市 Plus Code（8Q58FFJJ+XH）查附近，롯데마트 제주점 本體未出現。實查線上 /nearby：12 家名額被類別順序占滿（餐廳 5＋咖啡廳 5＋住宿 2），MT1 大型超市整類被 slice 切掉。Worker fix55：類別結果合併後按 Kakao distance 排序再取 12 家（頁面程式未改版，矩陣不涵蓋 Worker 邏輯，部署後以線上 /nearby 實測驗證）。2026-10-23 使用者部署後實測通過：濟州點名單第 5 為 롯데마트 제주점（第 6 為其停車場），南浦回歸正常（地址＋브로시스호텔＋남포정…）。fix55 僅改 Worker，頁面維持 fix54，使用者曾誤以為「fix55 尚未上傳」（看的是頁面頁尾）— 版本分屬兩邊，日後需講清。
 - 未測範圍：真機 App 點按（矩陣僅驗連結格式）— 2026-10-22 20:49–20:56 使用者 iPhone 實機截圖已驗證 fix47 三條流：找地點地址候選、Naver 網頁版開啟（藍圖釘＋地址面板）、iPhone App 開啟（紅圖釘＋地址面板）。Worker 線上行為（矩陣用 fixture；/local、/resolve、/nearby 已於 2026-10-22 另外實測通過）。

@@ -202,7 +202,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-22-fix62</p>
+  <p class="note" style="text-align:center">v2026-10-22-fix64</p>
 </div>
 
 <script>
@@ -376,7 +376,8 @@ function updateLinks(){
   // FIX fix45: 使用者實測「候選框未出現過」— Google 連結取出的多是中文店名（無韓文）→ 按鈕永遠被藏。
   // 改為有有效座標且無 pinId/未確認候選就顯示；韓文店名改在點擊時檢查並提示（findNearestNaver 內）。
   if(els.findBtn){
-    const canFind = hasCoords && coordsPrimary && !currentPinId && !naverOverride;
+    // FIX fix64: 無座標但有韓文店名也可找地標（店名查不需要座標）— Google ftid 分享、Naver 只有 ID 時靠它補座標，讓三家都能開。
+    const canFind = !naverOverride && ((hasCoords && coordsPrimary && !currentPinId) || (!hasCoords && /[\uAC00-\uD7A3]/.test(name)));
     els.findBtn.style.display = canFind ? '' : 'none';
   }
   els.naverApp.textContent = (hasName ? '店名搜尋：'+nAppName : '') + (hasCoords ? (hasName ? '\n' : '') + '座標圖釘：'+nAppCoord : '');
@@ -676,13 +677,31 @@ const CITY_REF = [
 // FIX fix15: 短連結主動切換為 ID — Worker 已部署在 map-resolve.tsai0215.workers.dev，做 HEAD + redirect:manual 取得 Location。
 // 若 Worker 程式碼尚未換成 worker.js（仍是 Hello World），會退回手動展開流程；換好程式碼後自動解析生效。
 const RESOLVE_WORKER = 'https://map-resolve.tsai0215.workers.dev/resolve';
+const PLACE_WORKER = 'https://map-resolve.tsai0215.workers.dev/place';
+// FIX fix63: 只有 Kakao ID 時，向 Worker /place 撈該店座標補上，讓 Google/Naver 也能開（三家互通）。
+let pendingKakaoPlace = null;
 async function resolveShortLink(shortUrl){
   try{
     const r = await fetch(RESOLVE_WORKER+'?url='+encodeURIComponent(shortUrl), {signal: AbortSignal.timeout(8000)});
     if(!r.ok) return null;
-    const j = await r.json();
-    return (j && j.location) ? j.location : null;
+    return await r.json();
   }catch(e){ return null; }
+}
+async function upgradeKakaoId(){
+  const id = currentKakaoId;
+  if(!id) return;
+  let p = (pendingKakaoPlace && pendingKakaoPlace.id === id) ? pendingKakaoPlace : null;
+  pendingKakaoPlace = null;
+  if(!p){
+    try{
+      const r = await fetch(PLACE_WORKER+'?id='+encodeURIComponent(id), {signal: AbortSignal.timeout(8000)});
+      const j = await r.json();
+      if(j && isFinite(j.lat) && isFinite(j.lng)) p = j;
+    }catch(e){}
+  }
+  if(!p || currentKakaoId !== id) return;
+  if(p.name && !/[\uAC00-\uD7A3]/.test(els.name.value)) els.name.value = p.name;
+  updateFromLatLng(p.lat, p.lng, '已從 Kakao 取得「'+(p.name || '地標')+'」的座標，Google、Naver、Kakao 都可以開啟了。');
 }
 function parseInput(){
   const raw = els.paste.value.trim();
@@ -729,8 +748,10 @@ function parseInput(){
     // 成功就直接用展開後的完整連結重新解析，ID/座標自動填上；Worker 未部署或失敗時，退回手動展開流程。
     setStatus('正在處理，請稍等一下…',false);
     if(expandBtn){ expandBtn.style.display=''; expandBtn.onclick=()=>{ window.open(cleanUrl,'_blank','noopener'); }; }
-    resolveShortLink(cleanUrl).then(loc=>{
+    resolveShortLink(cleanUrl).then(j=>{
+      const loc = j && j.location;
       if(loc){
+        if(j.place && isFinite(j.place.lat) && isFinite(j.place.lng)) pendingKakaoPlace = j.place;
         // FIX fix39: 原始分享文字若同時附 Plus Code，展開短連結時必須保留它，
         // 重新解析後才能用精確連結座標交叉比對；直接覆蓋會把不一致證據弄丟。
         const plusInRaw = raw.match(/\b[23456789CFGHJMPQRVWX]{8}\+[23456789CFGHJMPQRVWX]{2,3}\b/i) || raw.match(/\b[23456789CFGHJMPQRVWX]{2,7}\+[23456789CFGHJMPQRVWX]{2,3}\b/i);
@@ -944,8 +965,11 @@ function parseInput(){
     els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value='';
     hasReadyResult = true;
     readyMessage = '已取得地點 ID。請往下做第 4 步，點地圖按鈕。';
-    setStatus('已解析：只有地點 ID，沒有座標。'+(currentPinId ? ' Naver ID '+currentPinId+'。' : '')+(currentGoogleId ? ' Google ID 已取出。' : '')+(currentKakaoId ? ' Kakao ID '+currentKakaoId+'。' : ''),true);
-    updateLinks(); return;
+    setStatus('已解析：只有地點 ID，沒有座標。'+(currentPinId ? ' Naver ID '+currentPinId+'。' : '')+(currentGoogleId ? ' Google ID 已取出。' : '')+(currentKakaoId ? ' Kakao ID '+currentKakaoId+'。' : '')+((currentPinId && !/[\uAC00-\uD7A3]/.test(els.name.value)) ? '若要讓 Google、Kakao 也能開啟，請在名稱欄輸入這家店的韓文原名，再到第 3 步找地標。' : ''),true);
+    updateLinks();
+    // FIX fix63: Kakao ID 可向 Worker 補座標（place 頁公開資料），成功就升級成三家全開。
+    if(currentKakaoId) upgradeKakaoId();
+    return;
   }
   // FIX fix46: 純文字店名（沒有連結）— 當成店名輸入，必須清掉舊座標（fix18/19 精神），
   // 舊邏輯只報「看不懂」且殘留上一個地點的座標與按鈕。
@@ -1018,9 +1042,11 @@ function showNaverCandidate(){
   // 不懂韓文的使用者靠這行＋距離核對是不是同一家。名稱欄與候選標題相同時不重複顯示。
   const srcName = els.name.value.trim();
   const refLine = (srcName && srcName !== c.title) ? '你原本查的是：' + srcName + '\n' : '';
+  // FIX fix64: 無出發座標（店名查）時沒有距離可顯示，改說明確認後會補上座標。
+  const distText = isFinite(c.distanceM) ? '與目前座標相距約 '+Math.round(c.distanceM)+' 公尺。' : '（目前沒有出發座標，確認後就會補上這家的座標。）';
   cb.text.textContent = refLine + ((candidateSource === 'address' && c.kind !== 'place')
-    ? '用目前座標查到的韓國地址：'+c.title+'\n與目前座標相距約 '+Math.round(c.distanceM)+' 公尺。'+far+'\n如果位置正確，請按「就是這家」，所有地圖按鈕會改用這個查證過的座標（比 Plus Code 的大概位置準）。不對的話，按「不是，換一家」看附近的地點。'
-    : '找到最接近的地點（第 '+(naverCandidateIdx+1)+' / '+naverCandidates.length+' 家）：'+c.title+'\n地址：'+(c.roadAddress||c.address||'—')+'\n與目前座標相距約 '+Math.round(c.distanceM)+' 公尺。'+far+'\n如果就是這家，請按「就是這家」，所有地圖按鈕會改用這家查證過的座標。');
+    ? '用目前座標查到的韓國地址：'+c.title+'\n'+distText+far+'\n如果位置正確，請按「就是這家」，所有地圖按鈕會改用這個查證過的座標（比 Plus Code 的大概位置準）。不對的話，按「不是，換一家」看附近的地點。'
+    : '找到最接近的地點（第 '+(naverCandidateIdx+1)+' / '+naverCandidates.length+' 家）：'+c.title+'\n地址：'+(c.roadAddress||c.address||'—')+'\n'+distText+far+'\n如果就是這家，請按「就是這家」，所有地圖按鈕會改用這家查證過的座標。');
   cb.box.hidden = false;
   // FIX fix52: 店家候選（kind='place'）附機翻英文參考行；地址候選不翻。非同步補上，切換候選後只認標題相同者，避免貼到別家。
   // FIX fix54: 雙來源（Google＋MyMemory）並列，來源標明；譯文相同只顯示一行。
@@ -1040,11 +1066,15 @@ function showNaverCandidate(){
 async function findNearestNaver(){
   const name = els.name.value.trim();
   const lat = parseFloat(els.lat.value), lng = parseFloat(els.lng.value);
-  if(!isFinite(lat) || !isFinite(lng)){ setStatus('還沒有座標，請先完成第 1、2 步。',false); return; }
+  const byName = /[\uAC00-\uD7A3]/.test(name);
+  // FIX fix64: 沒有座標但有韓文店名 → 用店名查（Kakao /local 不需要座標）。
+  // Google ftid 分享、Naver 只有 ID 的連結靠這條補座標，讓三家都能開（使用者定：三種連結貼上後都能找地標）。
+  if(!isFinite(lat) || !isFinite(lng)){
+    if(!byName){ setStatus('還沒有座標，也沒有韓文店名，沒辦法找地標。請貼上帶座標的連結，或在名稱欄輸入韓文原名再找地標。',false); return; }
+  }
   // FIX fix47: 沒有韓文店名時不再直接擋下 — 改用座標向 Kakao 反查韓國地址（Worker /nearby），
   // 取該地址的官方座標當候選（實機回報：只有 Plus Code、沒店名時舊版按了只跳紅字，像死按鈕）。
   // Worker 尚未更新（無 /nearby）或查不到地址時，才退回韓文店名提示。
-  const byName = /[\uAC00-\uD7A3]/.test(name);
   setStatus('正在查詢附近地點，請稍等…',true);
   hideCandidateBoxes();
   try{
@@ -1075,12 +1105,14 @@ async function findNearestNaver(){
       lat: normalizeNaverCoord(it.mapy),
       lng: normalizeNaverCoord(it.mapx),
     })).filter(c=>isFinite(c.lat) && isFinite(c.lng))
-      .map(c=>({...c, distanceM: distanceMeters(lat,lng,c.lat,c.lng)}))
-      .sort((a,b)=>a.distanceM-b.distanceM);
+      .map(c=>({...c, distanceM: (isFinite(lat) && isFinite(lng)) ? distanceMeters(lat,lng,c.lat,c.lng) : NaN}))
+      .sort((a,b)=> (isFinite(a.distanceM) && isFinite(b.distanceM)) ? a.distanceM-b.distanceM : 0);
     if(!naverCandidates.length){ setStatus(byName ? '找不到「'+name+'」的候選地點，請確認是韓文原名，或換個寫法再試。' : '這個座標附近查不到地點資料。',false); return; }
     naverCandidateIdx = 0;
     showNaverCandidate();
-    setStatus(byName ? '找到 '+naverCandidates.length+' 家候選，已選出最近的一家，請在「確認地標」區確認。' : '已用座標查到韓國地址與附近地點，請在「確認地標」區確認；不對可按「不是，換一家」。',true);
+    setStatus(byName
+      ? ((isFinite(lat) && isFinite(lng)) ? '找到 '+naverCandidates.length+' 家候選，已選出最近的一家，請在「確認地標」區確認。' : '找到 '+naverCandidates.length+' 家候選，請在「確認地標」區確認是哪一家；確認後 Google、Naver、Kakao 都能開啟。')
+      : '已用座標查到韓國地址與附近地點，請在「確認地標」區確認；不對可按「不是，換一家」。',true);
   }catch(e){
     setStatus('連不上附近地點搜尋服務，請檢查網路後再試。',false);
   }

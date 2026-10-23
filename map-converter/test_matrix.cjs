@@ -29,11 +29,14 @@ const LOTTE_RESOLVED = 'https://www.google.com/maps/place/%E6%A8%82%E5%A4%A9%E8%
 const SAMRANGJIN_RESOLVED = 'https://www.google.com/maps/search/?api=1&query=%EC%82%BC%EB%9E%91%EC%A7%84%EC%83%9D%ED%83%9C%EB%AC%B8%ED%99%94%EA%B3%B5%EC%9B%90&ftid=0x3568bb1435d6becb%3A0x8aba633314c7db88';
 const YAHOO_RESOLVED = 'https://map.yahoo.co.jp/place/?lat=35.633670&lon=139.791520&z=17';
 const KAKAO_RESOLVED = 'https://applink.map.kakao.com/place?id=338712143&t_src=share&t_ch=copy_url&t_obj=place';
+const NAVER_ID_RESOLVED = 'https://map.naver.com/p/entry/place/1943436990?placePath=%2Fhome';
 const LOCAL_FIXTURES = [
   ['분점', { provider: 'kakao', total: 1, items: [{ title: '명동교자 분점', address: '서울 중구 명동2가 33-4', roadAddress: '서울 중구 명동10길 8', mapx: '1269851365', mapy: '375634555', link: 'http://place.map.kakao.com/18577297', category: '', telephone: '' }] }],
   ['가야테마', { provider: 'kakao', total: 2, items: [
     { title: '김해가야테마파크', address: '경남 김해시 어방동 964', roadAddress: '경남 김해시 가야테마길 161', mapx: '1288937493', mapy: '352516350', link: '', category: '', telephone: '' },
     { title: '김해가야테마파크 주차장', address: '경남 김해시 어방동 965', roadAddress: '경남 김해시 가야테마길 200', mapx: '1288970000', mapy: '352520000', link: '', category: '', telephone: '' }] }],
+  ['삼랑진', { provider: 'kakao', total: 1, items: [{ title: '삼랑진생태문화공원', address: '경남 밀양시 삼랑진읍 송지리 458', roadAddress: '', mapx: '1288347000', mapy: '353994000', link: '', category: '', telephone: '' }] }],
+  ['롯데호텔', { provider: 'kakao', total: 1, items: [{ title: '롯데호텔앤리조트 김해', address: '경남 김해시 장유로 505', roadAddress: '경남 김해시 장유로 505', mapx: '1287928000', mapy: '351917000', link: 'http://place.map.kakao.com/27584217', category: '', telephone: '' }] }],
   ['없는가게', { provider: 'kakao', total: 0, items: [] }],
   ['설정안됨', { error: 'not_configured' }],
 ];
@@ -46,7 +49,11 @@ global.fetch = async (url) => {
     else if (target.includes('8jUa4Jxcuvq4KEk78')) body = { status: 302, location: LOTTE_RESOLVED };
     else if (target.includes('SAMRANGJIN')) body = { status: 302, location: SAMRANGJIN_RESOLVED };
     else if (target.includes('yahoo')) body = { status: 302, location: YAHOO_RESOLVED };
-    else if (target.includes('qobmRiH')) body = { status: 301, location: KAKAO_RESOLVED };
+    else if (target.includes('qobmRiH')) body = { status: 301, location: KAKAO_RESOLVED, place: { id: '338712143', name: '브로시스호텔', lat: 35.0985955, lng: 129.0308898 } };
+    else if (target.includes('52R5JVa5')) body = { status: 307, location: NAVER_ID_RESOLVED };
+  } else if (u.includes('/place?')) {
+    if (u.includes('id=338712143')) body = { id: '338712143', name: '브로시스호텔', lat: 35.0985955, lng: 129.0308898 };
+    else body = { error: 'not_found' };
   } else if (u.includes('/nearby')) {
     body = { provider: 'kakao-address', total: 3, items: [
       { title: '부산 중구 구덕로 34번길 5', address: '부산 중구 남포동2가 24-1', roadAddress: '부산 중구 구덕로 34번길 5', kind: 'address', mapx: '1290310500', mapy: '350987000', link: '', category: '', telephone: '' },
