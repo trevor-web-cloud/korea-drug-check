@@ -103,12 +103,14 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <button class="btn-ghost" id="expandBtn" type="button" style="display:none">打開短連結 →</button>
     </div>
     <div class="status" id="parseStatus" role="status" aria-live="polite"></div>
-    <div class="ready" id="readyBox" role="status" aria-live="polite" hidden>✅ 已經準備好了<span id="readyText">請往下做第 3 步，點一個地圖按鈕。</span></div>
+    <div class="ready" id="readyBox" role="status" aria-live="polite" hidden>✅ 已經準備好了<span id="readyText">請往下做第 4 步，點一個地圖按鈕。</span></div>
     <label for="name">地點名稱（不用填也可以）</label>
     <input id="name" placeholder="例如：飯店或景點名稱" autocomplete="off">
   </div>
 
   <!-- FIX fix59: 確認地標獨立成一區 — Naver／Kakao 共用，只需要找一次、確認一次，全部地圖按鈕一起改用查證過的地標 -->
+  <!-- FIX fix60: 步驟編號 — 確認地標為第 3 步，選地圖為第 4 步 -->
+  <h2 class="step-heading">第 3 步：確認地標</h2>
   <section class="panel" aria-label="確認地標" style="margin-top:14px">
     <div class="panel-head landmark"><span>✅ 確認地標</span><span class="badge">Naver・Kakao 共用</span></div>
     <div class="panel-body">
@@ -125,7 +127,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
 
-  <h2 class="step-heading">第 3 步：點一個地圖打開</h2>
+  <h2 class="step-heading">第 4 步：點一個地圖打開</h2>
   <div class="grid">
     <div class="vs">⇄</div>
     <!-- LEFT: Google -->
@@ -200,7 +202,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-22-fix59</p>
+  <p class="note" style="text-align:center">v2026-10-22-fix60</p>
 </div>
 
 <script>
@@ -255,7 +257,7 @@ function setStatus(msg,ok){ els.status.textContent = msg||''; els.status.classNa
 function updateLinks(){
   if(els.readyBox){
     els.readyBox.hidden = !hasReadyResult;
-    if(hasReadyResult) els.readyText.textContent = readyMessage || '請往下做第 3 步，點一個地圖按鈕。';
+    if(hasReadyResult) els.readyText.textContent = readyMessage || '請往下做第 4 步，點一個地圖按鈕。';
   }
   const lat = parseFloat(els.lat.value), lng = parseFloat(els.lng.value);
   const name = els.name.value.trim();
@@ -455,7 +457,7 @@ function updateFromLatLng(lat,lng,msg,readyOverride,opts){
   // FIX fix13: 座標被明確設定（解析連結或手動輸入），視為是目前這間店的，座標優先。
   coordsValidForName = true;
   hasReadyResult = true;
-  readyMessage = readyOverride || (els.name.value.trim() ? '地點：'+els.name.value.trim()+'。請往下做第 3 步，點一個地圖按鈕。' : '位置已經找到。請往下做第 3 步，點一個地圖按鈕。');
+  readyMessage = readyOverride || (els.name.value.trim() ? '地點：'+els.name.value.trim()+'。請往下做第 4 步，點一個地圖按鈕。' : '位置已經找到。請往下做第 4 步，點一個地圖按鈕。');
   syncing=false; updateLinks(); if(msg) setStatus(msg,true);
 }
 function updateFromXY(x,y,msg,readyOverride,opts){
@@ -465,7 +467,7 @@ function updateFromXY(x,y,msg,readyOverride,opts){
   els.lat.value = fmt(lat,6); els.lng.value = fmt(lng,6);
   coordsValidForName = true;
   hasReadyResult = true;
-  readyMessage = readyOverride || (els.name.value.trim() ? '地點：'+els.name.value.trim()+'。請往下做第 3 步，點一個地圖按鈕。' : '位置已經找到。請往下做第 3 步，點一個地圖按鈕。');
+  readyMessage = readyOverride || (els.name.value.trim() ? '地點：'+els.name.value.trim()+'。請往下做第 4 步，點一個地圖按鈕。' : '位置已經找到。請往下做第 4 步，點一個地圖按鈕。');
   syncing=false; updateLinks(); if(msg) setStatus(msg,true);
 }
 
@@ -550,7 +552,7 @@ function plusCodeMismatch(text, exactLat, exactLng){
   const detail = '同時貼上的 Plus Code '+shownCode+'（還原為 '+fullCode+'）與連結座標不一致：連結點在 Plus Code 格子'+direction+'側外約 '+outsideM.toFixed(1)+' 公尺，格子中心與連結點相差約 '+distanceM.toFixed(1)+' 公尺，已超過這個碼最多約 '+p.maxM.toFixed(1)+' 公尺的中心誤差。';
   return {
     status: '⚠ '+detail+'這次以連結的精確座標為準；Plus Code 可能是附近另一點或另一家地圖的圖釘。',
-    ready: '⚠ 兩個位置不完全一樣。'+detail+'這次以連結的精確座標為準，請往下做第 3 步，點地圖按鈕。'
+    ready: '⚠ 兩個位置不完全一樣。'+detail+'這次以連結的精確座標為準，請往下做第 4 步，點地圖按鈕。'
   };
 }
 
@@ -845,7 +847,7 @@ function parseInput(){
       coordsValidForName = false;
       els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value='';
       hasReadyResult = true;
-      readyMessage = currentGoogleId ? '地點：'+qDec+'。請往下做第 3 步，點 Google 地圖按鈕。' : '已找到名稱：'+qDec+'。請往下點有「店名搜尋備援」或「App」的按鈕。';
+      readyMessage = currentGoogleId ? '地點：'+qDec+'。請往下做第 4 步，點 Google 地圖按鈕。' : '已找到名稱：'+qDec+'。請往下點有「店名搜尋備援」或「App」的按鈕。';
       if(currentGoogleId) setStatus('已解析：'+qDec+'（Google ID 已取出）',true);
       else setStatus('已取出店名「'+qDec+'」：Google ID 未找到，請用備援店名搜尋。',true);
       updateLinks(); return;
@@ -904,7 +906,7 @@ function parseInput(){
       const rec = recoverShortCode(shortPcm[0], ref[0], ref[1]);
       if(rec){
         const notice = plusCodeNotice(rec.full, rec.xy[0]);
-        updateFromLatLng(rec.xy[0], rec.xy[1], '已解析短碼 Plus Code「'+shortPcm[0]+'」（參考：'+refLabel+'，還原為 '+rec.full+'）。注意：這是大概位置，不是店門口。', notice+'請往下做第 3 步，點一個地圖按鈕看大概位置。');
+        updateFromLatLng(rec.xy[0], rec.xy[1], '已解析短碼 Plus Code「'+shortPcm[0]+'」（參考：'+refLabel+'，還原為 '+rec.full+'）。注意：這是大概位置，不是店門口。', notice+'請往下做第 4 步，點一個地圖按鈕看大概位置。');
         return;
       }
     }
@@ -921,7 +923,7 @@ function parseInput(){
     if(placeName) els.name.value = placeName;
     const notice = plusCodeNotice(pcm[1], clat);
     const sourceText = placeName ? '已解析 Google 地點頁：取出店名「'+placeName+'」+ Plus Code '+pcm[1]+'。' : '已解析 Plus Code '+pcm[1]+'。';
-    updateFromLatLng(clat, clng, sourceText+'注意：這是大概位置，不是店門口。', notice+'請往下做第 3 步，點一個地圖按鈕看大概位置。');
+    updateFromLatLng(clat, clng, sourceText+'注意：這是大概位置，不是店門口。', notice+'請往下做第 4 步，點一個地圖按鈕看大概位置。');
     return;
   }
   if(placeName){
@@ -939,7 +941,7 @@ function parseInput(){
     coordsValidForName = false;
     els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value='';
     hasReadyResult = true;
-    readyMessage = '已取得地點 ID。請往下做第 3 步，點地圖按鈕。';
+    readyMessage = '已取得地點 ID。請往下做第 4 步，點地圖按鈕。';
     setStatus('已解析：只有地點 ID，沒有座標。'+(currentPinId ? ' Naver ID '+currentPinId+'。' : '')+(currentGoogleId ? ' Google ID 已取出。' : '')+(currentKakaoId ? ' Kakao ID '+currentKakaoId+'。' : ''),true);
     updateLinks(); return;
   }
