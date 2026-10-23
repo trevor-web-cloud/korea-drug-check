@@ -382,6 +382,12 @@ rows.push(row('X9', '實機回報：Naver 完整形分享（座標＋pinId）→
   check(c, 'yahoo badge ok', E('yahooBadge').textContent === '座標 OK', E('yahooBadge').textContent);
   check(c, 'yahoo place pin link (fix67)', E('yahooOpen').href === 'https://map.yahoo.co.jp/place/?lat=35.098606&lon=129.0309021&z=17', E('yahooOpen').href);
 }));
+rows.push(row('Y4', 'Yahoo 手機分享連結→解析＋偏差提醒（fix68）', async (c) => {
+  await pasteAndParse('https://yahoo.jp/6aiq7W');
+  await flush();
+  check(c, 'coords parsed', E('lat').value === '35.09787' && E('lng').value === '129.0309', E('lat').value + ',' + E('lng').value);
+  check(c, 'deviation note in status', E('parseStatus').textContent.includes('地圖中心'), E('parseStatus').textContent.slice(0, 100));
+}));
 rows.push(row('K6', '無店名（只有 Plus Code）→找地點走地址備援（fixture）', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');
   check(c, 'coords decoded', Math.abs(parseFloat(E('lat').value) - 35.0985625) < 0.001, E('lat').value);

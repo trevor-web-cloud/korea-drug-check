@@ -206,10 +206,10 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
         <a class="btn btn-yahoo btn-small" id="yahooOpen" href="#" target="_blank" rel="noopener">在 Yahoo! MAP 開啟</a>
         <a class="btn btn-ghost btn-small" id="yahooNameFallback" href="#" target="_blank" rel="noopener" style="display:none">備援：店名搜尋</a>
       </div>
-      <p class="note">日本地圖。用 /place/ 連結開啟會出現紅色圖釘（2026-10-23 瀏覽器實測；舊的置中形式沒有圖釘，已停用）。</p>
+      <p class="note">日本地圖。用 /place/ 連結開啟會出現紅色圖釘（2026-10-23 瀏覽器實測；舊的置中形式沒有圖釘，已停用）。注意：從 Yahoo 手機版分享回來的連結，座標是當時的「地圖中心」而非圖釘，可能差幾十公尺（實測約 82 公尺）；韓國地點貼入後，請用第 3 步「確認地標」校正。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-22-fix67</p>
+  <p class="note" style="text-align:center">v2026-10-22-fix68</p>
 </div>
 
 <script>
@@ -806,7 +806,9 @@ function parseInput(){
       const pinNote = currentPinId ? '（ID '+currentPinId+'）' : '';
       const langNote = (!isKorean && els.name.value) ? '（非韓文名，已轉 ID）' : '';
       const mismatch = plusCodeMismatch(raw, la, ln);
-      updateFromLatLng(la, ln, '已解析：'+(els.name.value||'')+pinNote+langNote+(mismatch ? ' '+mismatch.status : ''), mismatch ? mismatch.ready : undefined);
+      // FIX fix68: Yahoo 連結即時提醒（使用者指示「Yahoo 手機分享偏差納入說明」）：手機版分享帶的是地圖中心座標、非圖釘，實測偏約 82 公尺。
+      const yahooNote = /yahoo\.(?:co\.jp|jp)/i.test(raw) ? '（提醒：Yahoo 手機版分享的座標是地圖中心、不是圖釘，可能偏幾十公尺；韓國地點可用第 3 步「確認地標」校正。）' : '';
+      updateFromLatLng(la, ln, '已解析：'+(els.name.value||'')+pinNote+langNote+(mismatch ? ' '+mismatch.status : '')+yahooNote, mismatch ? mismatch.ready : undefined);
       return;
     }
   }

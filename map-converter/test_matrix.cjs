@@ -32,6 +32,7 @@ const YAHOO_RESOLVED = 'https://map.yahoo.co.jp/place/?lat=35.633670&lon=139.791
 const KAKAO_RESOLVED = 'https://applink.map.kakao.com/place?id=338712143&t_src=share&t_ch=copy_url&t_obj=place';
 const NAVER_ID_RESOLVED = 'https://map.naver.com/p/entry/place/1943436990?placePath=%2Fhome';
 const NAVER_FULL_RESOLVED = 'https://map.naver.com/?version=2&lat=35.098606&title=Beurosiseu%20HOTEL&lng=129.0309021&app=Y&pinType=site&menu=location&pinId=1533218484&appMenu=location';
+const YAHOO_CENTER_RESOLVED = 'https://map.yahoo.co.jp/place/?lat=35.09787&lon=129.03090&z=17&zoom=17&maptype=basic';
 const LOCAL_FIXTURES = [
   ['분점', { provider: 'kakao', total: 1, items: [{ title: '명동교자 분점', address: '서울 중구 명동2가 33-4', roadAddress: '서울 중구 명동10길 8', mapx: '1269851365', mapy: '375634555', link: 'http://place.map.kakao.com/18577297', category: '', telephone: '' }] }],
   ['가야테마', { provider: 'kakao', total: 2, items: [
@@ -50,6 +51,7 @@ global.fetch = async (url) => {
     if (target.includes('FP8gOoAY')) body = { status: 302, location: NAVER_RESOLVED };
     else if (target.includes('8jUa4Jxcuvq4KEk78')) body = { status: 302, location: LOTTE_RESOLVED };
     else if (target.includes('SAMRANGJIN')) body = { status: 302, location: SAMRANGJIN_RESOLVED };
+    else if (target.includes('6aiq7W')) body = { status: 301, location: YAHOO_CENTER_RESOLVED };
     else if (target.includes('yahoo')) body = { status: 302, location: YAHOO_RESOLVED };
     else if (target.includes('qobmRiH')) body = { status: 301, location: KAKAO_RESOLVED, place: { id: '338712143', name: '브로시스호텔', lat: 35.0985955, lng: 129.0308898 } };
     else if (target.includes('52R5JVa5')) body = { status: 307, location: NAVER_ID_RESOLVED };
