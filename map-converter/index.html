@@ -29,8 +29,10 @@ button,.btn{appearance:none;border:0;border-radius:999px;padding:14px 20px;min-h
 .btn-naver{background:var(--naver);color:#fff}
 .btn-yahoo{background:var(--yahoo);color:#fff}
 .btn-kakao{background:#fee500;color:#191919}
+.btn-landmark{background:#344054;color:#fff}
 .panel-head.yahoo{background:var(--yahoo)}
 .panel-head.kakao{background:#fee500;color:#191919}
+.panel-head.landmark{background:#344054}
 .btn-small{padding:13px 18px;font-size:17px;min-height:54px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;position:relative}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
@@ -106,6 +108,23 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     <input id="name" placeholder="例如：飯店或景點名稱" autocomplete="off">
   </div>
 
+  <!-- FIX fix59: 確認地標獨立成一區 — Naver／Kakao 共用，只需要找一次、確認一次，全部地圖按鈕一起改用查證過的地標 -->
+  <section class="panel" aria-label="確認地標" style="margin-top:14px">
+    <div class="panel-head landmark"><span>✅ 確認地標</span><span class="badge">Naver・Kakao 共用</span></div>
+    <div class="panel-body">
+      <p class="note" style="margin-top:2px">座標只是大概位置（例如 Plus Code）時，在這裡找一次、確認一次就好。確認後，Naver、Kakao、Google、Yahoo 都會改用這個查證過的地標。</p>
+      <button class="btn btn-landmark" id="findBtn" type="button" style="display:none;width:100%;margin:6px 0">🔍 找地標並確認</button>
+      <div class="candidate" id="candidateBox" hidden>
+        <div id="candidateText">—</div>
+        <div class="cand-btns">
+          <button class="btn btn-landmark" id="candidateYes" type="button">就是這家</button>
+          <button class="btn btn-ghost" id="candidateNext" type="button">不是，換一家</button>
+          <button class="btn btn-ghost" id="candidateClose" type="button">關閉</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <h2 class="step-heading">第 3 步：點一個地圖打開</h2>
   <div class="grid">
     <div class="vs">⇄</div>
@@ -141,15 +160,6 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
           <input id="mx" inputmode="decimal" placeholder="X" aria-label="Naver X 座標">
           <input id="my" inputmode="decimal" placeholder="Y" aria-label="Naver Y 座標">
         </details>
-        <button class="btn btn-naver" id="naverFindBtn" type="button" style="display:none;width:100%;margin:6px 0">🔍 找最近的 Naver 地點</button>
-        <div class="candidate" id="naverCandidateBox" hidden>
-          <div id="naverCandidateText">—</div>
-          <div class="cand-btns">
-            <button class="btn btn-naver" id="naverCandidateYes" type="button">就是這家</button>
-            <button class="btn btn-ghost" id="naverCandidateNext" type="button">不是，換一家</button>
-            <button class="btn btn-ghost" id="naverCandidateClose" type="button">關閉</button>
-          </div>
-        </div>
         <div class="mono" id="naverLink">—</div>
         <div class="linkrow">
           <a class="btn btn-naver btn-small" id="naverOpen" href="#" target="_blank" rel="noopener">在 Naver 開啟</a>
@@ -190,7 +200,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-22-fix57</p>
+  <p class="note" style="text-align:center">v2026-10-22-fix59</p>
 </div>
 
 <script>
@@ -200,8 +210,8 @@ const els = {paste:$('paste'),name:$('name'),lat:$('lat'),lng:$('lng'),mx:$('mx'
   googleLink:$('googleLink'),googleApp:$('googleApp'),googleOpen:$('googleOpen'),googleCoordOpen:$('googleCoordOpen'),
   googleAppIOS:$('googleAppIOS'),googleAppAndroid:$('googleAppAndroid'),googleNameFallback:$('googleNameFallback'),
   naverLink:$('naverLink'),naverApp:$('naverApp'),naverOpen:$('naverOpen'),naverCoordOpen:$('naverCoordOpen'),naverAppOpen:$('naverAppOpen'),
-  naverFindBtn:$('naverFindBtn'),naverCandidateBox:$('naverCandidateBox'),naverCandidateText:$('naverCandidateText'),
-  naverCandidateYes:$('naverCandidateYes'),naverCandidateNext:$('naverCandidateNext'),naverCandidateClose:$('naverCandidateClose'),
+  findBtn:$('findBtn'),candidateBox:$('candidateBox'),candidateText:$('candidateText'),
+  candidateYes:$('candidateYes'),candidateNext:$('candidateNext'),candidateClose:$('candidateClose'),
   naverAppAndroid:$('naverAppAndroid'),naverAppAndroidText:$('naverAppAndroidText'),naverNameFallback:$('naverNameFallback'),
   yahooLink:$('yahooLink'),yahooOpen:$('yahooOpen'),yahooNameFallback:$('yahooNameFallback'),
   kakaoLink:$('kakaoLink'),kakaoOpen:$('kakaoOpen'),kakaoAppOpen:$('kakaoAppOpen'),kakaoAppAndroid:$('kakaoAppAndroid'),status:$('parseStatus'),
@@ -272,8 +282,8 @@ function updateLinks(){
     if(els.naverAppAndroid){ els.naverAppAndroid.href='#'; els.naverAppAndroid.textContent='Android App'; }
     if(els.googleNameFallback) els.googleNameFallback.style.display='none';
     if(els.naverNameFallback) els.naverNameFallback.style.display='none';
-    if(els.naverFindBtn) els.naverFindBtn.style.display='none';
-    if(els.naverCandidateBox) els.naverCandidateBox.hidden=true;
+    if(els.findBtn) els.findBtn.style.display='none';
+    if(els.candidateBox) els.candidateBox.hidden=true;
     // FIX fix30: 清空時也重置 Yahoo 按鈕。
     if(els.yahooLink) els.yahooLink.textContent='—';
     if(els.yahooOpen){ els.yahooOpen.href='#'; els.yahooOpen.textContent='在 Yahoo! MAP 開啟'; }
@@ -363,9 +373,9 @@ function updateLinks(){
   // FIX fix40: 找最近 Naver 地點 — 有有效座標 + 韓文店名 + 尚未有 pinId/已確認候選時才顯示。
   // FIX fix45: 使用者實測「候選框未出現過」— Google 連結取出的多是中文店名（無韓文）→ 按鈕永遠被藏。
   // 改為有有效座標且無 pinId/未確認候選就顯示；韓文店名改在點擊時檢查並提示（findNearestNaver 內）。
-  if(els.naverFindBtn){
+  if(els.findBtn){
     const canFind = hasCoords && coordsPrimary && !currentPinId && !naverOverride;
-    els.naverFindBtn.style.display = canFind ? '' : 'none';
+    els.findBtn.style.display = canFind ? '' : 'none';
   }
   els.naverApp.textContent = (hasName ? '店名搜尋：'+nAppName : '') + (hasCoords ? (hasName ? '\n' : '') + '座標圖釘：'+nAppCoord : '');
   if(els.naverAppAndroidText) els.naverAppAndroidText.textContent = (hasName ? '店名搜尋：'+nAppAndroidName : '') + (hasCoords ? (hasName ? '\n' : '') + '座標圖釘：'+nAppAndroidCoord : '');
@@ -680,7 +690,7 @@ function parseInput(){
   currentPinId = ''; currentGoogleId = ''; currentKakaoId = '';
   // FIX fix40: 新輸入也要清掉上一個地點已確認的 Naver 候選，避免誤用到新地點。
   naverOverride = null; naverCandidates = []; naverCandidateIdx = 0;
-  if(els.naverCandidateBox) els.naverCandidateBox.hidden = true;
+  if(els.candidateBox) els.candidateBox.hidden = true;
   const expandBtn = $('expandBtn');
   // FIX fix6: 貼上整段分享文字（[NAVER Maps]\n店名\n地址\n短連結）時，必須先取出乾淨的 URL，
   // 否則 window.open(整段文字) 會被當成相對路徑，在 GitHub Pages 上開出 404。
@@ -990,9 +1000,12 @@ function translateBoth(title){
     .then(mj => { const t = (mj && mj.responseData && mj.responseData.translatedText || '').trim(); return (t && !/MYMEMORY|WARNING|QUOTA|INVALID/i.test(t)) ? t : ''; });
   return Promise.all([safe(gtxP), safe(mmP)]).then(([g, m]) => { const v = { gtx: g, mm: m }; translateCache[title] = v; return v; });
 }
+// FIX fix59: 確認地標獨立成一區（fix58 曾在 Naver/Kakao 兩面板各放一份，使用者改定：獨立一區共用、只找一次）。
+function hideCandidateBoxes(){ if(els.candidateBox) els.candidateBox.hidden = true; }
 function showNaverCandidate(){
   const c = naverCandidates[naverCandidateIdx];
-  if(!c){ els.naverCandidateBox.hidden = true; return; }
+  const cb = { box: els.candidateBox, text: els.candidateText };
+  if(!c){ hideCandidateBoxes(); return; }
   const far = c.distanceM > 200 ? '⚠ 距離超過 200 公尺，可能不是同一家，請仔細確認。' : '';
   // FIX fix47: 地址模式（無店名→座標反查）文案不同：這不是店家，是查證過的韓國地址座標。
   // FIX fix49: 地址模式的候選混有附近實際地點（kind='place'），與地址候選（kind='address'）文案分開；
@@ -1001,21 +1014,22 @@ function showNaverCandidate(){
   // 不懂韓文的使用者靠這行＋距離核對是不是同一家。名稱欄與候選標題相同時不重複顯示。
   const srcName = els.name.value.trim();
   const refLine = (srcName && srcName !== c.title) ? '你原本查的是：' + srcName + '\n' : '';
-  els.naverCandidateText.textContent = refLine + ((candidateSource === 'address' && c.kind !== 'place')
+  cb.text.textContent = refLine + ((candidateSource === 'address' && c.kind !== 'place')
     ? '用目前座標查到的韓國地址：'+c.title+'\n與目前座標相距約 '+Math.round(c.distanceM)+' 公尺。'+far+'\n如果位置正確，請按「就是這家」，所有地圖按鈕會改用這個查證過的座標（比 Plus Code 的大概位置準）。不對的話，按「不是，換一家」看附近的地點。'
     : '找到最接近的地點（第 '+(naverCandidateIdx+1)+' / '+naverCandidates.length+' 家）：'+c.title+'\n地址：'+(c.roadAddress||c.address||'—')+'\n與目前座標相距約 '+Math.round(c.distanceM)+' 公尺。'+far+'\n如果就是這家，請按「就是這家」，所有地圖按鈕會改用這家查證過的座標。');
-  els.naverCandidateBox.hidden = false;
+  cb.box.hidden = false;
   // FIX fix52: 店家候選（kind='place'）附機翻英文參考行；地址候選不翻。非同步補上，切換候選後只認標題相同者，避免貼到別家。
   // FIX fix54: 雙來源（Google＋MyMemory）並列，來源標明；譯文相同只顯示一行。
   if(c.kind === 'place' && /[\uAC00-\uD7A3]/.test(c.title)){
     const shownTitle = c.title;
-    const baseText = els.naverCandidateText.textContent;
+    const textEl = cb.text;
+    const baseText = textEl.textContent;
     translateBoth(shownTitle).then(tr => {
       if(!tr || !(naverCandidates[naverCandidateIdx] && naverCandidates[naverCandidateIdx].title === shownTitle)) return;
       const lines = [];
       if(tr.gtx && tr.gtx !== shownTitle) lines.push('英文參考（Google 機翻，非官方名）：' + tr.gtx);
       if(tr.mm && tr.mm !== shownTitle && tr.mm !== tr.gtx) lines.push('英文參考（MyMemory 機翻，非官方名）：' + tr.mm);
-      if(lines.length) els.naverCandidateText.textContent = baseText + '\n' + lines.join('\n');
+      if(lines.length) textEl.textContent = baseText + '\n' + lines.join('\n');
     });
   }
 }
@@ -1028,7 +1042,7 @@ async function findNearestNaver(){
   // Worker 尚未更新（無 /nearby）或查不到地址時，才退回韓文店名提示。
   const byName = /[\uAC00-\uD7A3]/.test(name);
   setStatus('正在查詢附近地點，請稍等…',true);
-  els.naverCandidateBox.hidden = true;
+  hideCandidateBoxes();
   try{
     const ctrl = new AbortController();
     const timer = setTimeout(()=>ctrl.abort(), 12000);
@@ -1062,29 +1076,33 @@ async function findNearestNaver(){
     if(!naverCandidates.length){ setStatus(byName ? '找不到「'+name+'」的候選地點，請確認是韓文原名，或換個寫法再試。' : '這個座標附近查不到地點資料。',false); return; }
     naverCandidateIdx = 0;
     showNaverCandidate();
-    setStatus(byName ? '找到 '+naverCandidates.length+' 家候選，已選出最近的一家，請在 Naver 區確認。' : '已用座標查到韓國地址與附近地點，請在 Naver 區確認；不對可按「不是，換一家」。',true);
+    setStatus(byName ? '找到 '+naverCandidates.length+' 家候選，已選出最近的一家，請在「確認地標」區確認。' : '已用座標查到韓國地址與附近地點，請在「確認地標」區確認；不對可按「不是，換一家」。',true);
   }catch(e){
     setStatus('連不上附近地點搜尋服務，請檢查網路後再試。',false);
   }
 }
-if(els.naverFindBtn) els.naverFindBtn.addEventListener('click', findNearestNaver);
-if(els.naverCandidateNext) els.naverCandidateNext.addEventListener('click', ()=>{
+if(els.findBtn) els.findBtn.addEventListener('click', findNearestNaver);
+function onCandidateNext(){
   if(!naverCandidates.length) return;
   naverCandidateIdx = (naverCandidateIdx+1) % naverCandidates.length;
   showNaverCandidate();
-});
-if(els.naverCandidateClose) els.naverCandidateClose.addEventListener('click', ()=>{ els.naverCandidateBox.hidden = true; });
-if(els.naverCandidateYes) els.naverCandidateYes.addEventListener('click', ()=>{
+}
+function onCandidateYes(){
   const c = naverCandidates[naverCandidateIdx];
   if(!c) return;
   naverOverride = c;
-  els.naverCandidateBox.hidden = true;
+  hideCandidateBoxes();
   // FIX fix47: 確認後把頁面座標本身換成查證過的候選座標 — Google/Naver/Yahoo 全部按鈕一起升級。
   // （實機回報「Google 坐標偏差」：來源只有 Plus Code 時中心點最多差約 9 公尺；
   //   確認候選就是把大概位置換成查證位置的唯一途徑，只改 Naver 不夠。）
   updateFromLatLng(c.lat, c.lng);
   setStatus('已確認地點：'+c.title+'。所有地圖按鈕已改用查證過的座標（與原座標相距約 '+Math.round(c.distanceM)+' 公尺）。',true);
-});
+}
+if(els.candidateNext) els.candidateNext.addEventListener('click', onCandidateNext);
+if(els.candidateClose) els.candidateClose.addEventListener('click', hideCandidateBoxes);
+if(els.candidateYes) els.candidateYes.addEventListener('click', onCandidateYes);
+
+$('clearBtn').addEventListener('click',()=>{ els.paste.value=''; els.name.value=''; els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value=''; currentPinId=''; currentGoogleId=''; currentKakaoId=''; naverOverride=null; naverCandidates=[]; naverCandidateIdx=0; if(els.candidateBox) els.candidateBox.hidden=true; coordsValidForName=false; hasReadyResult=false; readyMessage=''; document.querySelectorAll('details.advanced').forEach(d=>{ d.open=false; }); updateLinks(); setStatus('',true); els.paste.focus(); });
 
 $('pasteBtn').addEventListener('click', async ()=>{
   try{
@@ -1100,7 +1118,6 @@ $('pasteBtn').addEventListener('click', async ()=>{
 });
 $('parseBtn').addEventListener('click',parseInput);
 $('exampleBtn').addEventListener('click',()=>{ els.name.value='남포역'; updateFromLatLng(35.097883,129.034663,'已填入範例：南浦站 남포역 35.097883,129.034663'); });
-$('clearBtn').addEventListener('click',()=>{ els.paste.value=''; els.name.value=''; els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value=''; currentPinId=''; currentGoogleId=''; naverOverride=null; naverCandidates=[]; naverCandidateIdx=0; if(els.naverCandidateBox) els.naverCandidateBox.hidden=true; coordsValidForName=false; hasReadyResult=false; readyMessage=''; document.querySelectorAll('details.advanced').forEach(d=>{ d.open=false; }); updateLinks(); setStatus('',true); els.paste.focus(); });
 document.querySelectorAll('[data-copy]').forEach(btn=>{
   btn.addEventListener('click', async ()=>{
     const key = btn.getAttribute('data-copy');
