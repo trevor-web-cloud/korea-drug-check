@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Naver Yahoo JP Google 地圖轉換</title>
-<meta name="description" content="Naver / Yahoo JP / Google 地圖轉換：貼上任一邊連結，自動算出其他兩邊。座標通用 WGS84，只有 Naver 網址的 c= 是 Web Mercator (EPSG:3857) 公尺座標。">
+<title>Naver Kakao Yahoo JP Google 地圖轉換</title>
+<meta name="description" content="Naver / Kakao / Yahoo JP / Google 地圖轉換：貼上任一邊連結，自動算出其他邊。座標通用 WGS84，只有 Naver 網址的 c= 是 Web Mercator (EPSG:3857) 公尺座標。">
 <style>
 /* FIX fix16: 簡化頁面 — 只顯示必要按鈕，隱藏連結文字、複製按鈕、座標副按鈕與範例（JS 仍更新它們，僅不顯示）。 */
 #googleLink,#googleApp,#naverLink,#naverApp,#naverAppAndroidText,#yahooLink,#kakaoLink,#googleCoordOpen,#naverCoordOpen,#exampleBtn{display:none!important}
@@ -81,7 +81,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
 </head>
 <body>
 <header>
-  <h1>Naver Yahoo JP Google 地圖轉換</h1>
+  <h1>Naver Kakao Yahoo JP Google 地圖轉換</h1>
   <p class="sub"><b>不用懂座標。</b>照著第 1、2、3 步做就可以。</p>
 </header>
 
@@ -89,7 +89,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
   <div class="card">
     <h2 class="step-title">第 1 步：把地圖連結貼在這裡</h2>
     <textarea id="paste" aria-label="貼上地圖連結" placeholder="在這裡貼上連結"></textarea>
-    <p class="note">可以把 Google、Naver 或 Yahoo 的整段分享文字貼上來，不用自己挑出連結。</p>
+    <p class="note">可以把 Google、Naver、Kakao 或 Yahoo 的整段分享文字貼上來，不用自己挑出連結。</p>
     <details class="mini-help">
       <summary>不知道可以貼什麼？點這裡看</summary>
       <p class="note">地圖分享連結、短連結、經緯度，或 Plus Code 都可以。Plus Code 如果只有短碼，請在後面加上城市名，例如「5RJG+F6 金海市」。</p>
@@ -202,7 +202,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-22-fix61</p>
+  <p class="note" style="text-align:center">v2026-10-22-fix62</p>
 </div>
 
 <script>
