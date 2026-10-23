@@ -17,7 +17,7 @@ rows.push(row('G2', 'Google api=1&query=lat,lng（KR）', async (c) => {
 rows.push(row('G3', 'Google ?q=lat,lng（JP）', async (c) => {
   await pasteAndParse('https://www.google.com/maps?q=35.676200,139.650300');
   check(c, 'coords', near(latV(), 35.6762, 1e-6) && near(lngV(), 139.6503, 1e-6), E('lat').value + ',' + E('lng').value);
-  check(c, 'yahoo href', E('yahooOpen').href.includes('lat=35.676200&lon=139.650300'), E('yahooOpen').href);
+  check(c, 'yahoo href', E('yahooOpen').href.includes('lat=35.6762&lon=139.6503'), E('yahooOpen').href);
 }));
 rows.push(row('G4', 'Google ?q=純店名（KR）', async (c) => {
   await pasteAndParse('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('명동교자'));
@@ -81,12 +81,12 @@ rows.push(row('Y2', 'yahoo.jp 短連結（fixture）', async (c) => {
 }));
 rows.push(row('P1', '完整 Plus Code 10 碼（濟州）', async (c) => {
   await pasteAndParse('8Q58FFRR+X8');
-  check(c, 'centre', E('lat').value === '33.492438' && E('lng').value === '126.490813', E('lat').value + ',' + E('lng').value);
+  check(c, 'centre', E('lat').value === '33.4924375' && E('lng').value === '126.4908125', E('lat').value + ',' + E('lng').value);
   check(c, 'precision note', E('readyText').textContent.includes('8Q58FFRR+X8') && E('readyText').textContent.includes('公尺'), E('readyText').textContent.slice(0, 60));
 }));
 rows.push(row('P2', '完整 Plus Code 11 碼（樂天）', async (c) => {
   await pasteAndParse('8Q58FFJJ+XHR');
-  check(c, 'centre', E('lat').value === '33.482488' && E('lng').value === '126.481391', E('lat').value + ',' + E('lng').value);
+  check(c, 'centre', E('lat').value === '33.4824875' && E('lng').value === '126.4813906', E('lat').value + ',' + E('lng').value);
 }));
 rows.push(row('P3', '完整 Plus Code（JP）', async (c) => {
   await pasteAndParse('8Q7XJQJW+VX');
@@ -142,7 +142,7 @@ rows.push(row('T2', '改名使座標失效（fix13）', async (c) => {
 }));
 rows.push(row('T3', '手動逐字輸入 lat/lng（fix41）', async (c) => {
   typeInto(E('lat'), '37.5634829'); typeInto(E('lng'), '126.9851666'); await flush();
-  check(c, 'final lat/lng', E('lat').value === '37.563483' && E('lng').value === '126.985167', E('lat').value + ',' + E('lng').value);
+  check(c, 'final lat/lng', E('lat').value === '37.5634829' && E('lng').value === '126.9851666', E('lat').value + ',' + E('lng').value);
   check(c, 'X synced', near(parseFloat(E('mx').value), 14135924.08, 1), E('mx').value);
 }));
 rows.push(row('T4', '手動逐字輸入 X/Y（fix41）', async (c) => {
@@ -254,7 +254,7 @@ rows.push(row('M2', 'Kakao 面板：已確認店家開 place ID 頁面（fix56�
   E('candidateYes').dispatch('click'); await flush();
   check(c, 'web place id page', E('kakaoOpen').href === 'https://map.kakao.com/link/map/18577297', E('kakaoOpen').href);
   check(c, 'web label confirmed', E('kakaoOpen').textContent.includes('已確認地點'), E('kakaoOpen').textContent);
-  check(c, 'app uses candidate coords', E('kakaoAppOpen').href === 'kakaomap://look?p=37.563456,126.985136', E('kakaoAppOpen').href);
+  check(c, 'app uses candidate coords', E('kakaoAppOpen').href === 'kakaomap://look?p=37.5634555,126.9851365', E('kakaoAppOpen').href);
 }));
 rows.push(row('K11', 'Kakao 連結輸入：link/map 座標（fix57）', async (c) => {
   await pasteAndParse('https://map.kakao.com/link/map/37.563483,126.985167');
@@ -308,7 +308,7 @@ rows.push(row('X1', '互通：Google 輸入→Naver＋Kakao 可開', async (c) =
 rows.push(row('X2', '互通：Naver 輸入→Google＋Kakao 可開', async (c) => {
   await pasteAndParse('https://map.naver.com/v5/?c=14348386.54,4198130.13,15,0,0,0,dh');
   check(c, 'google opens', E('googleOpen').href.includes('35.251635'), E('googleOpen').href.slice(0, 80));
-  check(c, 'kakao opens', E('kakaoOpen').href === 'https://map.kakao.com/link/map/35.251635,128.893749', E('kakaoOpen').href);
+  check(c, 'kakao opens', E('kakaoOpen').href === 'https://map.kakao.com/link/map/35.251635,128.8937493', E('kakaoOpen').href);
   check(c, 'naver opens', E('naverOpen').href.includes('lat=35.251635'), E('naverOpen').href.slice(0, 90));
 }));
 rows.push(row('X3', '互通：Kakao 輸入（座標）→Google＋Naver 可開', async (c) => {
@@ -359,6 +359,17 @@ rows.push(row('X8', '互通：naver.me 只有 ID（實例形狀）→Naver 可�
   check(c, 'naver place link', E('naverOpen').href === 'https://map.naver.com/p/entry/place/1943436990', E('naverOpen').href);
   check(c, 'guidance shown', E('parseStatus').textContent.includes('韓文原名'), E('parseStatus').textContent.slice(0, 80));
   check(c, 'find hidden without name', E('findBtn').style.display === 'none', E('findBtn').style.display);
+}));
+rows.push(row('E1', '第 1 步範例連結（fix65）：四家範例點按→帶入解析→四面板可開', async (c) => {
+  for(const sys of ['google','naver','kakao','yahoo']){
+    await clearAll();
+    [...document.querySelectorAll('.ex-btn')].find(b => b.dataset.ex === sys).dispatch('click'); await flush();
+    check(c, sys + ' coords full precision', E('lat').value === '37.4496919' && E('lng').value === '126.4524038', sys + ' lat=' + E('lat').value + ' lng=' + E('lng').value);
+    check(c, sys + ' google opens', E('googleOpen').href.includes('37.4496919'), E('googleOpen').href.slice(0, 70));
+    check(c, sys + ' naver opens', E('naverOpen').href.includes('37.4496919'), E('naverOpen').href.slice(0, 80));
+    check(c, sys + ' kakao opens', E('kakaoOpen').href.includes('37.4496919'), E('kakaoOpen').href.slice(0, 80));
+    check(c, sys + ' yahoo opens', E('yahooOpen').href.includes('37.4496919'), E('yahooOpen').href.slice(0, 80));
+  }
 }));
 rows.push(row('K6', '無店名（只有 Plus Code）→找地點走地址備援（fixture）', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');

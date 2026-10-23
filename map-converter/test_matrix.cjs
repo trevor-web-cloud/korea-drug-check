@@ -16,9 +16,10 @@ function makeEl(id) {
 }
 const registry = new Map();
 const detailsAdv = [makeEl('d1'), makeEl('d2')];
+const exBtns = ['google', 'naver', 'kakao', 'yahoo'].map(k => { const e = makeEl('ex-' + k); e.dataset = { ex: k }; return e; });
 global.document = {
   getElementById(id) { if (!registry.has(id)) registry.set(id, makeEl(id)); return registry.get(id); },
-  querySelectorAll(sel) { return sel === 'details.advanced' ? detailsAdv : []; },
+  querySelectorAll(sel) { if (sel === 'details.advanced') return detailsAdv; if (sel === '.ex-btn') return exBtns; return []; },
 };
 global.window = { setTimeout: global.setTimeout, open() {} };
 global.navigator = {};
