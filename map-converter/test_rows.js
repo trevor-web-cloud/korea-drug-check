@@ -8,7 +8,7 @@ rows.push(row('G1', 'Google /place/ 名稱+@座標（KR）', async (c) => {
   check(c, 'coords', near(latV(), 37.5634829, 1e-6) && near(lngV(), 126.9851666, 1e-6), E('lat').value + ',' + E('lng').value);
   check(c, 'naver pin href', E('naverOpen').href === 'https://map.naver.com/?lat=' + E('lat').value + '&lng=' + E('lng').value + '&menu=location', E('naverOpen').href);
   check(c, 'google coord href', E('googleOpen').href.includes('api=1&query=' + encodeURIComponent(E('lat').value + ',' + E('lng').value)), E('googleOpen').href);
-  check(c, 'yahoo href', E('yahooOpen').href === 'https://map.yahoo.co.jp/?lat=' + E('lat').value + '&lon=' + E('lng').value + '&z=17', E('yahooOpen').href);
+  check(c, 'yahoo href', E('yahooOpen').href === 'https://map.yahoo.co.jp/place/?lat=' + E('lat').value + '&lon=' + E('lng').value + '&z=17', E('yahooOpen').href);
 }));
 rows.push(row('G2', 'Google api=1&query=lat,lng（KR）', async (c) => {
   await pasteAndParse('https://www.google.com/maps/search/?api=1&query=37.5634375,126.9850625');
@@ -380,6 +380,7 @@ rows.push(row('X9', '實機回報：Naver 完整形分享（座標＋pinId）→
   check(c, 'kakao app has coords', E('kakaoAppOpen').href === 'kakaomap://look?p=35.098606,129.0309021', E('kakaoAppOpen').href);
   check(c, 'kakao badge ok', E('kakaoBadge').textContent === '座標 OK', E('kakaoBadge').textContent);
   check(c, 'yahoo badge ok', E('yahooBadge').textContent === '座標 OK', E('yahooBadge').textContent);
+  check(c, 'yahoo place pin link (fix67)', E('yahooOpen').href === 'https://map.yahoo.co.jp/place/?lat=35.098606&lon=129.0309021&z=17', E('yahooOpen').href);
 }));
 rows.push(row('K6', '無店名（只有 Plus Code）→找地點走地址備援（fixture）', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');
