@@ -1,7 +1,9 @@
-// Cloudflare Worker — map-resolve（fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查 + fix49 附近地點 + fix52 機翻 + fix55 附近地點距離排序 + fix61 短連結 GET 重試 + fix63 Kakao ID 撈座標）
+// Cloudflare Worker — map-resolve（fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查 + fix49 附近地點 + fix52 機翻 + fix55 附近地點距離排序 + fix61 短連結 GET 重試 + fix63 Kakao ID 撈座標 + fix69 用量計數）
 // 部署：貼到 Cloudflare Dashboard → Workers → map-resolve → Edit code 全文取代；
 //       另需在 Settings → Variables and Secrets 新增一個 Secret：
 //       KAKAO_REST_KEY（Kakao Local API 的 REST API 金鑰；金鑰只放 Worker Secret，不進前端）
+//       fix69 用量報表另需：Settings → Bindings 新增 KV Namespace 綁定，變數名 STATS；
+//       並新增一個 Secret：STATS_KEY（自訂一串密碼，讀 /stats 報表時用）。
 // 端點：
 //   GET /resolve?url={短連結}  → {"status":307,"location":"..."}（HEAD + redirect:manual 取 Location）
 //   GET /local?q={韓文關鍵字} → Kakao Local 키워드 장소 검색 的候選地點
@@ -19,10 +21,37 @@ export default {
     if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
     const u = new URL(request.url);
 
+    // fix69: 用量計數（KV，每日一組，台北日期）。Kakao 官方無用量查詢 API，而所有呼叫都經過本 Worker，
+    // 在此計數即為實際用量；Cloudflare 用量以 Worker 自身請求數計（官方儀表板數字為準，本數為近似）。
+    function statsDay() { return new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10); }
+    async function bump(metric, n) {
+      if (!env || !env.STATS) return;
+      try {
+        const key = 's:' + statsDay() + ':' + metric;
+        const cur = parseInt((await env.STATS.get(key)) || '0', 10) || 0;
+        await env.STATS.put(key, String(cur + (n || 1)));
+      } catch (e) {}
+    }
+    if (u.pathname === '/stats') {
+      const key = u.searchParams.get('key') || '';
+      if (!env || !env.STATS_KEY || key !== env.STATS_KEY) {
+        return new Response(JSON.stringify({ error: 'forbidden' }), { status: 403, headers: cors });
+      }
+      if (!env.STATS) return new Response(JSON.stringify({ error: 'stats_not_configured' }), { status: 503, headers: cors });
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(u.searchParams.get('date') || '') ? u.searchParams.get('date') : statsDay();
+      const metrics = ['worker_requests', 'kakao_keyword', 'kakao_coord2address', 'kakao_address', 'kakao_category', 'place_fetch'];
+      const out = { date };
+      for (const m of metrics) out[m] = parseInt((await env.STATS.get('s:' + date + ':' + m)) || '0', 10) || 0;
+      out.kakao_total = out.kakao_keyword + out.kakao_coord2address + out.kakao_address + out.kakao_category;
+      return new Response(JSON.stringify(out), { headers: cors });
+    }
+    await bump('worker_requests');
+
     // fix63: 用 Kakao 地點 ID 撈官方 place 頁的公開資料（og:title 店名 + OG 靜態地圖網址裡的 WGS84 座標），
     // 讓「只有 Kakao ID」的分享連結也能補出座標 → Google/Naver 一起開啟（Kakao Local API 本身沒有用 ID 查座標的端點）。
     async function scrapeKakaoPlace(id) {
       try {
+        await bump('place_fetch');
         const r = await fetch('https://place.map.kakao.com/' + id, { headers: { 'User-Agent': 'Mozilla/5.0' } });
         if (!r.ok) return null;
         const html = await r.text();
@@ -48,6 +77,7 @@ export default {
         return new Response(JSON.stringify({ error: 'not_configured' }), { status: 503, headers: cors });
       }
       try {
+        await bump('kakao_keyword');
         const kRes = await fetch('https://dapi.kakao.com/v2/local/search/keyword.json?size=15&page=1&query=' + encodeURIComponent(q), {
           headers: { 'Authorization': 'KakaoAK ' + env.KAKAO_REST_KEY },
         });
@@ -84,6 +114,7 @@ export default {
       }
       const h = { 'Authorization': 'KakaoAK ' + env.KAKAO_REST_KEY };
       try {
+        await bump('kakao_coord2address');
         const aRes = await fetch('https://dapi.kakao.com/v2/local/geo/coord2address.json?x=' + lng + '&y=' + lat, { headers: h });
         if (!aRes.ok) {
           return new Response(JSON.stringify({ error: 'kakao_api_status_' + aRes.status }), { status: 502, headers: cors });
@@ -94,6 +125,7 @@ export default {
         const jibun = doc && doc.address ? (doc.address.address_name || '') : '';
         const query = road || jibun;
         if (!query) return new Response(JSON.stringify({ error: 'no_address' }), { headers: cors });
+        await bump('kakao_address');
         const sRes = await fetch('https://dapi.kakao.com/v2/local/search/address.json?query=' + encodeURIComponent(query), { headers: h });
         if (!sRes.ok) {
           return new Response(JSON.stringify({ error: 'kakao_api_status_' + sRes.status }), { status: 502, headers: cors });
@@ -120,6 +152,7 @@ export default {
         const CATS = ['FD6', 'CE7', 'AD5', 'AT4', 'MT1', 'CS2', 'SW8', 'PK6'];
         const catLists = await Promise.all(CATS.map(async (code) => {
           try {
+            await bump('kakao_category');
             const r = await fetch('https://dapi.kakao.com/v2/local/search/category.json?category_group_code=' + code + '&x=' + lng + '&y=' + lat + '&radius=300&sort=distance&size=5', { headers: h });
             if (!r.ok) return [];
             const d = await r.json();
