@@ -185,7 +185,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
 
   <!-- FIX fix56: Kakao Map — 候選地點的資料來源。網頁用官方 /link/map/ 格式（place ID 或 名稱,座標），App 用官方 kakaomap://look scheme -->
   <section class="panel" aria-label="Kakao Map" style="margin-top:14px">
-    <div class="panel-head kakao"><span>Kakao Map</span><span class="badge">需經緯度</span></div>
+    <div class="panel-head kakao"><span>Kakao Map</span><span class="badge" id="kakaoBadge">需經緯度</span></div>
     <div class="panel-body">
       <div class="mono" id="kakaoLink">—</div>
       <div class="linkrow">
@@ -199,7 +199,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
 
   <!-- FIX fix30: Yahoo! MAP（日本）切換 — Yahoo 地圖用 WGS84 經緯度（與 Google 相同，不需轉換），網頁連結 map.yahoo.co.jp/?lat=&lon=&z= -->
   <section class="panel" aria-label="Yahoo! MAP" style="margin-top:14px">
-    <div class="panel-head yahoo"><span>Yahoo! MAP（日本）</span><span class="badge">需經緯度</span></div>
+    <div class="panel-head yahoo"><span>Yahoo! MAP（日本）</span><span class="badge" id="yahooBadge">需經緯度</span></div>
     <div class="panel-body">
       <div class="mono" id="yahooLink">—</div>
       <div class="linkrow">
@@ -209,7 +209,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-22-fix65</p>
+  <p class="note" style="text-align:center">v2026-10-22-fix66</p>
 </div>
 
 <script>
@@ -223,7 +223,7 @@ const els = {paste:$('paste'),name:$('name'),lat:$('lat'),lng:$('lng'),mx:$('mx'
   candidateYes:$('candidateYes'),candidateNext:$('candidateNext'),candidateClose:$('candidateClose'),
   naverAppAndroid:$('naverAppAndroid'),naverAppAndroidText:$('naverAppAndroidText'),naverNameFallback:$('naverNameFallback'),
   yahooLink:$('yahooLink'),yahooOpen:$('yahooOpen'),yahooNameFallback:$('yahooNameFallback'),
-  kakaoLink:$('kakaoLink'),kakaoOpen:$('kakaoOpen'),kakaoAppOpen:$('kakaoAppOpen'),kakaoAppAndroid:$('kakaoAppAndroid'),status:$('parseStatus'),
+  kakaoLink:$('kakaoLink'),kakaoOpen:$('kakaoOpen'),kakaoAppOpen:$('kakaoAppOpen'),kakaoAppAndroid:$('kakaoAppAndroid'),kakaoBadge:$('kakaoBadge'),yahooBadge:$('yahooBadge'),status:$('parseStatus'),
   readyBox:$('readyBox'),readyText:$('readyText')};
 let syncing = false;
 let currentPinId = '';
@@ -296,6 +296,8 @@ function updateLinks(){
     // FIX fix30: 清空時也重置 Yahoo 按鈕。
     if(els.yahooLink) els.yahooLink.textContent='—';
     if(els.yahooOpen){ els.yahooOpen.href='#'; els.yahooOpen.textContent='在 Yahoo! MAP 開啟'; }
+    if(els.kakaoBadge) els.kakaoBadge.textContent='需經緯度';
+    if(els.yahooBadge) els.yahooBadge.textContent='需經緯度';
     if(els.yahooNameFallback) els.yahooNameFallback.style.display='none';
     // FIX fix56: 清空時也重置 Kakao 按鈕。
     if(els.kakaoLink) els.kakaoLink.textContent='—';
@@ -430,6 +432,7 @@ function updateLinks(){
     if(coordsPrimary){ els.yahooOpen.href = yWeb; els.yahooOpen.textContent = '在 Yahoo! MAP 開啟 (座標)'; }
     else { els.yahooOpen.href = '#'; els.yahooOpen.textContent = '需經緯度'; }
   }
+  if(els.yahooBadge) els.yahooBadge.textContent = coordsPrimary ? '座標 OK' : '需經緯度';
   if(els.yahooNameFallback){
     if(hasName && !coordsPrimary){ els.yahooNameFallback.href = yNameWeb; els.yahooNameFallback.style.display = ''; }
     else els.yahooNameFallback.style.display = 'none';
@@ -439,14 +442,18 @@ function updateLinks(){
   // 已確認的 Kakao 店家（naverOverride 帶 place 連結）優先用 place ID 直開該店頁面；ID 從 place.map.kakao.com/{id} 取出。
   const kakaoPlaceId = (naverOverride && naverOverride.link) ? ((String(naverOverride.link).match(/place\.map\.kakao\.com\/(\d+)/) || [])[1] || '') : '';
   const kId = kakaoPlaceId || currentKakaoId;
-  const kLabel = (naverOverride && naverOverride.title) || name || '';
+  // FIX fix66: Kakao 網頁座標連結改用「無店名」官方格式 /link/map/{lat},{lng}。
+  // 實機回報：分享店名是羅馬拼音（Beurosiseu HOTEL）時，/link/map/{店名},{座標} 在 iPhone 交給 Kakao App
+  // 會先以店名搜尋（Kakao 只索引韓文原名，搜不到）→ 座標形同沒帶（使用者回報「Kakao 缺少經緯度」）。
+  // 與 fix47 同一課：座標連結不夾店名，避免被文字搜尋劫持。店名只在已確認地點時以 place ID 直開。
   const kWeb = kId ? 'https://map.kakao.com/link/map/' + kId
-    : (coordsPrimary ? 'https://map.kakao.com/link/map/' + (kLabel ? encodeURIComponent(kLabel) + ',' : '') + latS + ',' + lngS : '');
+    : (coordsPrimary ? 'https://map.kakao.com/link/map/' + latS + ',' + lngS : '');
   if(els.kakaoLink) els.kakaoLink.textContent = kWeb || '—';
   if(els.kakaoOpen){
-    if(kWeb){ els.kakaoOpen.href = kWeb; els.kakaoOpen.textContent = kakaoPlaceId ? '在 Kakao 開啟 (已確認地點)' : '在 Kakao 開啟'; }
+    if(kWeb){ els.kakaoOpen.href = kWeb; els.kakaoOpen.textContent = kakaoPlaceId ? '在 Kakao 開啟 (已確認地點)' : (kId ? '在 Kakao 開啟' : '在 Kakao 開啟（座標）'); }
     else { els.kakaoOpen.href = '#'; els.kakaoOpen.textContent = '需經緯度'; }
   }
+  if(els.kakaoBadge) els.kakaoBadge.textContent = kakaoPlaceId ? '已確認地點' : (coordsPrimary ? '座標 OK' : (kId ? '地點 ID' : '需經緯度'));
   if(els.kakaoAppOpen){
     els.kakaoAppOpen.href = coordsPrimary ? 'kakaomap://look?p=' + latS + ',' + lngS : '#';
     els.kakaoAppOpen.textContent = coordsPrimary ? 'iPhone App (座標標記)' : 'iPhone App';

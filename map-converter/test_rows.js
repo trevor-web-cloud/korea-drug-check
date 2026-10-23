@@ -371,6 +371,16 @@ rows.push(row('E1', '第 1 步範例連結（fix65）：四家範例點按→帶
     check(c, sys + ' yahoo opens', E('yahooOpen').href.includes('37.4496919'), E('yahooOpen').href.slice(0, 80));
   }
 }));
+rows.push(row('X9', '實機回報：Naver 完整形分享（座標＋pinId）→Kakao 須帶經緯度（fix66）', async (c) => {
+  await pasteAndParse('[NAVER Maps]\nBeurosiseu HOTEL\n釜山广域市 中区 南浦洞四街 5-3\nhttps://naver.me/GcAsfvpu');
+  await flush();
+  check(c, 'coords parsed', E('lat').value === '35.098606' && E('lng').value === '129.0309021', E('lat').value + ',' + E('lng').value);
+  check(c, 'kakao web has coords', E('kakaoOpen').href === 'https://map.kakao.com/link/map/35.098606,129.0309021', E('kakaoOpen').href);
+  check(c, 'kakao web label shows coords', E('kakaoOpen').textContent.includes('座標'), E('kakaoOpen').textContent);
+  check(c, 'kakao app has coords', E('kakaoAppOpen').href === 'kakaomap://look?p=35.098606,129.0309021', E('kakaoAppOpen').href);
+  check(c, 'kakao badge ok', E('kakaoBadge').textContent === '座標 OK', E('kakaoBadge').textContent);
+  check(c, 'yahoo badge ok', E('yahooBadge').textContent === '座標 OK', E('yahooBadge').textContent);
+}));
 rows.push(row('K6', '無店名（只有 Plus Code）→找地點走地址備援（fixture）', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');
   check(c, 'coords decoded', Math.abs(parseFloat(E('lat').value) - 35.0985625) < 0.001, E('lat').value);

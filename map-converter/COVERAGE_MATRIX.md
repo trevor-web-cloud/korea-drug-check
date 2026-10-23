@@ -59,6 +59,7 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 | M3 | 確認地標獨立區全流程（fix59） | 獨立「確認地標」區找一次→確認；Naver 開店名頁、Kakao 開 place 頁，全部面板同步升級 |
 | M4 | 確認後只找一次（fix59） | 確認完成後「找地標」按鈕隱藏、候選框收起（canFind 含 !naverOverride） |
 | E1 | 第 1 步範例連結（fix65） | 四家範例（仁川機場 T1）點按帶入解析後，四面板皆以完整精度座標（37.4496919,126.4524038）開啟 |
+| X9 | 實機回報：Naver 完整形分享→Kakao 帶座標（fix66） | naver.me/GcAsfvpu（Beurosiseu HOTEL，座標＋pinId 1533218484）→Kakao 網頁為無店名座標連結、標籤（座標）、Kakao/Yahoo badge 顯示「座標 OK」 |
 | X1 | 互通：Google 輸入（fix63） | 座標連結貼入後，Naver（menu=location）＋Kakao（link/map）都能開啟 |
 | X2 | 互通：Naver 輸入（fix63） | c= 連結貼入後，Google 圖釘＋Kakao（link/map）都能開啟 |
 | X3 | 互通：Kakao 輸入（fix63） | link/map 連結貼入後，Google 圖釘＋Naver（menu=location）都能開啟 |
@@ -114,5 +115,6 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 - 2026-10-23 使用者要求：第 1 步說明放上各系統可接受的連結範例（以首爾機場為例）。fix65：第 1 步「不知道可以貼什麼？」展開區加四家範例鈕（仁川機場第 1 航站樓；座標採 Kakao 官方值 37.4496919,126.4524038；格式皆為各家已驗證可解析的原生格式），點按自動帶入並轉換；新增 E1 列（四範例×四面板全開斷言）。E1 初版斷言曾被放寬到 6 位數，使用者糾正「不放寬，避免位置錯誤」——查出頁面 fmt(lat,6) 把三家原生 7 位座標截斷，改為保留 7 位（尾零不補、輸入幾位還原幾位；X/Y 維持 2 位），G3/P1/P2/T3/M2/X2 六列期望值同步改為真實完整精度值。本機 **62 列全 PASS**（完整精度斷言）。
 - 2026-10-23 v2026-10-22-fix65（線上部署版）：**62 列全 PASS**（Pages 曾短暫停在 fix64，翻頁後重跑確認）。
 - 2026-10-23 Worker fix63 已由使用者部署並實測通過：/place?id=338712143 回傳 브로시스호텔＋座標（35.098595470257095, 129.03088975936603，OG 原始全精度，頁面以 7 位呈現）；/resolve kko.to 回 applink＋place（首次呼叫撈取瞬時失敗無 place、重試即完整——頁面有 /place 直呼備援，不受影響）；/resolve naver.me/52R5JVa5 回歸正常（只有 ID、不附 place）。
+- 2026-10-23 使用者實機回報「Kakao 缺少經緯度」：貼 Naver 完整形分享（naver.me/GcAsfvpu，店名為羅馬拼音 Beurosiseu HOTEL）後，Kakao 網頁連結為 /link/map/{羅馬拼音店名},{座標}——iPhone 交給 Kakao App 時先以店名搜尋（Kakao 只索引韓文原名）而搜不到，座標形同沒帶；且面板 badge 為寫死的「需經緯度」靜態文字，與按鈕已有座標矛盾。fix66：Kakao 網頁座標連結改無店名官方格式 /link/map/{lat},{lng}（與 fix47 同一課：座標連結不夾店名）；網頁鈕標籤比照 Naver 加（座標）；Kakao/Yahoo badge 改動態（座標 OK／已確認地點／地點 ID／需經緯度）。新增 X9（實例形狀）。本機 **63 列全 PASS**。
 - 2026-10-23 實機回報：濟州樂天超市 Plus Code（8Q58FFJJ+XH）查附近，롯데마트 제주점 本體未出現。實查線上 /nearby：12 家名額被類別順序占滿（餐廳 5＋咖啡廳 5＋住宿 2），MT1 大型超市整類被 slice 切掉。Worker fix55：類別結果合併後按 Kakao distance 排序再取 12 家（頁面程式未改版，矩陣不涵蓋 Worker 邏輯，部署後以線上 /nearby 實測驗證）。2026-10-23 使用者部署後實測通過：濟州點名單第 5 為 롯데마트 제주점（第 6 為其停車場），南浦回歸正常（地址＋브로시스호텔＋남포정…）。fix55 僅改 Worker，頁面維持 fix54，使用者曾誤以為「fix55 尚未上傳」（看的是頁面頁尾）— 版本分屬兩邊，日後需講清。
 - 未測範圍：真機 App 點按（矩陣僅驗連結格式）— 2026-10-22 20:49–20:56 使用者 iPhone 實機截圖已驗證 fix47 三條流：找地點地址候選、Naver 網頁版開啟（藍圖釘＋地址面板）、iPhone App 開啟（紅圖釘＋地址面板）。Worker 線上行為（矩陣用 fixture；/local、/resolve、/nearby 已於 2026-10-22 另外實測通過）。
