@@ -241,6 +241,21 @@ rows.push(row('K10', '店家候選附雙來源機翻英文參考、地址候選�
   check(c, 'google translation line', E('naverCandidateText').textContent.includes('英文參考（Google 機翻，非官方名）：Daiso Busan Nampo Branch'), E('naverCandidateText').textContent.slice(-120));
   check(c, 'mymemory translation line (differs → also shown)', E('naverCandidateText').textContent.includes('英文參考（MyMemory 機翻，非官方名）：Daiso Busan Nampo'), E('naverCandidateText').textContent.slice(-120));
 }));
+rows.push(row('M1', 'Kakao 面板：座標狀態三按鈕格式（fix56）', async (c) => {
+  await pasteAndParse('(35.098562, 129.030938)');
+  check(c, 'web link/map coords', E('kakaoOpen').href === 'https://map.kakao.com/link/map/35.098562,129.030938', E('kakaoOpen').href);
+  check(c, 'iphone scheme', E('kakaoAppOpen').href === 'kakaomap://look?p=35.098562,129.030938', E('kakaoAppOpen').href);
+  check(c, 'android intent', E('kakaoAppAndroid').href === 'intent://look?p=35.098562,129.030938#Intent;scheme=kakaomap;package=net.daum.android.map;end', E('kakaoAppAndroid').href);
+}));
+rows.push(row('M2', 'Kakao 面板：已確認店家開 place ID 頁面（fix56）', async (c) => {
+  E('name').value = '명동교자 분점';
+  await pasteAndParse('https://www.google.com/maps/search/?api=1&query=37.5634375,126.9850625');
+  E('naverFindBtn').dispatch('click'); await flush();
+  E('naverCandidateYes').dispatch('click'); await flush();
+  check(c, 'web place id page', E('kakaoOpen').href === 'https://map.kakao.com/link/map/18577297', E('kakaoOpen').href);
+  check(c, 'web label confirmed', E('kakaoOpen').textContent.includes('已確認地點'), E('kakaoOpen').textContent);
+  check(c, 'app uses candidate coords', E('kakaoAppOpen').href === 'kakaomap://look?p=37.563456,126.985136', E('kakaoAppOpen').href);
+}));
 rows.push(row('K6', '無店名（只有 Plus Code）→找地點走地址備援（fixture）', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');
   check(c, 'coords decoded', Math.abs(parseFloat(E('lat').value) - 35.0985625) < 0.001, E('lat').value);

@@ -29,7 +29,7 @@ const LOTTE_RESOLVED = 'https://www.google.com/maps/place/%E6%A8%82%E5%A4%A9%E8%
 const SAMRANGJIN_RESOLVED = 'https://www.google.com/maps/search/?api=1&query=%EC%82%BC%EB%9E%91%EC%A7%84%EC%83%9D%ED%83%9C%EB%AC%B8%ED%99%94%EA%B3%B5%EC%9B%90&ftid=0x3568bb1435d6becb%3A0x8aba633314c7db88';
 const YAHOO_RESOLVED = 'https://map.yahoo.co.jp/place/?lat=35.633670&lon=139.791520&z=17';
 const LOCAL_FIXTURES = [
-  ['분점', { provider: 'kakao', total: 1, items: [{ title: '명동교자 분점', address: '서울 중구 명동2가 33-4', roadAddress: '서울 중구 명동10길 8', mapx: '1269851365', mapy: '375634555', link: '', category: '', telephone: '' }] }],
+  ['분점', { provider: 'kakao', total: 1, items: [{ title: '명동교자 분점', address: '서울 중구 명동2가 33-4', roadAddress: '서울 중구 명동10길 8', mapx: '1269851365', mapy: '375634555', link: 'http://place.map.kakao.com/18577297', category: '', telephone: '' }] }],
   ['가야테마', { provider: 'kakao', total: 2, items: [
     { title: '김해가야테마파크', address: '경남 김해시 어방동 964', roadAddress: '경남 김해시 가야테마길 161', mapx: '1288937493', mapy: '352516350', link: '', category: '', telephone: '' },
     { title: '김해가야테마파크 주차장', address: '경남 김해시 어방동 965', roadAddress: '경남 김해시 가야테마길 200', mapx: '1288970000', mapy: '352520000', link: '', category: '', telephone: '' }] }],

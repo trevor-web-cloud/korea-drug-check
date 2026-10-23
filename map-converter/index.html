@@ -7,7 +7,7 @@
 <meta name="description" content="Naver / Yahoo JP / Google 地圖轉換：貼上任一邊連結，自動算出其他兩邊。座標通用 WGS84，只有 Naver 網址的 c= 是 Web Mercator (EPSG:3857) 公尺座標。">
 <style>
 /* FIX fix16: 簡化頁面 — 只顯示必要按鈕，隱藏連結文字、複製按鈕、座標副按鈕與範例（JS 仍更新它們，僅不顯示）。 */
-#googleLink,#googleApp,#naverLink,#naverApp,#naverAppAndroidText,#yahooLink,#googleCoordOpen,#naverCoordOpen,#exampleBtn{display:none!important}
+#googleLink,#googleApp,#naverLink,#naverApp,#naverAppAndroidText,#yahooLink,#kakaoLink,#googleCoordOpen,#naverCoordOpen,#exampleBtn{display:none!important}
 *{box-sizing:border-box}
 :root{--google:#1a73e8;--naver:#03c75a;--yahoo:#720e9e;--bg:#f6f7f9;--card:#fff;--line:#d0d5dd;--text:#101828;--muted:#475467}
 body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif;line-height:1.55}
@@ -28,7 +28,9 @@ button,.btn{appearance:none;border:0;border-radius:999px;padding:14px 20px;min-h
 .btn-google{background:var(--google);color:#fff}
 .btn-naver{background:var(--naver);color:#fff}
 .btn-yahoo{background:var(--yahoo);color:#fff}
+.btn-kakao{background:#fee500;color:#191919}
 .panel-head.yahoo{background:var(--yahoo)}
+.panel-head.kakao{background:#fee500;color:#191919}
 .btn-small{padding:13px 18px;font-size:17px;min-height:54px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;position:relative}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
@@ -162,6 +164,20 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </section>
   </div>
 
+  <!-- FIX fix56: Kakao Map — 候選地點的資料來源。網頁用官方 /link/map/ 格式（place ID 或 名稱,座標），App 用官方 kakaomap://look scheme -->
+  <section class="panel" aria-label="Kakao Map" style="margin-top:14px">
+    <div class="panel-head kakao"><span>Kakao Map</span><span class="badge">需經緯度</span></div>
+    <div class="panel-body">
+      <div class="mono" id="kakaoLink">—</div>
+      <div class="linkrow">
+        <a class="btn btn-kakao btn-small" id="kakaoOpen" href="#" target="_blank" rel="noopener">在 Kakao 開啟</a>
+        <a class="btn btn-kakao btn-small" id="kakaoAppOpen" href="#" target="_blank" rel="noopener">iPhone App</a>
+        <a class="btn btn-kakao btn-small" id="kakaoAppAndroid" href="#" target="_blank" rel="noopener">Android App</a>
+      </div>
+      <p class="note">韓國地圖，候選地點就是從這裡查的。已確認店家時，網頁按鈕會直接開那家店的 Kakao 頁面。</p>
+    </div>
+  </section>
+
   <!-- FIX fix30: Yahoo! MAP（日本）切換 — Yahoo 地圖用 WGS84 經緯度（與 Google 相同，不需轉換），網頁連結 map.yahoo.co.jp/?lat=&lon=&z= -->
   <section class="panel" aria-label="Yahoo! MAP" style="margin-top:14px">
     <div class="panel-head yahoo"><span>Yahoo! MAP（日本）</span><span class="badge">需經緯度</span></div>
@@ -174,7 +190,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-22-fix54</p>
+  <p class="note" style="text-align:center">v2026-10-22-fix56</p>
 </div>
 
 <script>
@@ -187,7 +203,8 @@ const els = {paste:$('paste'),name:$('name'),lat:$('lat'),lng:$('lng'),mx:$('mx'
   naverFindBtn:$('naverFindBtn'),naverCandidateBox:$('naverCandidateBox'),naverCandidateText:$('naverCandidateText'),
   naverCandidateYes:$('naverCandidateYes'),naverCandidateNext:$('naverCandidateNext'),naverCandidateClose:$('naverCandidateClose'),
   naverAppAndroid:$('naverAppAndroid'),naverAppAndroidText:$('naverAppAndroidText'),naverNameFallback:$('naverNameFallback'),
-  yahooLink:$('yahooLink'),yahooOpen:$('yahooOpen'),yahooNameFallback:$('yahooNameFallback'),status:$('parseStatus'),
+  yahooLink:$('yahooLink'),yahooOpen:$('yahooOpen'),yahooNameFallback:$('yahooNameFallback'),
+  kakaoLink:$('kakaoLink'),kakaoOpen:$('kakaoOpen'),kakaoAppOpen:$('kakaoAppOpen'),kakaoAppAndroid:$('kakaoAppAndroid'),status:$('parseStatus'),
   readyBox:$('readyBox'),readyText:$('readyText')};
 let syncing = false;
 let currentPinId = '';
@@ -259,6 +276,11 @@ function updateLinks(){
     if(els.yahooLink) els.yahooLink.textContent='—';
     if(els.yahooOpen){ els.yahooOpen.href='#'; els.yahooOpen.textContent='在 Yahoo! MAP 開啟'; }
     if(els.yahooNameFallback) els.yahooNameFallback.style.display='none';
+    // FIX fix56: 清空時也重置 Kakao 按鈕。
+    if(els.kakaoLink) els.kakaoLink.textContent='—';
+    if(els.kakaoOpen){ els.kakaoOpen.href='#'; els.kakaoOpen.textContent='在 Kakao 開啟'; }
+    if(els.kakaoAppOpen){ els.kakaoAppOpen.href='#'; els.kakaoAppOpen.textContent='iPhone App'; }
+    if(els.kakaoAppAndroid){ els.kakaoAppAndroid.href='#'; els.kakaoAppAndroid.textContent='Android App'; }
     return;
   }
   const latS = hasCoords ? fmt(lat,6) : '', lngS = hasCoords ? fmt(lng,6) : '';
@@ -389,6 +411,26 @@ function updateLinks(){
   if(els.yahooNameFallback){
     if(hasName && !coordsPrimary){ els.yahooNameFallback.href = yNameWeb; els.yahooNameFallback.style.display = ''; }
     else els.yahooNameFallback.style.display = 'none';
+  }
+  // FIX fix56: Kakao Map — 官方格式（apis.map.kakao.com/web/guide 查證）：
+  // 網頁 https://map.kakao.com/link/map/{placeID} 或 /link/map/{名稱},{lat},{lng}；App kakaomap://look?p={lat},{lng}（座標＋標記）。
+  // 已確認的 Kakao 店家（naverOverride 帶 place 連結）優先用 place ID 直開該店頁面；ID 從 place.map.kakao.com/{id} 取出。
+  const kakaoPlaceId = (naverOverride && naverOverride.link) ? ((String(naverOverride.link).match(/place\.map\.kakao\.com\/(\d+)/) || [])[1] || '') : '';
+  const kLabel = (naverOverride && naverOverride.title) || name || '';
+  const kWeb = kakaoPlaceId ? 'https://map.kakao.com/link/map/' + kakaoPlaceId
+    : (coordsPrimary ? 'https://map.kakao.com/link/map/' + (kLabel ? encodeURIComponent(kLabel) + ',' : '') + latS + ',' + lngS : '');
+  if(els.kakaoLink) els.kakaoLink.textContent = kWeb || '—';
+  if(els.kakaoOpen){
+    if(kWeb){ els.kakaoOpen.href = kWeb; els.kakaoOpen.textContent = kakaoPlaceId ? '在 Kakao 開啟 (已確認地點)' : '在 Kakao 開啟'; }
+    else { els.kakaoOpen.href = '#'; els.kakaoOpen.textContent = '需經緯度'; }
+  }
+  if(els.kakaoAppOpen){
+    els.kakaoAppOpen.href = coordsPrimary ? 'kakaomap://look?p=' + latS + ',' + lngS : '#';
+    els.kakaoAppOpen.textContent = coordsPrimary ? 'iPhone App (座標標記)' : 'iPhone App';
+  }
+  if(els.kakaoAppAndroid){
+    els.kakaoAppAndroid.href = coordsPrimary ? 'intent://look?p=' + latS + ',' + lngS + '#Intent;scheme=kakaomap;package=net.daum.android.map;end' : '#';
+    els.kakaoAppAndroid.textContent = coordsPrimary ? 'Android App (座標標記)' : 'Android App';
   }
 }
 
@@ -984,6 +1026,7 @@ async function findNearestNaver(){
       title: it.title || '',
       address: it.address || '',
       roadAddress: it.roadAddress || '',
+      link: it.link || '',
       kind: it.kind || (byName ? 'place' : 'address'),
       lat: normalizeNaverCoord(it.mapy),
       lng: normalizeNaverCoord(it.mapx),
