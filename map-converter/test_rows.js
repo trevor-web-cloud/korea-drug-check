@@ -256,6 +256,23 @@ rows.push(row('M2', 'Kakao 面板：已確認店家開 place ID 頁面（fix56�
   check(c, 'web label confirmed', E('kakaoOpen').textContent.includes('已確認地點'), E('kakaoOpen').textContent);
   check(c, 'app uses candidate coords', E('kakaoAppOpen').href === 'kakaomap://look?p=37.563456,126.985136', E('kakaoAppOpen').href);
 }));
+rows.push(row('K11', 'Kakao 連結輸入：link/map 座標（fix57）', async (c) => {
+  await pasteAndParse('https://map.kakao.com/link/map/37.563483,126.985167');
+  check(c, 'coords parsed', E('lat').value === '37.563483' && E('lng').value === '126.985167', E('lat').value + ',' + E('lng').value);
+  check(c, 'naver converts', E('naverOpen').href.includes('lat=37.563483') && E('naverOpen').href.includes('lng=126.985167'), E('naverOpen').href);
+  check(c, 'kakao web echoes link/map', E('kakaoOpen').href === 'https://map.kakao.com/link/map/37.563483,126.985167', E('kakaoOpen').href);
+}));
+rows.push(row('K12', 'Kakao 連結輸入：link/map 名稱＋座標（fix57）', async (c) => {
+  await pasteAndParse('https://map.kakao.com/link/map/%EB%AA%85%EB%8F%99%EA%B5%90%EC%9E%90,37.563483,126.985167');
+  check(c, 'name parsed', E('name').value === '명동교자', E('name').value);
+  check(c, 'coords parsed', E('lat').value === '37.563483', E('lat').value);
+  check(c, 'google converts', E('googleOpen').href.includes('37.563483'), E('googleOpen').href.slice(0, 70));
+}));
+rows.push(row('K13', 'Kakao 連結輸入：place ID 只有 ID（fix57）', async (c) => {
+  await pasteAndParse('https://place.map.kakao.com/18577297');
+  check(c, 'kakao opens id page', E('kakaoOpen').href === 'https://map.kakao.com/link/map/18577297', E('kakaoOpen').href);
+  check(c, 'status mentions kakao id', E('parseStatus').textContent.includes('Kakao ID 18577297'), E('parseStatus').textContent.slice(0, 60));
+}));
 rows.push(row('K6', '無店名（只有 Plus Code）→找地點走地址備援（fixture）', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');
   check(c, 'coords decoded', Math.abs(parseFloat(E('lat').value) - 35.0985625) < 0.001, E('lat').value);

@@ -190,7 +190,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note">日本地圖。注意：Yahoo 只會把地圖移到附近，不會出現圖釘；要看圖釘，請選 Google 地圖。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-22-fix56</p>
+  <p class="note" style="text-align:center">v2026-10-22-fix57</p>
 </div>
 
 <script>
@@ -211,6 +211,8 @@ let currentPinId = '';
 // FIX fix17: Google 的 ID 是 ftid（Google 地點頁 / ?q= 跳轉連結裡的 ftid=0x... 參數），與 Naver pinId 對應。
 // 找 ID 失敗時，兩邊主按鈕都不退回店名搜尋，改顯示「ID 未找到」；店名搜尋降為明確標示的備援按鈕。
 let currentGoogleId = '';
+// FIX fix57: Kakao 地點 ID（place.map.kakao.com/{id} 或 map.kakao.com/link/map/{id}），與 pinId/ftid 對應，讓 Kakao 連結也能當輸入。
+let currentKakaoId = '';
 // FIX fix40: Naver 官方地區搜尋 API 只能回傳候選店名/地址/座標，沒有 place ID。
 // 流程：以韓文店名查詢 → 以距離排序 → 使用者一鍵確認 → Naver 按鈕改用該候選在 Naver 資料中的座標。
 let naverCandidates = [];
@@ -256,7 +258,7 @@ function updateLinks(){
   // App 分享都是短網址：短連結本身無座標，貼短連結時不得沿用舊座標，必須先展開或用店名搜尋。
   // FIX fix46: 空狀態早退必須同時「無 ID」；只有 ID（無座標無店名）時要繼續走下方 ID 按鈕邏輯，
   // 否則貼 /p/entry/place/{id} 或 ?ftid= 連結永遠顯示空按鈕（矩陣 G7/N2 抓到）。
-  if(!hasCoords && !hasName && !currentPinId && !currentGoogleId){
+  if(!hasCoords && !hasName && !currentPinId && !currentGoogleId && !currentKakaoId){
     els.googleLink.textContent='—'; els.googleApp.textContent='—'; els.naverLink.textContent='—'; els.naverApp.textContent='—';
     if(els.naverAppAndroidText) els.naverAppAndroidText.textContent='—';
     // FIX fix20: 清空時必須同時重置所有按鈕文字 + 隱藏備援按鈕，否則上一個狀態的「地點 ID / ID 未找到 / 備援」文字會殘留。
@@ -416,8 +418,9 @@ function updateLinks(){
   // 網頁 https://map.kakao.com/link/map/{placeID} 或 /link/map/{名稱},{lat},{lng}；App kakaomap://look?p={lat},{lng}（座標＋標記）。
   // 已確認的 Kakao 店家（naverOverride 帶 place 連結）優先用 place ID 直開該店頁面；ID 從 place.map.kakao.com/{id} 取出。
   const kakaoPlaceId = (naverOverride && naverOverride.link) ? ((String(naverOverride.link).match(/place\.map\.kakao\.com\/(\d+)/) || [])[1] || '') : '';
+  const kId = kakaoPlaceId || currentKakaoId;
   const kLabel = (naverOverride && naverOverride.title) || name || '';
-  const kWeb = kakaoPlaceId ? 'https://map.kakao.com/link/map/' + kakaoPlaceId
+  const kWeb = kId ? 'https://map.kakao.com/link/map/' + kId
     : (coordsPrimary ? 'https://map.kakao.com/link/map/' + (kLabel ? encodeURIComponent(kLabel) + ',' : '') + latS + ',' + lngS : '');
   if(els.kakaoLink) els.kakaoLink.textContent = kWeb || '—';
   if(els.kakaoOpen){
@@ -674,7 +677,7 @@ function parseInput(){
   hasReadyResult = false; readyMessage = '';
   if(!raw){ updateLinks(); setStatus('還沒有貼上內容。請先點白色大框框，把連結貼進去。',false); return; }
   // FIX fix17: 解析新輸入時先清空舊 ID，避免殘留上一個地點的 ftid / pinId 被誤用。
-  currentPinId = ''; currentGoogleId = '';
+  currentPinId = ''; currentGoogleId = ''; currentKakaoId = '';
   // FIX fix40: 新輸入也要清掉上一個地點已確認的 Naver 候選，避免誤用到新地點。
   naverOverride = null; naverCandidates = []; naverCandidateIdx = 0;
   if(els.naverCandidateBox) els.naverCandidateBox.hidden = true;
@@ -734,6 +737,9 @@ function parseInput(){
   // FIX fix17: 取出 Google ftid（Google 的地點 ID），否則 ?q= 連結會被誤判為「沒有 ID」而退回店名搜尋。
   const ftidMatch = raw.match(/[?&]ftid\s*=\s*([^&]+)/i);
   if(ftidMatch){ try{ currentGoogleId = decodeURIComponent(ftidMatch[1]); }catch(e){ currentGoogleId = ftidMatch[1]; } }
+  // FIX fix57: 取出 Kakao 地點 ID（place 連結或 link/map/{純數字}）。
+  const kakaoIdMatch = raw.match(/place\.map\.kakao\.com\/(\d+)/i) || raw.match(/map\.kakao\.com\/link\/map\/(\d+)(?:[?#]|$)/i);
+  if(kakaoIdMatch) currentKakaoId = kakaoIdMatch[1];
   // FIX fix6: Naver 短連結展開後的跳轉網址本身就帶座標 + 店名：
   // map.naver.com/?title=兄弟潜水艇&pinId=...&lng=129.0972166&lat=35.1235958
   // 之前解析器不認 ?lat= / ?lng= 分開的參數，會誤判解析失敗。
@@ -752,6 +758,26 @@ function parseInput(){
       updateFromLatLng(la, ln, '已解析：'+(els.name.value||'')+pinNote+langNote+(mismatch ? ' '+mismatch.status : ''), mismatch ? mismatch.ready : undefined);
       return;
     }
+  }
+  // FIX fix57: Kakao 連結輸入 — map.kakao.com/link/map/{名稱},{lat},{lng} 或 /link/map/{lat},{lng}（名稱可省略）；
+  // 以及 App 連結 kakaomap://look?p={lat},{lng}。名稱段可能含逗號，取最後兩段為座標、其餘併回名稱。
+  const km = raw.match(/map\.kakao\.com\/link\/map\/([^/?#]+)/i);
+  if(km){
+    let seg = km[1]; try{ seg = decodeURIComponent(seg); }catch(e){}
+    const parts = seg.split(',');
+    const kla = parseFloat(parts[parts.length-2]), kln = parseFloat(parts[parts.length-1]);
+    if(parts.length >= 2 && isFinite(kla) && isFinite(kln) && Math.abs(kla) <= 90 && Math.abs(kln) <= 180){
+      const kName = parts.slice(0, parts.length-2).join(',').trim();
+      if(kName && !/^[\d.\s-]+$/.test(kName)) els.name.value = kName;
+      const mismatch = plusCodeMismatch(raw, kla, kln);
+      updateFromLatLng(kla, kln, '已解析 Kakao 連結座標。' + (mismatch ? ' ' + mismatch.status : ''), mismatch ? mismatch.ready : undefined);
+      return;
+    }
+  }
+  const kLook = raw.match(/kakaomap:\/\/look\?p=(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/i);
+  if(kLook){
+    updateFromLatLng(parseFloat(kLook[1]), parseFloat(kLook[2]), '已解析 Kakao App 連結座標。');
+    return;
   }
   // Naver c= : c=14364073,4177191  (allow spaces)
   let m = raw.match(/c\s*=\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/i);
@@ -899,12 +925,12 @@ function parseInput(){
   }
   // FIX fix46: 只有 ID 的連結（Naver /p/entry/place/{id}、Google ?ftid=）— ID 已在前面取出，
   // 舊邏輯走到這裡只顯示「看不懂」且沒呼叫 updateLinks()，按鈕會停在上一個地點的舊連結。
-  if(currentPinId || currentGoogleId){
+  if(currentPinId || currentGoogleId || currentKakaoId){
     coordsValidForName = false;
     els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value='';
     hasReadyResult = true;
     readyMessage = '已取得地點 ID。請往下做第 3 步，點地圖按鈕。';
-    setStatus('已解析：只有地點 ID，沒有座標。'+(currentPinId ? ' Naver ID '+currentPinId+'。' : '')+(currentGoogleId ? ' Google ID 已取出。' : ''),true);
+    setStatus('已解析：只有地點 ID，沒有座標。'+(currentPinId ? ' Naver ID '+currentPinId+'。' : '')+(currentGoogleId ? ' Google ID 已取出。' : '')+(currentKakaoId ? ' Kakao ID '+currentKakaoId+'。' : ''),true);
     updateLinks(); return;
   }
   // FIX fix46: 純文字店名（沒有連結）— 當成店名輸入，必須清掉舊座標（fix18/19 精神），
