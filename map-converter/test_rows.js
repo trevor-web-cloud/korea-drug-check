@@ -450,11 +450,17 @@ rows.push(row('L4', '英文模式 ID 未找到與備援（fix72）', async (c) =
   E('langZh').dispatch('click'); await flush();
   check(c, 'restored zh', E('googleOpen').textContent.includes('ID 未找到'), E('googleOpen').textContent);
 }));
-rows.push(row('L5', '頁面不顯示用量（fix84：只需提供後台每日／每月報表）', async (c) => {
+rows.push(row('L5', '頁尾額度剩餘百分比（僅今日，fix73/85 最終版）＋切英文重繪', async (c) => {
   await flush();
-  check(c, 'no quota element in source', !PAGE_HTML.includes('id="quotaLine"'), 'found');
-  check(c, 'no quota strings in source', !PAGE_HTML.includes('查詢額度剩餘') && !PAGE_HTML.includes('Query quota remaining'), 'found');
-  check(c, 'page never calls /stats', !FETCH_LOG.some(u => u.includes('/stats')), FETCH_LOG.filter(u => u.includes('stats')).join(',') || 'none');
+  check(c, 'quota visible', E('quotaLine').hidden === false, String(E('quotaLine').hidden));
+  check(c, 'daily pct (max type 500/100000)', E('quotaLine').textContent.includes('99.50'), E('quotaLine').textContent);
+  check(c, 'no monthly on page (fix83)', !E('quotaLine').textContent.includes('99.00') && !E('quotaLine').textContent.includes('本月'), E('quotaLine').textContent);
+  check(c, 'no system info on page', !E('quotaLine').textContent.includes('UTC') && !E('quotaLine').textContent.includes('系統'), E('quotaLine').textContent);
+  check(c, 'quota cached to localStorage (fix82)', (localStorage.getItem('mcQuota') || '').includes('"d":"99.50"'), localStorage.getItem('mcQuota') || 'null');
+  check(c, 'page never calls monthly endpoint (fix83/85)', !FETCH_LOG.some(u => u.includes('sum=month')), FETCH_LOG.filter(u => u.includes('sum')).join(',') || 'none');
+  E('langEn').dispatch('click'); await flush();
+  check(c, 'quota en', E('quotaLine').textContent.includes('Query quota remaining'), E('quotaLine').textContent);
+  E('langZh').dispatch('click'); await flush();
 }));
 rows.push(row('L6', '切換 Indonesia：印尼語標籤＋href 不變＋額度行印尼語；切回中文（fix74）', async (c) => {
   await pasteAndParse('https://www.google.com/maps/place/%EB%AA%85%EB%8F%99%EA%B5%90%EC%9E%90/@37.5634829,126.9851666,17z');
@@ -464,6 +470,7 @@ rows.push(row('L6', '切換 Indonesia：印尼語標籤＋href 不變＋額度�
   check(c, 'google id', E('googleOpen').textContent === 'Buka di Google Maps (pin koordinat)', E('googleOpen').textContent);
   check(c, 'kakao id', E('kakaoOpen').textContent === 'Buka di Kakao (koordinat)', E('kakaoOpen').textContent);
   check(c, 'ready id', E('readyText').textContent.includes('Langkah 4'), E('readyText').textContent);
+  check(c, 'quota id', E('quotaLine').textContent.includes('Sisa kuota pencarian'), E('quotaLine').textContent);
   check(c, 'href unchanged id', E('naverOpen').href === naverHref, E('naverOpen').href);
   E('langZh').dispatch('click'); await flush();
   check(c, 'back to zh', E('naverOpen').textContent.includes('在 Naver 開啟 (座標)'), E('naverOpen').textContent);
