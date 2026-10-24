@@ -148,6 +148,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
         <button class="candrow" id="candRow10" type="button" hidden></button>
         <button class="candrow" id="candRow11" type="button" hidden></button>
         <button class="candrow" id="candRow12" type="button" hidden></button>
+        <p id="candidateFoot" style="white-space:pre-line;margin:10px 0 0" hidden></p>
         <div class="cand-btns">
           <button class="btn btn-ghost" id="candidateClose" type="button" data-i18n="candClose">關閉</button>
         </div>
@@ -231,7 +232,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-24-fix77</p>
+  <p class="note" style="text-align:center">v2026-10-24-fix78</p>
 </div>
 
 <script>
@@ -242,7 +243,7 @@ const els = {paste:$('paste'),name:$('name'),lat:$('lat'),lng:$('lng'),mx:$('mx'
   googleAppIOS:$('googleAppIOS'),googleAppAndroid:$('googleAppAndroid'),googleNameFallback:$('googleNameFallback'),
   naverLink:$('naverLink'),naverApp:$('naverApp'),naverOpen:$('naverOpen'),naverCoordOpen:$('naverCoordOpen'),naverAppOpen:$('naverAppOpen'),
   findBtn:$('findBtn'),candidateBox:$('candidateBox'),candidateHead:$('candidateHead'),
-  candSecAddr:$('candSecAddr'),candSecPlaces:$('candSecPlaces'),candidateClose:$('candidateClose'),
+  candSecAddr:$('candSecAddr'),candSecPlaces:$('candSecPlaces'),candidateClose:$('candidateClose'),candidateFoot:$('candidateFoot'),
   candRows:Array.from({length:13},(_,i)=>$('candRow'+i)),
   naverAppAndroid:$('naverAppAndroid'),naverAppAndroidText:$('naverAppAndroidText'),naverNameFallback:$('naverNameFallback'),
   yahooLink:$('yahooLink'),yahooOpen:$('yahooOpen'),yahooNameFallback:$('yahooNameFallback'),
@@ -375,7 +376,8 @@ zh: {
   stNoCandAddr: '這個座標附近查不到地點資料。',
   stCandFoundNameCoord: '找到 {n} 家候選，已選出最近的一家，請在「確認地標」區確認。',
   stCandFoundNameNoCoord: '找到 {n} 家候選，請在「確認地標」區確認是哪一家；確認後 Google、Naver、Kakao 都能開啟。',
-  stCandFoundAddr: '已用座標查到韓國地址與附近地點，請在「確認地標」區確認；不對可按「不是，換一家」。',
+  stCandFoundAddr: '已用座標查到韓國地址與附近地點，請在「確認地標」區的清單點一個確認。',
+  candListFoot: '找不到你要找的地點？可以點最上面的地址那一列——那是這個位置查證過的門牌地址，所有地圖會開在那個地址。',
   stOffline: '連不上附近地點搜尋服務，請檢查網路後再試。',
   stConfirmed: '已確認地點：{title}。所有地圖按鈕已改用查證過的座標（與原座標相距約 {d} 公尺）。',
   candRefLine: '你原本查的是：{name}',
@@ -504,7 +506,8 @@ en: {
   stNoCandAddr: 'No place data was found near these coordinates.',
   stCandFoundNameCoord: 'Found {n} candidates; the nearest one is selected. Please confirm it in the “Confirm landmark” section.',
   stCandFoundNameNoCoord: 'Found {n} candidates. Please confirm which one it is in the “Confirm landmark” section; after that, Google, Naver and Kakao can all open it.',
-  stCandFoundAddr: 'Found the Korean address and nearby places for these coordinates. Please confirm in the “Confirm landmark” section; if it’s wrong, tap “Not this one, next”.',
+  stCandFoundAddr: 'Found the Korean address and nearby places for these coordinates. Please tap one in the “Confirm landmark” list to confirm it.',
+  candListFoot: 'Can’t find your place? Tap the address row at the top — it is the verified street address of this spot, and all maps will open there.',
   stOffline: 'Could not reach the nearby-place search service. Please check your connection and try again.',
   stConfirmed: 'Place confirmed: {title}. All map buttons now use the verified coordinates (about {d} m from the original ones).',
   candRefLine: 'You searched for: {name}',
@@ -633,7 +636,8 @@ id: {
   stNoCandAddr: 'Tidak ditemukan data tempat di sekitar koordinat ini.',
   stCandFoundNameCoord: 'Ditemukan {n} kandidat; yang terdekat sudah dipilih. Konfirmasi di bagian “Konfirmasi landmark”.',
   stCandFoundNameNoCoord: 'Ditemukan {n} kandidat. Konfirmasi yang mana di bagian “Konfirmasi landmark”; setelah itu Google, Naver, dan Kakao bisa membukanya.',
-  stCandFoundAddr: 'Alamat Korea dan tempat sekitar untuk koordinat ini ditemukan. Konfirmasi di bagian “Konfirmasi landmark”; jika salah, ketuk “Bukan, berikutnya”.',
+  stCandFoundAddr: 'Alamat Korea dan tempat sekitar untuk koordinat ini ditemukan. Ketuk satu di daftar “Konfirmasi landmark” untuk mengonfirmasi.',
+  candListFoot: 'Tidak menemukan tempat Anda? Ketuk baris alamat di paling atas — itu alamat terverifikasi untuk titik ini, dan semua peta akan terbuka di sana.',
   stOffline: 'Tidak dapat terhubung ke layanan pencarian tempat sekitar. Periksa koneksi Anda lalu coba lagi.',
   stConfirmed: 'Tempat dikonfirmasi: {title}. Semua tombol peta sekarang memakai koordinat terverifikasi (sekitar {d} m dari koordinat asal).',
   candRefLine: 'Anda mencari: {name}',
@@ -1593,6 +1597,7 @@ function renderCandidateList(){
   displayCandidates = [addr].concat(places);
   if(els.candSecAddr) els.candSecAddr.hidden = !addr;
   if(els.candSecPlaces) els.candSecPlaces.hidden = !places.length;
+  if(els.candidateFoot){ els.candidateFoot.hidden = !addr; els.candidateFoot.textContent = addr ? T('candListFoot') : ''; }
   els.candRows.forEach((rowEl, i) => {
     const c = displayCandidates[i];
     if(!c){ rowEl.hidden = true; rowEl.textContent = ''; return; }

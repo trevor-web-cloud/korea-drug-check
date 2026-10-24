@@ -500,3 +500,9 @@ rows.push(row('K12', '店名依分類分組：同類相鄰、組序照最近距�
   check(c, 'row3 station last despite nearer', candRows()[3].textContent.includes('공항역'), candRows()[3].textContent.slice(0, 50));
   check(c, 'cafe gloss zh', candRows()[1].textContent.includes('分類：咖啡廳'), candRows()[1].textContent.slice(0, 80));
 }));
+rows.push(row('K13', '清單底部提示：找不到地點可點地址列（fix78）＋狀態文字改清單語意', async (c) => {
+  await pasteAndParse('32XJ+C9 釜山 南韓');
+  E('findBtn').dispatch('click'); await flush();
+  check(c, 'status uses list wording', st().includes('清單點一個確認') && !st().includes('換一家'), st().slice(0, 60));
+  check(c, 'foot hint visible', E('candidateFoot').hidden === false && E('candidateFoot').textContent.includes('找不到你要找的地點'), E('candidateFoot').textContent.slice(0, 40));
+}));
