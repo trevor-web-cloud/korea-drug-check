@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="preconnect" href="https://map-resolve.tsai0215.workers.dev">
 <title>Naver Kakao Yahoo JP Google 地圖轉換</title>
 <meta name="description" content="Naver / Kakao / Yahoo JP / Google 地圖轉換：貼上任一邊連結，自動算出其他邊。座標通用 WGS84，只有 Naver 網址的 c= 是 Web Mercator (EPSG:3857) 公尺座標。">
 <style>
@@ -232,7 +233,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-24-fix81</p>
+  <p class="note" style="text-align:center">v2026-10-24-fix82</p>
 </div>
 
 <script>
@@ -699,18 +700,32 @@ async function loadQuota() {
   // FIX fix81: 使用者實機回報「要等一陣子才出現」——實測每日端點 0.7 秒、每月加總端點 14 秒
   // （Worker 逐日讀 KV 彙總整月），舊版等兩者都回來才顯示。改為分段：每日先到先顯示（月欄先佔位 …），每月到齊再補上。
   // 位置維持頁尾原處（使用者定「只需放在原本地方」，fix80 曾加第 3 步上方一份，已撤）。
+  // FIX fix82: 使用者選定加速 1＋2——(1) 上次餘額存 localStorage，開頁先即時顯示（同 KST 日的日欄、同 KST 月的月欄才沿用，
+  // 過期欄位顯示 …等新值）；背景抓到新值再覆寫並存回。(2) head 加 preconnect 先暖 Worker 連線。
+  // 每月端點本身由 Worker fix82 改為月份前綴一次列舉（14 秒→約 1 秒，需使用者部署後生效）。
   const base = 'https://map-resolve.tsai0215.workers.dev/stats';
   const left = (used, limit) => Math.max(0, 100 - used / limit * 100).toFixed(2);
+  const nowIso = new Date(Date.now() + 9 * 3600 * 1000).toISOString();
+  const now = { date: nowIso.slice(0, 10), month: nowIso.slice(0, 7) };
+  const save = () => { try { localStorage.setItem('mcQuota', JSON.stringify({ d: quotaVals.d, m: quotaVals.m, date: now.date, month: now.month })); } catch (e) {} };
+  try {
+    const c = JSON.parse(localStorage.getItem('mcQuota') || 'null');
+    if (c) {
+      const d = c.date === now.date ? c.d : '…';
+      const m = c.month === now.month ? c.m : '…';
+      if (d !== '…' || m !== '…') { quotaVals = { d, m }; renderQuota(); }
+    }
+  } catch (e) {}
   try {
     const kd = await fetch(base + '?tz=kst').then(r => r.json());
     if (!kd || kd.error) return;
     const maxType = Math.max(kd.kakao_keyword || 0, kd.kakao_coord2address || 0, kd.kakao_address || 0, kd.kakao_category || 0);
-    quotaVals = { d: left(maxType, 100000), m: '…' };
-    renderQuota();
+    quotaVals = { d: left(maxType, 100000), m: (quotaVals && quotaVals.m) || '…' };
+    renderQuota(); save();
   } catch (e) { return; }
   try {
     const km = await fetch(base + '?tz=kst&sum=month').then(r => r.json());
-    if (km && km.month && quotaVals) { quotaVals.m = left(km.kakao_total || 0, 3000000); renderQuota(); }
+    if (km && km.month && quotaVals) { quotaVals.m = left(km.kakao_total || 0, 3000000); renderQuota(); save(); }
   } catch (e) {}
 }
 function applyLang(l) {

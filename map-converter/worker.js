@@ -80,16 +80,41 @@ export default {
         return o;
       };
       if (u.searchParams.get('sum') === 'month') {
+        // fix82: 原逐日 readDay 串行跑整月（24 天 × 每日 12 GET＋1 list ≈ 14 秒，頁面實機回報「要等一陣子」）。
+        // 改為以月份為前綴一次列舉整月事件鍵加總＋舊鍵底值一次列舉逐鍵 GET（舊窗與事件鍵不重疊）；
+        // 只統計當月（date 所在月、1 日起至月底；事件鍵只由當日產生，不含未來日，結果與逐日加總等價）。
         const ym = date.slice(0, 7);
         const agg = { date, tz, month: ym };
         for (const m of metrics) agg[m] = 0;
-        agg.kakao_total = 0;
-        const lastDay = parseInt(date.slice(8, 10), 10);
-        for (let d = 1; d <= lastDay; d++) {
-          const day = await readDay(ym + '-' + String(d).padStart(2, '0'));
-          for (const m of metrics) agg[m] += day[m];
-          agg.kakao_total += day.kakao_total;
+        const listAll = async (prefix) => {
+          const names = [];
+          try {
+            let cursor;
+            do {
+              const page = await env.STATS.list({ prefix, cursor });
+              for (const k of page.keys) names.push(k.name);
+              cursor = page.list_complete ? null : page.cursor;
+            } while (cursor);
+          } catch (e) {}
+          return names;
+        };
+        for (const name of await listAll('e:' + tz + ':' + ym + '-')) {
+          const parts = name.split(':');
+          if (parts.length >= 6 && metrics.includes(parts[3])) agg[parts[3]] += parseInt(parts[4], 10) || 0;
         }
+        for (const name of await listAll('s:' + tz + ':' + ym + '-')) {
+          const m = name.split(':').pop();
+          if (metrics.includes(m)) agg[m] += parseInt((await env.STATS.get(name)) || '0', 10) || 0;
+        }
+        if (tz === 'tpe') {
+          for (const name of await listAll('s:' + ym + '-')) {
+            const parts = name.split(':');
+            if (parts.length === 3 && /^\d{4}-\d{2}-\d{2}$/.test(parts[1]) && metrics.includes(parts[2])) {
+              agg[parts[2]] += parseInt((await env.STATS.get(name)) || '0', 10) || 0;
+            }
+          }
+        }
+        agg.kakao_total = agg.kakao_keyword + agg.kakao_coord2address + agg.kakao_address + agg.kakao_category;
         return new Response(JSON.stringify(agg), { headers: cors });
       }
       const out = { date, tz, ...(await readDay(date)) };

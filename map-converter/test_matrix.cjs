@@ -22,6 +22,7 @@ global.document = {
   querySelectorAll(sel) { if (sel === 'details.advanced') return detailsAdv; if (sel === '.ex-btn') return exBtns; return []; },
 };
 global.window = { setTimeout: global.setTimeout, open() {} };
+global.localStorage = { _m: {}, getItem(k) { return k in this._m ? this._m[k] : null; }, setItem(k, v) { this._m[k] = String(v); }, removeItem(k) { delete this._m[k]; } };
 global.navigator = {};
 
 // ---------- Worker fixtures（真實回應形狀） ----------
