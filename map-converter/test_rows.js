@@ -233,10 +233,10 @@ rows.push(row('K9', '候選框附原本名稱對照行（fix51：英文名連結
   E('candidateNext').dispatch('click'); await flush();
   check(c, 'ref line kept on place candidate', E('candidateText').textContent.includes('你原本查的是：Brosis Hotel'), E('candidateText').textContent.slice(0, 60));
 }));
-rows.push(row('K10', '店家候選附雙來源機翻英文參考、地址候選不附（fix52/54）', async (c) => {
+rows.push(row('K10', '店家候選附雙來源機翻英文參考、地址候選也附英文參考（fix52/54/75）', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');
   E('findBtn').dispatch('click'); await flush();
-  check(c, 'address candidate has no translation', !E('candidateText').textContent.includes('英文參考'), E('candidateText').textContent.slice(0, 50));
+  check(c, 'address candidate has translation (fix75)', E('candidateText').textContent.includes('英文參考（Google 機翻，非官方名）：5, Gudeok-ro 34beon-gil'), E('candidateText').textContent.slice(-120));
   E('candidateNext').dispatch('click'); await flush();
   check(c, 'google translation line', E('candidateText').textContent.includes('英文參考（Google 機翻，非官方名）：Daiso Busan Nampo Branch'), E('candidateText').textContent.slice(-120));
   check(c, 'mymemory translation line (differs → also shown)', E('candidateText').textContent.includes('英文參考（MyMemory 機翻，非官方名）：Daiso Busan Nampo'), E('candidateText').textContent.slice(-120));
@@ -479,4 +479,13 @@ rows.push(row('L6', '切換 Indonesia：印尼語標籤＋href 不變＋額度�
   check(c, 'href unchanged id', E('naverOpen').href === naverHref, E('naverOpen').href);
   E('langZh').dispatch('click'); await flush();
   check(c, 'back to zh', E('naverOpen').textContent.includes('在 Naver 開啟 (座標)'), E('naverOpen').textContent);
+}));
+rows.push(row('K9', '地址候選也附英文機翻參考行（fix75）；印尼語介面下譯文仍為英文', async (c) => {
+  await pasteAndParse('32XJ+C9 釜山 南韓');
+  E('findBtn').dispatch('click'); await flush();
+  check(c, 'address candidate', E('candidateText').textContent.includes('구덕로'), E('candidateText').textContent.slice(0, 60));
+  check(c, 'en line present (zh ui)', E('candidateText').textContent.includes('英文參考（Google 機翻，非官方名）：5, Gudeok-ro 34beon-gil'), E('candidateText').textContent.slice(-120));
+  E('langId').dispatch('click'); await flush();
+  check(c, 'id label, en text kept', E('candidateText').textContent.includes('Referensi Inggris (terjemahan mesin Google') && E('candidateText').textContent.includes('5, Gudeok-ro 34beon-gil'), E('candidateText').textContent.slice(-140));
+  E('langZh').dispatch('click'); await flush();
 }));

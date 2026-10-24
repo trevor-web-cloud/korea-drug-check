@@ -215,7 +215,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-24-fix74</p>
+  <p class="note" style="text-align:center">v2026-10-24-fix75</p>
 </div>
 
 <script>
@@ -1526,7 +1526,9 @@ function showNaverCandidate(){
   cb.box.hidden = false;
   // FIX fix52: 店家候選（kind='place'）附機翻英文參考行；地址候選不翻。非同步補上，切換候選後只認標題相同者，避免貼到別家。
   // FIX fix54: 雙來源（Google＋MyMemory）並列，來源標明；譯文相同只顯示一行。
-  if(c.kind === 'place' && /[\uAC00-\uD7A3]/.test(c.title)){
+  // FIX fix75: 使用者實機回報「地址候選沒看到英文」——地址候選也納入機翻英文參考行（看不懂韓文時地址最需要對照）；
+  // 仍維持使用者定的規則：機翻永遠只做韓→英，不隨介面語系（中/英/印尼）改變目標語言。
+  if(/[\uAC00-\uD7A3]/.test(c.title)){
     const shownTitle = c.title;
     const textEl = cb.text;
     const baseText = textEl.textContent;

@@ -71,7 +71,7 @@ global.fetch = async (url) => {
   } else if (u.includes('translate.googleapis.com')) {
     // fix53: 頁面直呼 gtx，回應形狀是巢狀陣列
     const t = decodeURIComponent((u.match(/[?&]q=([^&]*)/) || [])[1] || '').replace(/\+/g, ' ');
-    const TR = { '다이소 부산남포점': 'Daiso Busan Nampo Branch', '명동교자 분점': 'Myeongdong Gyoja Branch' };
+    const TR = { '다이소 부산남포점': 'Daiso Busan Nampo Branch', '명동교자 분점': 'Myeongdong Gyoja Branch', '부산 중구 구덕로 34번길 5': '5, Gudeok-ro 34beon-gil, Jung-gu, Busan' };
     body = [[[TR[t] || '', t, null, null, 3]]];
   } else if (u.includes('mymemory')) {
     const t = decodeURIComponent((u.match(/[?&]q=([^&]*)/) || [])[1] || '').replace(/\+/g, ' ');
