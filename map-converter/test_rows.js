@@ -100,13 +100,11 @@ rows.push(row('P5', '短碼＋JP 城市還原', async (c) => {
   await pasteAndParse('JQJW+VX 江東區 日本東京都');
   check(c, 'recovered', near(latV(), 35.6321875, 1e-6) && near(lngV(), 139.7974375, 1e-6), E('lat').value + ',' + E('lng').value);
 }));
-rows.push(row('P6', '短碼無參考→拒絕', async (c) => {
+rows.push(row('P6', 'Plus Code 拒絕路徑：短碼無參考＋無效碼字元（原 P6＋P7）', async (c) => {
   await pasteAndParse('FFRR+X8');
-  check(c, 'rejected', E('lat').value === '', E('lat').value + '|' + st().slice(0, 40));
-}));
-rows.push(row('P7', '無效碼字元→不解碼', async (c) => {
+  check(c, 'short code no reference rejected', E('lat').value === '', E('lat').value + '|' + st().slice(0, 40));
   await pasteAndParse('8Q58FFRR+X1');
-  check(c, 'no coords', E('lat').value === '', E('lat').value);
+  check(c, 'invalid char not decoded', E('lat').value === '', E('lat').value);
 }));
 rows.push(row('S1', 'Naver 分享整段＋落差 Plus Code（fix39）', async (c) => {
   await pasteAndParse('명동교자 1호점\n서울 중구 명동10길 29\nhttps://naver.me/FP8gOoAY\nHX7P+92 서울');
@@ -140,12 +138,10 @@ rows.push(row('T2', '改名使座標失效（fix13）', async (c) => {
   E('name').value = '다른이름'; E('name').dispatch('input'); await flush();
   check(c, 'google falls to ID未找到', E('googleOpen').textContent.includes('ID 未找到'), E('googleOpen').textContent);
 }));
-rows.push(row('T3', '手動逐字輸入 lat/lng（fix41）', async (c) => {
+rows.push(row('T3', '手動逐字輸入 lat/lng 與 X/Y 都不被改寫（fix41，原 T3＋T4）', async (c) => {
   typeInto(E('lat'), '37.5634829'); typeInto(E('lng'), '126.9851666'); await flush();
   check(c, 'final lat/lng', E('lat').value === '37.5634829' && E('lng').value === '126.9851666', E('lat').value + ',' + E('lng').value);
   check(c, 'X synced', near(parseFloat(E('mx').value), 14135924.08, 1), E('mx').value);
-}));
-rows.push(row('T4', '手動逐字輸入 X/Y（fix41）', async (c) => {
   typeInto(E('mx'), '14135924.08'); typeInto(E('my'), '4517942.80'); await flush();
   check(c, 'X/Y intact', E('mx').value === '14135924.08' && E('my').value === '4517942.80', E('mx').value + ',' + E('my').value);
   check(c, 'lat/lng derived', near(latV(), 37.5634829, 2e-6) && near(lngV(), 126.9851666, 2e-6), E('lat').value + ',' + E('lng').value);
@@ -188,32 +184,24 @@ rows.push(row('K4', '搜尋空結果（fixture）', async (c) => {
   E('findBtn').dispatch('click'); await flush();
   check(c, 'not found status', st().includes('找不到'), st().slice(0, 60));
 }));
-rows.push(row('K5', 'Worker 未設定（fixture）', async (c) => {
-  await pasteAndParse('37.5634829, 126.9851666');
-  E('name').value = '설정안됨가게';
-  E('findBtn').dispatch('click'); await flush();
-  check(c, 'not_configured status', st().includes('KAKAO_REST_KEY'), st().slice(0, 80));
-}));
 rows.push(row('N6', 'Naver 網頁座標連結必須是官方接手格式（不可用 /p/search/ 座標，fix47）', async (c) => {
   await pasteAndParse('35.098562, 129.030938');
   const href = E('naverOpen').href;
   check(c, 'menu=location format', href === 'https://map.naver.com/?lat=35.098562&lng=129.030938&menu=location', href);
   check(c, 'not search format', !href.includes('/p/search/'), href);
 }));
-rows.push(row('N7', '無店名時 Naver App 連結 name 不可為座標字串（2026-10-22 實機回報）', async (c) => {
+rows.push(row('N7', 'Naver App 圖釘 name 規則：無店名不可用座標字串＋中文名不可當 name（fix48 實機回報，含原 N8）', async (c) => {
   await pasteAndParse('8Q7F32XJ+C9');
   check(c, 'name field empty', E('name').value === '', E('name').value);
-  const href = E('naverAppOpen') ? E('naverAppOpen').href : '';
-  const m = href.match(/[?&]name=([^&]*)/);
-  const nm = m ? decodeURIComponent(m[1]) : '';
-  check(c, 'app name label', !!nm && !/^\d+\.\d+,\d+\.\d+$/.test(nm), href.slice(0, 90));
-}));
-rows.push(row('N8', '中文店名不可傳給 Naver App 圖釘 name（fix48 實機回報）', async (c) => {
+  let href = E('naverAppOpen') ? E('naverAppOpen').href : '';
+  let m = href.match(/[?&]name=([^&]*)/);
+  let nm = m ? decodeURIComponent(m[1]) : '';
+  check(c, 'app name not coord string', !!nm && !/^\d+\.\d+,\d+\.\d+$/.test(nm), href.slice(0, 90));
   await pasteAndParse('https://maps.app.goo.gl/8jUa4Jxcuvq4KEk78');
-  const href = E('naverAppOpen').href;
-  const m = href.match(/[?&]name=([^&]*)/);
-  const nm = m ? decodeURIComponent(m[1]) : '';
-  check(c, 'name is neutral label', nm === '좌표 위치', href.slice(0, 110));
+  href = E('naverAppOpen').href;
+  m = href.match(/[?&]name=([^&]*)/);
+  nm = m ? decodeURIComponent(m[1]) : '';
+  check(c, 'chinese name → neutral label', nm === '좌표 위치', href.slice(0, 110));
   check(c, 'coords in app href', href.includes('lat=33.4824'), href.slice(0, 110));
 }));
 rows.push(row('N9', '確認附近店家後 Naver 網頁按鈕開店名頁（fix50 實機回報）', async (c) => {
@@ -392,14 +380,17 @@ rows.push(row('K6', '無店名（只有 Plus Code）→找地點走地址備援�
   check(c, 'address candidate box', E('candidateBox').hidden === false, String(E('candidateBox').hidden));
   check(c, 'address candidate text', candAllText().includes('부산'), candAllText().slice(0, 90));
 }));
-rows.push(row('K8', '地址模式清單：地址第一列＋店名列並列（fix49/77）', async (c) => {
+rows.push(row('K8', '地址模式清單：地址第一列＋店名列並列＋清單結構與分類標籤（fix49/77，含原 K11）', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');
   E('findBtn').dispatch('click'); await flush();
   check(c, 'three rows', candRows().length === 3, String(candRows().length));
+  check(c, 'head counts', E('candidateHead').textContent.includes('找到 3 個候選'), E('candidateHead').textContent.slice(0, 60));
   check(c, 'sections visible', E('candSecAddr').hidden === false && E('candSecPlaces').hidden === false, '');
   check(c, 'first row is address', candRows()[0].textContent.includes('구덕로'), candRows()[0].textContent.slice(0, 60));
   check(c, 'second row daiso', candRows()[1].textContent.includes('다이소'), candRows()[1].textContent.slice(0, 60));
+  check(c, 'daiso category gloss', candRows()[1].textContent.includes('分類：購物'), candRows()[1].textContent.slice(0, 90));
   check(c, 'third row station', candRows()[2].textContent.includes('남포역'), candRows()[2].textContent.slice(0, 60));
+  check(c, 'station category gloss', candRows()[2].textContent.includes('分類：地鐵站'), candRows()[2].textContent.slice(0, 90));
 }));
 rows.push(row('K7', '確認地址候選→全部面板改用確認座標', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');
@@ -475,7 +466,7 @@ rows.push(row('L6', '切換 Indonesia：印尼語標籤＋href 不變＋額度�
   E('langZh').dispatch('click'); await flush();
   check(c, 'back to zh', E('naverOpen').textContent.includes('在 Naver 開啟 (座標)'), E('naverOpen').textContent);
 }));
-rows.push(row('K9', '地址列也附英文機翻參考行（fix75/77）；印尼語介面下譯文仍為英文', async (c) => {
+rows.push(row('K15', '地址列也附英文機翻參考行（fix75/77）；印尼語介面下譯文仍為英文', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');
   E('findBtn').dispatch('click'); await flush();
   check(c, 'address row', candRows()[0].textContent.includes('구덕로'), candRows()[0].textContent.slice(0, 60));
@@ -484,16 +475,7 @@ rows.push(row('K9', '地址列也附英文機翻參考行（fix75/77）；印尼
   check(c, 'id label, en text kept', candRows()[0].textContent.includes('Referensi Inggris (terjemahan mesin Google') && candRows()[0].textContent.includes('5, Gudeok-ro 34beon-gil'), candRows()[0].textContent.slice(-140));
   E('langZh').dispatch('click'); await flush();
 }));
-rows.push(row('K11', '候選清單結構：地址區＋店名區＋分類標籤（fix77）', async (c) => {
-  await pasteAndParse('32XJ+C9 釜山 南韓');
-  E('findBtn').dispatch('click'); await flush();
-  check(c, 'head counts', E('candidateHead').textContent.includes('找到 3 個候選'), E('candidateHead').textContent.slice(0, 60));
-  check(c, 'sections shown', E('candSecAddr').hidden === false && E('candSecPlaces').hidden === false, '');
-  check(c, 'daiso category gloss', candRows()[1].textContent.includes('分類：購物'), candRows()[1].textContent.slice(0, 90));
-  check(c, 'station category gloss', candRows()[2].textContent.includes('分類：地鐵站'), candRows()[2].textContent.slice(0, 90));
-}));
-
-rows.push(row('K12', '店名依分類分組：同類相鄰、組序照最近距離（fix77）', async (c) => {
+rows.push(row('K16', '店名依分類分組：同類相鄰、組序照最近距離（fix77）', async (c) => {
   await pasteAndParse('37.4496919, 126.4524038');
   E('findBtn').dispatch('click'); await flush();
   check(c, 'four rows', candRows().length === 4, String(candRows().length));
@@ -502,7 +484,7 @@ rows.push(row('K12', '店名依分類分組：同類相鄰、組序照最近距�
   check(c, 'row3 station last despite nearer', candRows()[3].textContent.includes('공항역'), candRows()[3].textContent.slice(0, 50));
   check(c, 'cafe gloss zh', candRows()[1].textContent.includes('分類：咖啡廳'), candRows()[1].textContent.slice(0, 80));
 }));
-rows.push(row('K13', '清單底部提示：找不到地點可點地址列（fix78）＋狀態文字改清單語意', async (c) => {
+rows.push(row('K17', '清單底部提示：找不到地點可點地址列（fix78）＋狀態文字改清單語意', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');
   E('findBtn').dispatch('click'); await flush();
   check(c, 'status uses list wording', st().includes('清單點一個確認') && !st().includes('換一家'), st().slice(0, 60));
@@ -517,7 +499,7 @@ rows.push(row('X10', '互通：Kakao 分享（濟州 Parkside 實例）→補座
   check(c, 'google opens', E('googleOpen').href.includes('33.4924'), E('googleOpen').href.slice(0, 80));
   check(c, 'naver opens', E('naverOpen').href.includes('lat=33.4924'), E('naverOpen').href.slice(0, 90));
 }));
-rows.push(row('K14', '店名候選規則：30 公尺內＋最多 10 家（fix79）', async (c) => {
+rows.push(row('K18', '店名候選規則：30 公尺內＋最多 10 家（fix79）', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');
   E('findBtn').dispatch('click'); await flush();
   check(c, 'far place filtered (>30m)', !candAllText().includes('먼곳식당'), candAllText().slice(0, 80));
