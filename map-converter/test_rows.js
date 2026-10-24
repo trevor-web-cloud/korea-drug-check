@@ -415,3 +415,45 @@ rows.push(row('K7', '確認地址候選→全部面板改用確認座標', async
   check(c, 'google href upgraded', E('googleOpen').href.includes('35.0987'), E('googleOpen').href.slice(0, 90));
   check(c, 'naver href upgraded', E('naverOpen').href.includes('35.0987'), E('naverOpen').href.slice(0, 90));
 }));
+rows.push(row('L1', '語系預設中文：按鈕與準備提示為中文（fix72）', async (c) => {
+  await pasteAndParse('https://www.google.com/maps/place/%EB%AA%85%EB%8F%99%EA%B5%90%EC%9E%90/@37.5634829,126.9851666,17z');
+  check(c, 'naver zh label', E('naverOpen').textContent.includes('在 Naver 開啟 (座標)'), E('naverOpen').textContent);
+  check(c, 'google zh label', E('googleOpen').textContent.includes('座標圖釘'), E('googleOpen').textContent);
+  check(c, 'ready zh', E('readyText').textContent.includes('第 4 步'), E('readyText').textContent);
+}));
+rows.push(row('L2', '切換 English：全按鈕與徽章變英文、href 不變；切回中文（fix72）', async (c) => {
+  await pasteAndParse('https://www.google.com/maps/place/%EB%AA%85%EB%8F%99%EA%B5%90%EC%9E%90/@37.5634829,126.9851666,17z');
+  const naverHref = E('naverOpen').href, googleHref = E('googleOpen').href;
+  E('langEn').dispatch('click'); await flush();
+  check(c, 'naver en', E('naverOpen').textContent === 'Open in Naver (coordinates)', E('naverOpen').textContent);
+  check(c, 'google en', E('googleOpen').textContent === 'Open in Google Maps (coordinate pin)', E('googleOpen').textContent);
+  check(c, 'kakao en', E('kakaoOpen').textContent === 'Open in Kakao (coordinates)', E('kakaoOpen').textContent);
+  check(c, 'yahoo en', E('yahooOpen').textContent === 'Open in Yahoo! MAP (coordinates)', E('yahooOpen').textContent);
+  check(c, 'badge en', E('kakaoBadge').textContent === 'Coordinates OK', E('kakaoBadge').textContent);
+  check(c, 'ready en', E('readyText').textContent.includes('Step 4'), E('readyText').textContent);
+  check(c, 'hrefs unchanged', E('naverOpen').href === naverHref && E('googleOpen').href === googleHref, E('naverOpen').href);
+  E('langZh').dispatch('click'); await flush();
+  check(c, 'back to zh', E('naverOpen').textContent.includes('在 Naver 開啟 (座標)'), E('naverOpen').textContent);
+}));
+rows.push(row('L3', '英文模式完整流程：Plus Code→找地標（英文候選框）→確認（fix72）', async (c) => {
+  E('langEn').dispatch('click'); await flush();
+  await pasteAndParse('32XJ+C9 釜山 南韓');
+  check(c, 'coords decoded en', Math.abs(parseFloat(E('lat').value) - 35.0985625) < 0.001, E('lat').value);
+  check(c, 'ready en plus', E('readyText').textContent.includes('approximate location'), E('readyText').textContent.slice(0, 80));
+  E('findBtn').dispatch('click'); await flush();
+  check(c, 'candidate en', E('candidateText').textContent.includes('Korean address found for the current coordinates'), E('candidateText').textContent.slice(0, 90));
+  E('candidateNext').dispatch('click'); await flush();
+  check(c, 'candidate place en', E('candidateText').textContent.includes('Nearest place found (2 of 3)'), E('candidateText').textContent.slice(0, 90));
+  E('candidateYes').dispatch('click'); await flush();
+  check(c, 'confirmed status en', st().includes('Place confirmed:'), st().slice(0, 60));
+  E('langZh').dispatch('click'); await flush();
+}));
+rows.push(row('L4', '英文模式 ID 未找到與備援（fix72）', async (c) => {
+  E('langEn').dispatch('click'); await flush();
+  await pasteAndParse('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('명동교자'));
+  check(c, 'google id not found en', E('googleOpen').textContent === 'ID not found', E('googleOpen').textContent);
+  check(c, 'status en', st().includes('No Google ID was found'), st().slice(0, 80));
+  check(c, 'app fallback en', E('googleAppIOS').textContent === 'iPhone App (name search fallback)', E('googleAppIOS').textContent);
+  E('langZh').dispatch('click'); await flush();
+  check(c, 'restored zh', E('googleOpen').textContent.includes('ID 未找到'), E('googleOpen').textContent);
+}));
