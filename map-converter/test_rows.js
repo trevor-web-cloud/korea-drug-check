@@ -506,3 +506,12 @@ rows.push(row('K13', '清單底部提示：找不到地點可點地址列（fix7
   check(c, 'status uses list wording', st().includes('清單點一個確認') && !st().includes('換一家'), st().slice(0, 60));
   check(c, 'foot hint visible', E('candidateFoot').hidden === false && E('candidateFoot').textContent.includes('找不到你要找的地點'), E('candidateFoot').textContent.slice(0, 40));
 }));
+rows.push(row('X10', '互通：Kakao 分享（濟州 Parkside 實例）→補座標＋ID 三家可開（fix63）', async (c) => {
+  await pasteAndParse('[KakaoMap] Jeju Park Side Hotel https://kko.to/JuV3NbSRyw');
+  await flush(); await flush();
+  check(c, 'name upgraded to korean', E('name').value === '제주 파크사이드 호텔', E('name').value);
+  check(c, 'coords filled', Math.abs(parseFloat(E('lat').value) - 33.4924038) < 0.00001, E('lat').value);
+  check(c, 'kakao id page', E('kakaoOpen').href === 'https://map.kakao.com/link/map/11334932', E('kakaoOpen').href);
+  check(c, 'google opens', E('googleOpen').href.includes('33.4924'), E('googleOpen').href.slice(0, 80));
+  check(c, 'naver opens', E('naverOpen').href.includes('lat=33.4924'), E('naverOpen').href.slice(0, 90));
+}));

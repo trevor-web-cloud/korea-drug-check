@@ -58,6 +58,7 @@ global.fetch = async (url) => {
     else if (target.includes('6aiq7W')) body = { status: 301, location: YAHOO_CENTER_RESOLVED };
     else if (target.includes('yahoo')) body = { status: 302, location: YAHOO_RESOLVED };
     else if (target.includes('qobmRiH')) body = { status: 301, location: KAKAO_RESOLVED, place: { id: '338712143', name: '브로시스호텔', lat: 35.0985955, lng: 129.0308898 } };
+    else if (target.includes('JuV3NbSRyw')) body = { status: 301, location: 'https://applink.map.kakao.com/place?id=11334932&t_src=share&t_ch=copy_url&t_obj=place', place: { id: '11334932', name: '제주 파크사이드 호텔', lat: 33.4924038, lng: 126.4907929 } };
     else if (target.includes('52R5JVa5')) body = { status: 307, location: NAVER_ID_RESOLVED };
     else if (target.includes('GcAsfvpu')) body = { status: 307, location: NAVER_FULL_RESOLVED };
   } else if (u.includes('/place?')) {
