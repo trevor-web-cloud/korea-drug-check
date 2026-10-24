@@ -467,3 +467,16 @@ rows.push(row('L5', '頁尾額度剩餘百分比（日/月，fix73）＋切英�
   check(c, 'quota en', E('quotaLine').textContent.includes('Query quota remaining'), E('quotaLine').textContent);
   E('langZh').dispatch('click'); await flush();
 }));
+rows.push(row('L6', '切換 Indonesia：印尼語標籤＋href 不變＋額度行印尼語；切回中文（fix74）', async (c) => {
+  await pasteAndParse('https://www.google.com/maps/place/%EB%AA%85%EB%8F%99%EA%B5%90%EC%9E%90/@37.5634829,126.9851666,17z');
+  const naverHref = E('naverOpen').href;
+  E('langId').dispatch('click'); await flush();
+  check(c, 'naver id', E('naverOpen').textContent === 'Buka di Naver (koordinat)', E('naverOpen').textContent);
+  check(c, 'google id', E('googleOpen').textContent === 'Buka di Google Maps (pin koordinat)', E('googleOpen').textContent);
+  check(c, 'kakao id', E('kakaoOpen').textContent === 'Buka di Kakao (koordinat)', E('kakaoOpen').textContent);
+  check(c, 'ready id', E('readyText').textContent.includes('Langkah 4'), E('readyText').textContent);
+  check(c, 'quota id', E('quotaLine').textContent.includes('Sisa kuota pencarian'), E('quotaLine').textContent);
+  check(c, 'href unchanged id', E('naverOpen').href === naverHref, E('naverOpen').href);
+  E('langZh').dispatch('click'); await flush();
+  check(c, 'back to zh', E('naverOpen').textContent.includes('在 Naver 開啟 (座標)'), E('naverOpen').textContent);
+}));

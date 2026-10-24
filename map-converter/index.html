@@ -85,6 +85,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
   <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:6px">
     <button type="button" id="langZh" style="border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 16px;min-height:44px;font-size:16px;font-weight:700;cursor:pointer">中文</button>
     <button type="button" id="langEn" style="border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 16px;min-height:44px;font-size:16px;font-weight:700;cursor:pointer">English</button>
+    <button type="button" id="langId" style="border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 16px;min-height:44px;font-size:16px;font-weight:700;cursor:pointer">Indonesia</button>
   </div>
   <h1 data-i18n="docTitle">Naver Kakao Yahoo JP Google 地圖轉換</h1>
   <p class="sub" data-i18n-html="subLine"><b>不用懂座標。</b>照著第 1、2、3 步做就可以。</p>
@@ -214,7 +215,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-24-fix73</p>
+  <p class="note" style="text-align:center">v2026-10-24-fix74</p>
 </div>
 
 <script>
@@ -515,13 +516,143 @@ en: {
   guideNote2: 'Different cell letters mean a different place: <code>F6</code> is the hotel, <code>FVG</code> is the park next door, about 150 m apart. Make sure the code came from the place card, not from long-pressing the map.',
   guideNote3: 'A Plus Code stands for an area, not an exact pin; this page uses the center of the area. A code with 2 characters after the <code>+</code> (10 characters in total once restored) covers about 14 m across, so the center can be up to about 10 m from the place; a code with 3 characters after the <code>+</code> (11 in total) covers about 3 m, so the gap is only about 2 m. For an exact location, paste the place’s share link instead, or confirm by the name and sign when you get there.',
   quotaLine: 'Query quota remaining — Kakao today {d}% (daily limit, busiest type, Korea time) · Kakao this month {m}%'
+},
+id: {
+  docTitle: 'Konverter Peta Naver · Kakao · Yahoo JP · Google',
+  subLine: '<b>Tidak perlu paham koordinat.</b> Cukup ikuti langkah-langkah di bawah ini.',
+  step1Title: 'Langkah 1: Tempel tautan peta di sini',
+  pastePh: 'Tempel tautan di sini', pasteAria: 'Tempel tautan peta',
+  step1Note: 'Anda bisa menempel seluruh teks bagikan dari Google, Naver, Kakao, atau Yahoo — tidak perlu memilih tautannya sendiri.',
+  helpSummary: 'Tidak tahu harus menempel apa? Ketuk di sini',
+  helpNote1: 'Tautan bagikan peta, tautan pendek, garis lintang/bujur, atau Plus Code semuanya bisa. Untuk Plus Code pendek, tambahkan nama kota setelahnya, misalnya “5RJG+F6 Gimhae”.',
+  helpNote2: 'Tautan yang bisa ditempel tampak seperti ini (contoh: Terminal 1 Bandara Incheon — <b>ketuk contoh untuk mengisi dan mengonversi otomatis</b>):',
+  exGoogle: 'Google: google.com/maps/place/…@37.4496,126.4524',
+  exNaver: 'Naver: tautan pendek naver.me, atau map.naver.com/?lat=…&lng=…',
+  exKakao: 'Kakao: tautan pendek kko.to, atau map.kakao.com/link/map/…',
+  exYahoo: 'Yahoo: map.yahoo.co.jp/place/?lat=…&lon=…',
+  helpNote3: 'Bagikan yang Anda terima biasanya berupa tautan pendek (naver.me, kko.to, maps.app.goo.gl) plus teks — tempel saja semuanya.',
+  step2Title: 'Langkah 2: Tekan tombol besar',
+  pasteBtn: '📋 Tempel & Konversi', parseBtn: 'Sudah ditempel — Konversi', exampleBtn: 'Isi contoh',
+  clearBtn: 'Hapus semua & mulai lagi', expandBtn: 'Buka tautan pendek →',
+  readyLead: 'Sudah siap', readyDefault: 'Lanjut ke Langkah 4 di bawah, lalu ketuk tombol peta.',
+  nameLabel: 'Nama tempat (boleh kosong)', namePh: 'mis. nama hotel atau tempat wisata',
+  step3Title: 'Langkah 3: Konfirmasi landmark', landmarkHead: '✅ Konfirmasi landmark', landmarkBadge: 'Dipakai bersama Naver · Kakao',
+  landmarkNote: 'Jika koordinat hanya perkiraan (mis. dari Plus Code), cari dan konfirmasi tempatnya di sini satu kali. Setelah itu, Naver, Kakao, Google, dan Yahoo semuanya memakai landmark terverifikasi ini.',
+  findBtn: '🔍 Cari & konfirmasi landmark', candYes: 'Ya, ini tempatnya', candNext: 'Bukan, berikutnya', candClose: 'Tutup',
+  step4Title: 'Langkah 4: Ketuk peta untuk membuka',
+  advGoogle: 'Lanjutan: lihat atau ubah lintang/bujur (biasanya tidak perlu)', advNaver: 'Lanjutan: lihat atau ubah X/Y (biasanya tidak perlu)',
+  latPh: 'Lintang', lngPh: 'Bujur', latAria: 'Lintang Google', lngAria: 'Bujur Google', mxPh: 'X', myPh: 'Y', mxAria: 'Koordinat X Naver', myAria: 'Koordinat Y Naver',
+  gOpen: 'Buka di Google Maps', gOpenPin: 'Buka di Google Maps (pin koordinat)', gOpenId: 'Buka di Google Maps (ID tempat)',
+  nOpen: 'Buka di Naver', nOpenCoord: 'Buka di Naver (koordinat)', nOpenConfirmed: 'Buka di Naver (tempat terkonfirmasi)', nOpenId: 'Buka di Naver (ID tempat)',
+  coordOpenG: 'Buka pin koordinat', coordOpenN: 'Buka koordinat',
+  nameFallbackBtn: 'Cadangan: cari berdasarkan nama',
+  appIOS: 'App iPhone', appAndroid: 'App Android',
+  appIOSPin: 'App iPhone (pin koordinat)', appAndroidPin: 'App Android (pin koordinat)',
+  appIOSId: 'App iPhone (ID tempat)', appAndroidId: 'App Android (ID tempat)',
+  appIOSNameFb: 'App iPhone (cadangan pencarian nama)', appAndroidNameFb: 'App Android (cadangan pencarian nama)',
+  appIOSMiss: 'App iPhone (ID tidak ditemukan)', appAndroidMiss: 'App Android (ID tidak ditemukan)',
+  kOpen: 'Buka di Kakao', kOpenConfirmed: 'Buka di Kakao (tempat terkonfirmasi)', kOpenCoord: 'Buka di Kakao (koordinat)',
+  kAppPinIOS: 'App iPhone (penanda koordinat)', kAppPinAndroid: 'App Android (penanda koordinat)',
+  yOpen: 'Buka di Yahoo! MAP', yOpenCoord: 'Buka di Yahoo! MAP (koordinat)', yahooHead: 'Yahoo! MAP (Jepang)',
+  needCoords: 'Perlu koordinat', coordOk: 'Koordinat OK', badgeConfirmed: 'Tempat terkonfirmasi', badgeId: 'ID tempat',
+  idNotFound: 'ID tidak ditemukan',
+  kakaoNote: 'Peta Korea — kandidat landmark dicari dari sini. Setelah tempat dikonfirmasi, tombol web membuka langsung halaman Kakao tempat tersebut.',
+  yahooNote: 'Peta Jepang. Membuka dengan tautan /place/ menampilkan pin merah (terverifikasi di browser pada 2026-10-23; bentuk lama yang hanya memusatkan peta tidak ada pin dan tidak dipakai lagi). Catatan: tautan yang dibagikan dari aplikasi seluler Yahoo membawa posisi TENGAH peta saat itu, bukan pin — bisa meleset puluhan meter (terukur ~82 m). Untuk tempat di Korea, perbaiki dengan Langkah 3 “Konfirmasi landmark” setelah menempel.',
+  ftidLine: 'ID (ftid): {u}', coordPinLine: 'Pin koordinat: {u}',
+  monoCoordIOS: 'Pin koordinat iPhone: {u}', monoCoordAndroid: 'Pin koordinat Android: {u}',
+  monoNameIOS: 'Pencarian nama iPhone: {u}', monoNameAndroid: 'Pencarian nama Android: {u}',
+  monoNameSearch: 'Pencarian nama: {u}',
+  naverConfirmedLine: '✅ Tempat Naver terkonfirmasi: {title} (sekitar {d} m dari koordinat asal)',
+  monoNameAddrSearch: 'Pencarian nama/alamat: {u}', monoCoord: 'Koordinat: {u}',
+  monoPlaceId: 'Tautan tempat (ID tempat, berfungsi dalam bahasa apa pun): {u}',
+  monoNoNameHint: '(Tanpa nama/alamat, gunakan tautan koordinat atau tautan pin App di atas.)',
+  readyNamed: 'Tempat: {name}. Lanjut ke Langkah 4 di bawah, lalu ketuk tombol peta.',
+  readyFound: 'Lokasi ditemukan. Lanjut ke Langkah 4 di bawah, lalu ketuk tombol peta.',
+  readyNameFallback: 'Nama ditemukan: {name}. Gunakan tombol bertanda “cadangan pencarian nama” atau “App” di bawah.',
+  readyNameGoogle: 'Tempat: {name}. Lanjut ke Langkah 4 di bawah, lalu ketuk tombol Google Maps.',
+  readyIdOnly: 'ID tempat didapat. Lanjut ke Langkah 4 di bawah, lalu ketuk tombol peta.',
+  readyPlusApprox: '{notice}Lanjut ke Langkah 4 di bawah, lalu ketuk tombol peta untuk melihat lokasi perkiraan.',
+  readyMismatch: '⚠ Kedua lokasi tidak sama persis. {detail}Kali ini koordinat tautan yang persis yang dipakai — lanjut ke Langkah 4 di bawah, lalu ketuk tombol peta.',
+  plusNotice: 'Ini lokasi perkiraan: {code} mencakup area sekitar {w}×{h} meter, dan pin diletakkan di tengahnya — bisa meleset hingga sekitar {m} meter dari tempat sebenarnya. Untuk lokasi persis, tempel tautan bagikan tempat tersebut.',
+  dirEast: 'timur', dirWest: 'barat', dirNorth: 'utara', dirSouth: 'selatan',
+  mismatchDetail: 'Plus Code yang ditempel bersamaan, {code} (dipulihkan menjadi {full}), tidak cocok dengan koordinat tautan: titik tautan berada sekitar {out} m di luar sisi {dir} sel Plus Code, dan pusat sel berjarak sekitar {dist} m dari titik tautan — melebihi galat pusat maksimum kode ini sekitar {max} m.',
+  mismatchStatus: '⚠ {detail}Kali ini koordinat tautan yang persis yang dipakai; Plus Code itu mungkin milik titik di dekatnya atau pin peta lain.',
+  pinNote: ' (ID {id})', nonKoreanNote: ' (nama bukan Korea, diubah ke ID)',
+  yahooShareNote: ' (Catatan: tautan dari aplikasi seluler Yahoo membawa posisi tengah peta, bukan pin, dan bisa meleset puluhan meter; untuk tempat di Korea, perbaiki dengan Langkah 3 “Konfirmasi landmark”.)',
+  stParsed: 'Dibaca: {rest}',
+  stKakaoCoord: 'Koordinat dari tautan Kakao berhasil dibaca.', stKakaoApp: 'Koordinat dari tautan aplikasi Kakao berhasil dibaca.',
+  stNaverC: 'Naver c= berhasil dibaca dan diubah ke lintang/bujur Google.',
+  stGoogleData: 'Lintang !3d dan bujur !4d Google berhasil dibaca.', stGoogleAt: 'Google @lintang,bujur berhasil dibaca.', stGoogleQ: 'Google ?q=lintang,bujur berhasil dibaca.',
+  stLatLng: 'Lintang,bujur berhasil dibaca.', stXY: 'X,Y (meter) berhasil dibaca dan diubah ke lintang/bujur.',
+  stBadNums: 'Angka-angka ini di luar rentang lintang/bujur dan juga tidak tampak seperti koordinat X/Y Naver. Periksa kembali bahwa yang ditempel adalah lintang/bujur atau tautan lengkap.',
+  stNameIdOk: 'Dibaca: {name} (ID Google didapat)',
+  stNameNoId: 'Nama diambil: “{name}”. ID Google tidak ditemukan — gunakan cadangan pencarian nama.',
+  stSearchName: 'Nama pencarian diambil — periksa kembali.',
+  stShortCode: 'Plus Code pendek “{code}” berhasil dibaca (referensi: {ref}, dipulihkan menjadi {full}). Catatan: ini lokasi perkiraan, bukan pintu tempatnya.',
+  pageCoordRef: 'koordinat halaman',
+  approxTail: 'Catatan: ini lokasi perkiraan, bukan pintu tempatnya.',
+  stNeedCity: 'Masih perlu nama kota. Tambahkan kota setelah kode pendek, misalnya “5RJG+F6 Gimhae” atau “V6X6+RC Taoyuan”, lalu tekan Konversi lagi.',
+  stPlaceNameOnly: 'Nama diambil: “{name}”. Tautan ini tidak memiliki koordinat atau Plus Code.',
+  stPlusSrcName: 'Halaman tempat Google dibaca: nama “{name}” + Plus Code {code}.',
+  stPlusSrc: 'Plus Code {code} berhasil dibaca.',
+  stIdOnlyBase: 'Dibaca: hanya ID tempat, tanpa koordinat.',
+  stIdNaver: ' ID Naver {id}.', stIdGoogle: ' ID Google didapat.', stIdKakao: ' ID Kakao {id}.',
+  stIdGuide: 'Agar Google dan Kakao juga bisa membukanya, ketik nama asli Korea tempat ini di kolom nama, lalu cari landmark di Langkah 3.',
+  stNamePlain: 'Nama diambil: “{name}”. Tidak ada koordinat — gunakan cadangan pencarian nama, atau tempel tautan bagikan tempat tersebut.',
+  stUnknown: 'Konten ini tidak bisa dibaca. Periksa bahwa ini tautan bagikan peta, atau tempel lintang/bujur atau Plus Code.',
+  stEmpty: 'Belum ada yang ditempel. Ketuk kotak putih besar dulu dan tempel tautannya.',
+  stWorking: 'Sedang diproses, mohon tunggu…',
+  stAutoFail: 'Pemrosesan otomatis tidak berhasil. Ketuk “Buka tautan pendek”, tunggu halaman baru terbuka, lalu salin tautan lengkap di bagian atas dan tempel kembali ke sini.',
+  stNameFoundSuffix: 'Nama “{name}” ditemukan lebih dulu.',
+  stKakaoUpgraded: 'Koordinat “{name}” didapat dari Kakao — Google, Naver, dan Kakao sekarang bisa membukanya.',
+  landmarkWord: 'tempat tersebut',
+  stExample: 'Contoh diisi: Stasiun Nampo 남포역 35.097883,129.034663',
+  stPasteHelp: 'Tekan dan tahan kotak putih besar di atas, ketuk “Tempel” saat muncul; setelah ditempel, halaman mulai mengonversi otomatis.',
+  copied: 'Disalin ✓', copyLink: 'Salin tautan', copyAppLink: 'Salin tautan app',
+  stNoCoordNoName: 'Tidak ada koordinat dan tidak ada nama Korea, jadi landmark tidak bisa dicari. Tempel tautan yang memiliki koordinat, atau ketik nama asli Korea di kolom nama lalu coba lagi.',
+  stSearching: 'Mencari tempat di sekitar, mohon tunggu…',
+  stNotConfigured: 'Pencarian tempat sekitar belum disiapkan: tambahkan secret KAKAO_REST_KEY ke map-resolve di Cloudflare dulu.',
+  stNoAddress: 'Tidak ditemukan alamat Korea untuk koordinat ini (fitur ini hanya berfungsi di dalam Korea Selatan). Untuk tempat yang persis, tempel tautan bagikannya.',
+  stFindFailName: 'Pencarian tempat sekitar gagal. Coba lagi nanti.',
+  stFindFailAddr: 'Mencari tempat sekitar memerlukan nama Korea (sumber data Kakao hanya bisa mencari dalam bahasa Korea). Ubah nama menjadi nama asli Korea lalu coba lagi.',
+  stNoCandName: 'Tidak ditemukan kandidat untuk “{name}”. Periksa bahwa itu nama asli Korea, atau coba ejaan lain.',
+  stNoCandAddr: 'Tidak ditemukan data tempat di sekitar koordinat ini.',
+  stCandFoundNameCoord: 'Ditemukan {n} kandidat; yang terdekat sudah dipilih. Konfirmasi di bagian “Konfirmasi landmark”.',
+  stCandFoundNameNoCoord: 'Ditemukan {n} kandidat. Konfirmasi yang mana di bagian “Konfirmasi landmark”; setelah itu Google, Naver, dan Kakao bisa membukanya.',
+  stCandFoundAddr: 'Alamat Korea dan tempat sekitar untuk koordinat ini ditemukan. Konfirmasi di bagian “Konfirmasi landmark”; jika salah, ketuk “Bukan, berikutnya”.',
+  stOffline: 'Tidak dapat terhubung ke layanan pencarian tempat sekitar. Periksa koneksi Anda lalu coba lagi.',
+  stConfirmed: 'Tempat dikonfirmasi: {title}. Semua tombol peta sekarang memakai koordinat terverifikasi (sekitar {d} m dari koordinat asal).',
+  candRefLine: 'Anda mencari: {name}',
+  candDistCoord: 'Sekitar {d} m dari koordinat saat ini.',
+  candDistNone: '(Belum ada koordinat awal; mengonfirmasi akan mengisi koordinat tempat ini.)',
+  candFar: '⚠ Lebih dari 200 m jauhnya — mungkin bukan tempat yang sama, periksa dengan teliti.',
+  candAddrText: 'Alamat Korea yang ditemukan untuk koordinat saat ini: {title}\n{dist}{far}\nJika lokasinya benar, ketuk “Ya, ini tempatnya” — semua tombol peta akan memakai koordinat terverifikasi ini (lebih akurat daripada perkiraan Plus Code). Jika bukan, ketuk “Bukan, berikutnya” untuk melihat tempat di sekitar.',
+  candPlaceText: 'Tempat terdekat ditemukan ({i} dari {n}): {title}\nAlamat: {addr}\n{dist}{far}\nJika ini tempatnya, ketuk “Ya, ini tempatnya” — semua tombol peta akan memakai koordinat terverifikasi tempat ini.',
+  candEnGtx: 'Referensi Inggris (terjemahan mesin Google, bukan nama resmi): {t}',
+  candEnMm: 'Referensi Inggris (terjemahan mesin MyMemory, bukan nama resmi): {t}',
+  guideSummary: '📍 Panduan Plus Code Google Maps (ketuk untuk membuka)',
+  guideWhatH: 'Apa itu Plus Code?',
+  guideWhatP: 'Plus Code adalah kode lokasi Google: rangkaian karakter yang mewakili lintang/bujur. Kode lengkap tampak seperti <code>8Q7C5RJG+F63</code> (8 karakter sebelum <code>+</code>); kode pendek seperti <code>5RJG+F6</code> (hanya 4 sebelum <code>+</code>, dan perlu nama kota).',
+  guideHowH: 'Cara menyalin Plus Code dari aplikasi Google Maps',
+  guideHow1: 'Di aplikasi Google Maps, ketuk <strong>nama tempat</strong> untuk membuka kartunya (jangan tekan lama titik kosong di peta — itu memberi kode untuk posisi lain).',
+  guideHow2: 'Gulir ke bawah ke bagian “Tentang” dan temukan baris <strong>Plus Code</strong> (mis. <code>5RJG+F6 Gimhae, Gyeongsang Selatan, Korea Selatan</code>).',
+  guideHow3: 'Ketuk baris itu untuk menyalin, atau catat kode pendek + nama kotanya.',
+  guidePasteH: 'Cara menempelnya ke halaman ini',
+  guidePaste1: '<strong>Kode lengkap</strong>: cukup tempel <code>8Q7C5RJG+F63</code> — tidak perlu nama kota.',
+  guidePaste2: '<strong>Kode pendek</strong>: wajib menambahkan nama kota, mis. tempel <code>5RJG+F6 Gimhae</code>. Menempel <code>5RJG+F6</code> saja akan meminta lokasi referensi dan tidak menghasilkan koordinat.',
+  guidePaste3: 'Setelah ditempel, halaman mulai mengonversi otomatis; jika tidak, tekan “Sudah ditempel — Konversi”. Jika berhasil, ketuk tombol peta di bawah.',
+  guideNoteH: 'Catatan',
+  guideNote1: 'Aplikasi hanya menampilkan <strong>kode pendek</strong> — selalu tempel bersama nama kotanya.',
+  guideNote2: 'Huruf sel yang berbeda berarti tempat yang berbeda: <code>F6</code> adalah hotel, <code>FVG</code> adalah taman di sebelahnya, berjarak sekitar 150 m. Pastikan kode berasal dari kartu tempat, bukan dari menekan lama peta.',
+  guideNote3: 'Plus Code mewakili sebuah area, bukan pin yang persis; halaman ini memakai pusat area tersebut. Kode dengan 2 karakter setelah <code>+</code> (total 10 karakter setelah dipulihkan) mencakup sekitar 14 m, jadi pusatnya bisa meleset hingga sekitar 10 m dari tempatnya; kode dengan 3 karakter setelah <code>+</code> (total 11) mencakup sekitar 3 m, jadi selisihnya hanya sekitar 2 m. Untuk lokasi persis, tempel tautan bagikan tempat tersebut, atau konfirmasi dengan nama dan papan nama saat tiba.',
+  quotaLine: 'Sisa kuota pencarian — Kakao hari ini {d}% (batas harian, jenis tersibuk, waktu Korea) · Kakao bulan ini {m}%'
 }
 };
 let LANG = 'zh';
 try {
   const qp = (typeof location !== 'undefined' && location.search) ? new URLSearchParams(location.search).get('lang') : null;
   const saved = qp || localStorage.getItem('mcLang');
-  if (saved === 'en' || saved === 'zh') LANG = saved;
+  if (saved === 'en' || saved === 'id' || saved === 'zh') LANG = saved;
 } catch (e) {}
 function T(key, vars) {
   let s = (STR[LANG] && STR[LANG][key]) || STR.zh[key] || key;
@@ -559,17 +690,18 @@ async function loadQuota() {
   } catch (e) {}
 }
 function applyLang(l) {
-  LANG = (l === 'en') ? 'en' : 'zh';
+  LANG = (l === 'en' || l === 'id') ? l : 'zh';
   try { localStorage.setItem('mcLang', LANG); } catch (e) {}
-  if (document.documentElement) document.documentElement.lang = (LANG === 'en') ? 'en' : 'zh-Hant';
+  if (document.documentElement) document.documentElement.lang = (LANG === 'en') ? 'en' : (LANG === 'id') ? 'id' : 'zh-Hant';
   document.title = T('docTitle');
   document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = T(el.getAttribute('data-i18n')); });
   document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = T(el.getAttribute('data-i18n-html')); });
   document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.setAttribute('placeholder', T(el.getAttribute('data-i18n-ph'))); });
   document.querySelectorAll('[data-i18n-aria]').forEach(el => { el.setAttribute('aria-label', T(el.getAttribute('data-i18n-aria'))); });
-  const zb = $('langZh'), eb = $('langEn');
-  if (zb) { zb.style.background = LANG === 'zh' ? '#111' : '#fff'; zb.style.color = LANG === 'zh' ? '#fff' : '#111'; }
-  if (eb) { eb.style.background = LANG === 'en' ? '#111' : '#fff'; eb.style.color = LANG === 'en' ? '#fff' : '#111'; }
+  for (const [btnId, code] of [['langZh', 'zh'], ['langEn', 'en'], ['langId', 'id']]) {
+    const b = $(btnId);
+    if (b) { b.style.background = LANG === code ? '#111' : '#fff'; b.style.color = LANG === code ? '#fff' : '#111'; }
+  }
   updateLinks();
   renderQuota();
   if (els.candidateBox && !els.candidateBox.hidden) showNaverCandidate();
@@ -1263,7 +1395,7 @@ function parseInput(){
     let ref = null, refLabel = '';
     const lowerRaw = decodedRaw.toLowerCase();
     for(const [zh, ko, en, rla, rln] of CITY_REF){
-      if(decodedRaw.includes(zh) || decodedRaw.includes(ko) || lowerRaw.includes(en)){ ref = [rla, rln]; refLabel = (LANG === 'en' ? en : zh); break; }
+      if(decodedRaw.includes(zh) || decodedRaw.includes(ko) || lowerRaw.includes(en)){ ref = [rla, rln]; refLabel = (LANG === 'zh' ? zh : en); break; }
     }
     if(!ref && els.lat.value && els.lng.value){
       const rla = parseFloat(els.lat.value), rln = parseFloat(els.lng.value);
@@ -1524,6 +1656,7 @@ currentPinId=''; currentGoogleId=''; coordsValidForName=false;
 // FIX fix72: 語系切換按鈕 + 初始套用（偵測在 STR 區塊：?lang 優先，其次 localStorage）。
 $('langZh').addEventListener('click',()=>applyLang('zh'));
 $('langEn').addEventListener('click',()=>applyLang('en'));
+$('langId').addEventListener('click',()=>applyLang('id'));
 applyLang(LANG); setStatus('',true);
 loadQuota();
 </script>
