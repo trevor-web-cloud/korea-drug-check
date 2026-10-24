@@ -21,16 +21,22 @@ export default {
     if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
     const u = new URL(request.url);
 
-    // fix69: 用量計數（KV，每日一組，台北日期）。Kakao 官方無用量查詢 API，而所有呼叫都經過本 Worker，
+    // fix69: 用量計數（KV）。Kakao 官方無用量查詢 API，而所有呼叫都經過本 Worker，
     // 在此計數即為實際用量；Cloudflare 用量以 Worker 自身請求數計（官方儀表板數字為準，本數為近似）。
-    function statsDay() { return new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10); }
+    // fix70: 拆三套日界計數——tpe（台北 UTC+8，使用者本地）／kst（韓國 UTC+9，Kakao 日額度日界）／
+    // utc（Cloudflare 每日上限日界）。三地皆無夏令時間，固定偏移即精確。每個事件同時寫三個桶。
+    function dayIn(offsetH) { return new Date(Date.now() + offsetH * 3600 * 1000).toISOString().slice(0, 10); }
+    const TZ_DAYS = [['tpe', 8], ['kst', 9], ['utc', 0]];
     async function bump(metric, n) {
       if (!env || !env.STATS) return;
-      try {
-        const key = 's:' + statsDay() + ':' + metric;
-        const cur = parseInt((await env.STATS.get(key)) || '0', 10) || 0;
-        await env.STATS.put(key, String(cur + (n || 1)));
-      } catch (e) {}
+      const cnt = n || 1;
+      for (const [tz, off] of TZ_DAYS) {
+        try {
+          const key = 's:' + tz + ':' + dayIn(off) + ':' + metric;
+          const cur = parseInt((await env.STATS.get(key)) || '0', 10) || 0;
+          await env.STATS.put(key, String(cur + cnt));
+        } catch (e) {}
+      }
     }
     // fix69b/c: 連接頁驗證主機時會打根路徑（可能不帶金鑰）；根路徑無條件回 200 服務資訊
     // （轉換器只用 /resolve /local /nearby /place /stats，根路徑原本只是落入 /resolve 回 400，無人依賴）。
@@ -42,10 +48,17 @@ export default {
       // 但 Muse 連接頁的檢查始終拒絕（根路徑 200、多參數名、Bearer 皆試過），故報表改走無金鑰讀取；
       // 本端點只回用量計數，不含任何帳號權限或個資，公開風險僅為「本工具每日被使用次數」。
       if (!env.STATS) return new Response(JSON.stringify({ error: 'stats_not_configured' }), { status: 503, headers: cors });
-      const date = /^\d{4}-\d{2}-\d{2}$/.test(u.searchParams.get('date') || '') ? u.searchParams.get('date') : statsDay();
+      // fix70: ?tz=tpe|kst|utc 選日界（預設 tpe）；tpe 缺新格式鍵時回退讀 fix69 的舊格式鍵（部署當日的連續性）。
+      const tz = ['tpe', 'kst', 'utc'].includes(u.searchParams.get('tz')) ? u.searchParams.get('tz') : 'tpe';
+      const off = tz === 'kst' ? 9 : tz === 'utc' ? 0 : 8;
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(u.searchParams.get('date') || '') ? u.searchParams.get('date') : dayIn(off);
       const metrics = ['worker_requests', 'kakao_keyword', 'kakao_coord2address', 'kakao_address', 'kakao_category', 'place_fetch'];
-      const out = { date };
-      for (const m of metrics) out[m] = parseInt((await env.STATS.get('s:' + date + ':' + m)) || '0', 10) || 0;
+      const out = { date, tz };
+      for (const m of metrics) {
+        let v = await env.STATS.get('s:' + tz + ':' + date + ':' + m);
+        if (v === null && tz === 'tpe') v = await env.STATS.get('s:' + date + ':' + m);
+        out[m] = parseInt(v || '0', 10) || 0;
+      }
       out.kakao_total = out.kakao_keyword + out.kakao_coord2address + out.kakao_address + out.kakao_category;
       return new Response(JSON.stringify(out), { headers: cors });
     }
