@@ -450,13 +450,13 @@ rows.push(row('L4', '英文模式 ID 未找到與備援（fix72）', async (c) =
   E('langZh').dispatch('click'); await flush();
   check(c, 'restored zh', E('googleOpen').textContent.includes('ID 未找到'), E('googleOpen').textContent);
 }));
-rows.push(row('L5', '頁尾額度剩餘百分比（日/月，fix73/81 分段載入）＋切英文重繪', async (c) => {
+rows.push(row('L5', '頁尾額度剩餘百分比（僅今日，fix73/83）＋切英文重繪', async (c) => {
   await flush();
   check(c, 'quota visible', E('quotaLine').hidden === false, String(E('quotaLine').hidden));
   check(c, 'daily pct (max type 500/100000)', E('quotaLine').textContent.includes('99.50'), E('quotaLine').textContent);
-  check(c, 'monthly pct (30000/3000000)', E('quotaLine').textContent.includes('99.00'), E('quotaLine').textContent);
+  check(c, 'no monthly on page (fix83)', !E('quotaLine').textContent.includes('99.00') && !E('quotaLine').textContent.includes('本月'), E('quotaLine').textContent);
   check(c, 'no system info on page', !E('quotaLine').textContent.includes('UTC') && !E('quotaLine').textContent.includes('系統'), E('quotaLine').textContent);
-  check(c, 'quota cached to localStorage (fix82)', (localStorage.getItem('mcQuota') || '').includes('"d":"99.50"') && (localStorage.getItem('mcQuota') || '').includes('"m":"99.00"'), localStorage.getItem('mcQuota') || 'null');
+  check(c, 'quota cached to localStorage (fix82)', (localStorage.getItem('mcQuota') || '').includes('"d":"99.50"'), localStorage.getItem('mcQuota') || 'null');
   E('langEn').dispatch('click'); await flush();
   check(c, 'quota en', E('quotaLine').textContent.includes('Query quota remaining'), E('quotaLine').textContent);
   E('langZh').dispatch('click'); await flush();

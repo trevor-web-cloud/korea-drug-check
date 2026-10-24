@@ -233,7 +233,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-24-fix82</p>
+  <p class="note" style="text-align:center">v2026-10-24-fix83</p>
 </div>
 
 <script>
@@ -404,7 +404,7 @@ zh: {
   guideNote1: 'App 顯示的都是<strong>短碼</strong>，務必連城市名一起貼。',
   guideNote2: '短碼的格子字不同就是不同位置：<code>F6</code> 是飯店、<code>FVG</code> 是旁邊公園，相差約 150 公尺。請確認是從地點卡片複製的碼，不是長按空地拿到的碼。',
   guideNote3: 'Plus Code 代表一塊範圍，不是精確圖釘；轉換頁放的是範圍中心。<code>+</code> 後面 2 字、還原後共 10 字的碼，範圍約 14 公尺見方，中心和店家最多可能差約 10 公尺；<code>+</code> 後面 3 字、還原後共 11 字的碼，範圍約 3 公尺見方，落差才約 2 公尺。要精準找店，請改貼店家的分享連結，或到現場再以店名、招牌確認。',
-  quotaLine: '查詢額度剩餘 — 今日 Kakao {d}%（每日上限以用量最高一類計，韓國時間）・本月 Kakao {m}%'
+  quotaLine: '查詢額度剩餘 — 今日 Kakao {d}%（每日上限以用量最高一類計，韓國時間）'
 },
 en: {
   docTitle: 'Naver · Kakao · Yahoo JP · Google Map Converter',
@@ -535,7 +535,7 @@ en: {
   guideNote1: 'The app only shows <strong>short codes</strong> — always paste the city name with them.',
   guideNote2: 'Different cell letters mean a different place: <code>F6</code> is the hotel, <code>FVG</code> is the park next door, about 150 m apart. Make sure the code came from the place card, not from long-pressing the map.',
   guideNote3: 'A Plus Code stands for an area, not an exact pin; this page uses the center of the area. A code with 2 characters after the <code>+</code> (10 characters in total once restored) covers about 14 m across, so the center can be up to about 10 m from the place; a code with 3 characters after the <code>+</code> (11 in total) covers about 3 m, so the gap is only about 2 m. For an exact location, paste the place’s share link instead, or confirm by the name and sign when you get there.',
-  quotaLine: 'Query quota remaining — Kakao today {d}% (daily limit, busiest type, Korea time) · Kakao this month {m}%'
+  quotaLine: 'Query quota remaining — Kakao today {d}% (daily limit, busiest type, Korea time)'
 },
 id: {
   docTitle: 'Konverter Peta Naver · Kakao · Yahoo JP · Google',
@@ -666,7 +666,7 @@ id: {
   guideNote1: 'Aplikasi hanya menampilkan <strong>kode pendek</strong> — selalu tempel bersama nama kotanya.',
   guideNote2: 'Huruf sel yang berbeda berarti tempat yang berbeda: <code>F6</code> adalah hotel, <code>FVG</code> adalah taman di sebelahnya, berjarak sekitar 150 m. Pastikan kode berasal dari kartu tempat, bukan dari menekan lama peta.',
   guideNote3: 'Plus Code mewakili sebuah area, bukan pin yang persis; halaman ini memakai pusat area tersebut. Kode dengan 2 karakter setelah <code>+</code> (total 10 karakter setelah dipulihkan) mencakup sekitar 14 m, jadi pusatnya bisa meleset hingga sekitar 10 m dari tempatnya; kode dengan 3 karakter setelah <code>+</code> (total 11) mencakup sekitar 3 m, jadi selisihnya hanya sekitar 2 m. Untuk lokasi persis, tempel tautan bagikan tempat tersebut, atau konfirmasi dengan nama dan papan nama saat tiba.',
-  quotaLine: 'Sisa kuota pencarian — Kakao hari ini {d}% (batas harian, jenis tersibuk, waktu Korea) · Kakao bulan ini {m}%'
+  quotaLine: 'Sisa kuota pencarian — Kakao hari ini {d}% (batas harian, jenis tersibuk, waktu Korea)'
 }
 };
 let LANG = 'zh';
@@ -707,25 +707,19 @@ async function loadQuota() {
   const left = (used, limit) => Math.max(0, 100 - used / limit * 100).toFixed(2);
   const nowIso = new Date(Date.now() + 9 * 3600 * 1000).toISOString();
   const now = { date: nowIso.slice(0, 10), month: nowIso.slice(0, 7) };
-  const save = () => { try { localStorage.setItem('mcQuota', JSON.stringify({ d: quotaVals.d, m: quotaVals.m, date: now.date, month: now.month })); } catch (e) {} };
+  const save = () => { try { localStorage.setItem('mcQuota', JSON.stringify({ d: quotaVals.d, date: now.date })); } catch (e) {} };
   try {
     const c = JSON.parse(localStorage.getItem('mcQuota') || 'null');
-    if (c) {
-      const d = c.date === now.date ? c.d : '…';
-      const m = c.month === now.month ? c.m : '…';
-      if (d !== '…' || m !== '…') { quotaVals = { d, m }; renderQuota(); }
-    }
+    if (c && c.date === now.date && c.d) { quotaVals = { d: c.d }; renderQuota(); }
   } catch (e) {}
+  // FIX fix83: 使用者定「每月不須顯示」——頁面只顯示今日額度，不再呼叫每月加總端點（慢的根源直接移除；
+  // 本月累計仍保留在每日 08:00 報表與月結算裡）。Worker fix82 的每月加速因此只嘉惠報表，頁面不依賴。
   try {
     const kd = await fetch(base + '?tz=kst').then(r => r.json());
     if (!kd || kd.error) return;
     const maxType = Math.max(kd.kakao_keyword || 0, kd.kakao_coord2address || 0, kd.kakao_address || 0, kd.kakao_category || 0);
-    quotaVals = { d: left(maxType, 100000), m: (quotaVals && quotaVals.m) || '…' };
+    quotaVals = { d: left(maxType, 100000) };
     renderQuota(); save();
-  } catch (e) { return; }
-  try {
-    const km = await fetch(base + '?tz=kst&sum=month').then(r => r.json());
-    if (km && km.month && quotaVals) { quotaVals.m = left(km.kakao_total || 0, 3000000); renderQuota(); save(); }
   } catch (e) {}
 }
 function applyLang(l) {
