@@ -59,6 +59,14 @@ export default {
       // fix71: 總數 = 舊鍵底值（fix69 舊格式＋fix70 s: 鍵，時間窗與事件鍵不重疊）＋事件鍵加總。
       // fix73: 單日讀取抽成 readDay；?sum=month 時回傳該月 1 日到 date 當日的逐日加總（頁尾額度顯示用）。
       const readDay = async (d) => {
+        // fix87: 使用者原則「前一日已完成數量偵測，不應該重複計算」——已結束的日期第一次算出後，
+        // 把總數存成一筆定版值（f:<tz>:<date>），之後讀取只 GET 一次、不再 list 事件鍵重掃。
+        // 定版留 15 分鐘寬限（KV list 可見性延遲約 1 分鐘），避免跨日界邊緣的事件被漏凍結。
+        const fKey = 'f:' + tz + ':' + d;
+        const isPast = d < dayIn(off);
+        if (isPast) {
+          try { const f = await env.STATS.get(fKey); if (f) return JSON.parse(f); } catch (e) {}
+        }
         const o = {};
         for (const m of metrics) {
           let base = parseInt((await env.STATS.get('s:' + tz + ':' + d + ':' + m)) || '0', 10) || 0;
@@ -77,43 +85,24 @@ export default {
           } while (cursor);
         } catch (e) {}
         o.kakao_total = o.kakao_keyword + o.kakao_coord2address + o.kakao_address + o.kakao_category;
+        if (isPast) {
+          const dayEndUtc = Date.parse(d + 'T00:00:00Z') - off * 3600 * 1000 + 86400 * 1000;
+          if (Date.now() > dayEndUtc + 900 * 1000) {
+            try { await env.STATS.put(fKey, JSON.stringify(o)); } catch (e) {}
+          }
+        }
         return o;
       };
       if (u.searchParams.get('sum') === 'month') {
-        // fix82: 原逐日 readDay 串行跑整月（24 天 × 每日 12 GET＋1 list ≈ 14 秒，頁面實機回報「要等一陣子」）。
-        // 改為以月份為前綴一次列舉整月事件鍵加總＋舊鍵底值一次列舉逐鍵 GET（舊窗與事件鍵不重疊）；
-        // 只統計當月（date 所在月、1 日起至月底；事件鍵只由當日產生，不含未來日，結果與逐日加總等價）。
+        // fix87: 逐日 readDay 並行彙總——過去的日子走定版值（每日期 1 次 GET），只有今天即時 list 計算；
+        // 不再整月重掃事件鍵（fix82 的月份前綴一次列舉至此退役），list 用量大降、速度更快。
         const ym = date.slice(0, 7);
+        const lastDay = parseInt(date.slice(8, 10), 10);
+        const days = [];
+        for (let d = 1; d <= lastDay; d++) days.push(ym + '-' + String(d).padStart(2, '0'));
+        const parts = await Promise.all(days.map(readDay));
         const agg = { date, tz, month: ym };
-        for (const m of metrics) agg[m] = 0;
-        const listAll = async (prefix) => {
-          const names = [];
-          try {
-            let cursor;
-            do {
-              const page = await env.STATS.list({ prefix, cursor });
-              for (const k of page.keys) names.push(k.name);
-              cursor = page.list_complete ? null : page.cursor;
-            } while (cursor);
-          } catch (e) {}
-          return names;
-        };
-        for (const name of await listAll('e:' + tz + ':' + ym + '-')) {
-          const parts = name.split(':');
-          if (parts.length >= 6 && metrics.includes(parts[3])) agg[parts[3]] += parseInt(parts[4], 10) || 0;
-        }
-        for (const name of await listAll('s:' + tz + ':' + ym + '-')) {
-          const m = name.split(':').pop();
-          if (metrics.includes(m)) agg[m] += parseInt((await env.STATS.get(name)) || '0', 10) || 0;
-        }
-        if (tz === 'tpe') {
-          for (const name of await listAll('s:' + ym + '-')) {
-            const parts = name.split(':');
-            if (parts.length === 3 && /^\d{4}-\d{2}-\d{2}$/.test(parts[1]) && metrics.includes(parts[2])) {
-              agg[parts[2]] += parseInt((await env.STATS.get(name)) || '0', 10) || 0;
-            }
-          }
-        }
+        for (const m of metrics) agg[m] = parts.reduce((a, p) => a + (p[m] || 0), 0);
         agg.kakao_total = agg.kakao_keyword + agg.kakao_coord2address + agg.kakao_address + agg.kakao_category;
         return new Response(JSON.stringify(agg), { headers: cors });
       }
