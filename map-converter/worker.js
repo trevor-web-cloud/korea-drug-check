@@ -27,14 +27,17 @@ export default {
     // utc（Cloudflare 每日上限日界）。三地皆無夏令時間，固定偏移即精確。每個事件同時寫三個桶。
     function dayIn(offsetH) { return new Date(Date.now() + offsetH * 3600 * 1000).toISOString().slice(0, 10); }
     const TZ_DAYS = [['tpe', 8], ['kst', 9], ['utc', 0]];
+    // fix71: 計數改「事件鍵」制——fix70 的 get-modify-put 在連續呼叫下被實測到少計
+    // （KV 最終一致性＋讀改寫競態；utc worker_requests 3 次只記到 1）。事件鍵每次寫獨立鍵、
+    // 次數編在鍵名（e:<tz>:<date>:<metric>:<n>:<rand>），讀取時 list 加總，無競態；100 天 TTL 自動清理。
     async function bump(metric, n) {
       if (!env || !env.STATS) return;
       const cnt = n || 1;
       for (const [tz, off] of TZ_DAYS) {
         try {
-          const key = 's:' + tz + ':' + dayIn(off) + ':' + metric;
-          const cur = parseInt((await env.STATS.get(key)) || '0', 10) || 0;
-          await env.STATS.put(key, String(cur + cnt));
+          const ek = 'e:' + tz + ':' + dayIn(off) + ':' + metric + ':' + cnt + ':' +
+            Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+          await env.STATS.put(ek, '1', { expirationTtl: 86400 * 100 });
         } catch (e) {}
       }
     }
@@ -54,11 +57,23 @@ export default {
       const date = /^\d{4}-\d{2}-\d{2}$/.test(u.searchParams.get('date') || '') ? u.searchParams.get('date') : dayIn(off);
       const metrics = ['worker_requests', 'kakao_keyword', 'kakao_coord2address', 'kakao_address', 'kakao_category', 'place_fetch'];
       const out = { date, tz };
+      // fix71: 總數 = 舊鍵底值（fix69 舊格式＋fix70 s: 鍵，時間窗與事件鍵不重疊）＋事件鍵加總。
       for (const m of metrics) {
-        let v = await env.STATS.get('s:' + tz + ':' + date + ':' + m);
-        if (v === null && tz === 'tpe') v = await env.STATS.get('s:' + date + ':' + m);
-        out[m] = parseInt(v || '0', 10) || 0;
+        let base = parseInt((await env.STATS.get('s:' + tz + ':' + date + ':' + m)) || '0', 10) || 0;
+        if (tz === 'tpe') base += parseInt((await env.STATS.get('s:' + date + ':' + m)) || '0', 10) || 0;
+        out[m] = base;
       }
+      try {
+        let cursor;
+        do {
+          const page = await env.STATS.list({ prefix: 'e:' + tz + ':' + date + ':', cursor });
+          for (const k of page.keys) {
+            const parts = k.name.split(':');
+            if (parts.length >= 6 && metrics.includes(parts[3])) out[parts[3]] += parseInt(parts[4], 10) || 0;
+          }
+          cursor = page.list_complete ? null : page.cursor;
+        } while (cursor);
+      } catch (e) {}
       out.kakao_total = out.kakao_keyword + out.kakao_coord2address + out.kakao_address + out.kakao_category;
       return new Response(JSON.stringify(out), { headers: cors });
     }
