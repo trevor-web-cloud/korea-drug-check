@@ -221,7 +221,7 @@ rows.push(row('N9', '確認附近店家後 Naver 網頁按鈕開店名頁（fix5
   E('findBtn').dispatch('click'); await flush();
   candNext(); candYes(); await flush();
   check(c, 'naver href is place page', E('naverOpen').href === 'https://map.naver.com/p/search/' + encodeURIComponent('다이소 부산남포점'), E('naverOpen').href);
-  check(c, 'google uses candidate coords', E('googleOpen').href.includes('35.0984'), E('googleOpen').href.slice(0, 80));
+  check(c, 'google uses candidate coords', E('googleOpen').href.includes('35.09852'), E('googleOpen').href.slice(0, 80));
 }));
 rows.push(row('K9', '候選清單附原本名稱對照行（fix51：英文名連結→地址模式候選）', async (c) => {
   await pasteAndParse('https://www.google.com/maps/place/Brosis+Hotel/@35.0986,129.0309,17z');
@@ -514,4 +514,16 @@ rows.push(row('X10', '互通：Kakao 分享（濟州 Parkside 實例）→補座
   check(c, 'kakao id page', E('kakaoOpen').href === 'https://map.kakao.com/link/map/11334932', E('kakaoOpen').href);
   check(c, 'google opens', E('googleOpen').href.includes('33.4924'), E('googleOpen').href.slice(0, 80));
   check(c, 'naver opens', E('naverOpen').href.includes('lat=33.4924'), E('naverOpen').href.slice(0, 90));
+}));
+rows.push(row('K14', '店名候選規則：30 公尺內＋最多 10 家（fix79）', async (c) => {
+  await pasteAndParse('32XJ+C9 釜山 南韓');
+  E('findBtn').dispatch('click'); await flush();
+  check(c, 'far place filtered (>30m)', !candAllText().includes('먼곳식당'), candAllText().slice(0, 80));
+  check(c, 'rule note in head', E('candidateHead').textContent.includes('30 公尺內、最多 10 家'), E('candidateHead').textContent.slice(0, 80));
+  check(c, 'near places kept (addr+2)', candRows().length === 3, String(candRows().length));
+  await clearAll();
+  await pasteAndParse('37.5666103, 126.9783882');
+  E('findBtn').dispatch('click'); await flush();
+  check(c, 'capped at 10 places + address', candRows().length === 11, String(candRows().length));
+  check(c, '10th present, 11th/12th absent', candAllText().includes('시청가게10') && !candAllText().includes('시청가게11') && !candAllText().includes('시청가게12'), candAllText().slice(-60));
 }));

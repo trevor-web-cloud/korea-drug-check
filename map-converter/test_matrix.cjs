@@ -64,17 +64,22 @@ global.fetch = async (url) => {
   } else if (u.includes('/place?')) {
     if (u.includes('id=338712143')) body = { id: '338712143', name: '브로시스호텔', lat: 35.0985955, lng: 129.0308898 };
     else body = { error: 'not_found' };
+  } else if (u.includes('/nearby') && u.includes('37.5666103')) {
+    const items = [{ title: '서울특별시 중구 세종대로 110', address: '서울 중구 태평로1가 31', roadAddress: '서울 중구 세종대로 110', kind: 'address', mapx: '1269784000', mapy: '375666200', link: '', category: '', telephone: '' }];
+    for (let i = 1; i <= 12; i++) items.push({ title: '시청가게' + String(i).padStart(2, '0'), address: '서울 중구 세종대로 ' + (110 + i), roadAddress: '', kind: 'place', mapx: String(1269783882 + i * 100), mapy: String(375666103 + i * 200), link: '', category: '음식점 > 한식', telephone: '' });
+    body = { provider: 'kakao-address', total: items.length, items };
   } else if (u.includes('/nearby') && u.includes('37.4496919')) {
     body = { provider: 'kakao-address', total: 4, items: [
       { title: '인천 연수구 공항로 271', address: '인천 연수구 운서동 2851', roadAddress: '인천 연수구 공항로 271', kind: 'address', mapx: '1264524200', mapy: '374496900', link: '', category: '', telephone: '' },
       { title: '공항카페', address: '인천 연수구 운서동 2851', roadAddress: '인천 연수구 공항로 272', kind: 'place', mapx: '1264525000', mapy: '374497000', link: '', category: '음식점 > 카페', telephone: '' },
-      { title: '공항역', address: '인천 연수구 운서동 2850', roadAddress: '인천 연수구 공항로 지하 271', kind: 'place', mapx: '1264530000', mapy: '374498000', link: '', category: '교통,수송 > 지하철 > 지하철역', telephone: '' },
-      { title: '공항서점', address: '인천 연수구 운서동 2852', roadAddress: '인천 연수구 공항로 280', kind: 'place', mapx: '1264540000', mapy: '374499000', link: '', category: '음식점 > 카페', telephone: '' }] };
+      { title: '공항역', address: '인천 연수구 운서동 2850', roadAddress: '인천 연수구 공항로 지하 271', kind: 'place', mapx: '1264526500', mapy: '374497300', link: '', category: '교통,수송 > 지하철 > 지하철역', telephone: '' },
+      { title: '공항서점', address: '인천 연수구 운서동 2852', roadAddress: '인천 연수구 공항로 280', kind: 'place', mapx: '1264526800', mapy: '374497100', link: '', category: '음식점 > 카페', telephone: '' }] };
   } else if (u.includes('/nearby')) {
     body = { provider: 'kakao-address', total: 3, items: [
       { title: '부산 중구 구덕로 34번길 5', address: '부산 중구 남포동2가 24-1', roadAddress: '부산 중구 구덕로 34번길 5', kind: 'address', mapx: '1290310500', mapy: '350987000', link: '', category: '', telephone: '' },
-      { title: '다이소 부산남포점', address: '부산 중구 남포동2가 24-2', roadAddress: '부산 중구 구덕로 34', kind: 'place', mapx: '1290305000', mapy: '350984000', link: '', category: '쇼핑 > 생활용품할인점 > 다이소', telephone: '' },
-      { title: '남포역 부산1호선', address: '부산 중구 남포동1가 11', roadAddress: '부산 중구 중앙대로 지하 240', kind: 'place', mapx: '1290315000', mapy: '350978000', link: '', category: '교통,수송 > 지하철 > 지하철역', telephone: '' }] };
+      { title: '다이소 부산남포점', address: '부산 중구 남포동2가 24-2', roadAddress: '부산 중구 구덕로 34', kind: 'place', mapx: '1290308000', mapy: '350985200', link: '', category: '쇼핑 > 생활용품할인점 > 다이소', telephone: '' },
+      { title: '남포역 부산1호선', address: '부산 중구 남포동1가 11', roadAddress: '부산 중구 중앙대로 지하 240', kind: 'place', mapx: '1290311000', mapy: '350984500', link: '', category: '교통,수송 > 지하철 > 지하철역', telephone: '' },
+      { title: '먼곳식당', address: '부산 중구 남포동2가 30', roadAddress: '부산 중구 구덕로 40', kind: 'place', mapx: '1290314000', mapy: '350990000', link: '', category: '음식점 > 한식', telephone: '' }] };
   } else if (u.includes('translate.googleapis.com')) {
     // fix53: 頁面直呼 gtx，回應形狀是巢狀陣列
     const t = decodeURIComponent((u.match(/[?&]q=([^&]*)/) || [])[1] || '').replace(/\+/g, ' ');
