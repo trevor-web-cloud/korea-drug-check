@@ -232,8 +232,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note" data-i18n="yahooNote">日本地圖。用 /place/ 連結開啟會出現紅色圖釘（2026-10-23 瀏覽器實測；舊的置中形式沒有圖釘，已停用）。注意：從 Yahoo 手機版分享回來的連結，座標是當時的「地圖中心」而非圖釘，可能差幾十公尺（實測約 82 公尺）；韓國地點貼入後，請用第 3 步「確認地標」校正。</p>
     </div>
   </section>
-  <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-24-fix83</p>
+  <p class="note" style="text-align:center">v2026-10-24-fix84</p>
 </div>
 
 <script>
@@ -404,7 +403,6 @@ zh: {
   guideNote1: 'App 顯示的都是<strong>短碼</strong>，務必連城市名一起貼。',
   guideNote2: '短碼的格子字不同就是不同位置：<code>F6</code> 是飯店、<code>FVG</code> 是旁邊公園，相差約 150 公尺。請確認是從地點卡片複製的碼，不是長按空地拿到的碼。',
   guideNote3: 'Plus Code 代表一塊範圍，不是精確圖釘；轉換頁放的是範圍中心。<code>+</code> 後面 2 字、還原後共 10 字的碼，範圍約 14 公尺見方，中心和店家最多可能差約 10 公尺；<code>+</code> 後面 3 字、還原後共 11 字的碼，範圍約 3 公尺見方，落差才約 2 公尺。要精準找店，請改貼店家的分享連結，或到現場再以店名、招牌確認。',
-  quotaLine: '查詢額度剩餘 — 今日 Kakao {d}%（每日上限以用量最高一類計，韓國時間）'
 },
 en: {
   docTitle: 'Naver · Kakao · Yahoo JP · Google Map Converter',
@@ -535,7 +533,6 @@ en: {
   guideNote1: 'The app only shows <strong>short codes</strong> — always paste the city name with them.',
   guideNote2: 'Different cell letters mean a different place: <code>F6</code> is the hotel, <code>FVG</code> is the park next door, about 150 m apart. Make sure the code came from the place card, not from long-pressing the map.',
   guideNote3: 'A Plus Code stands for an area, not an exact pin; this page uses the center of the area. A code with 2 characters after the <code>+</code> (10 characters in total once restored) covers about 14 m across, so the center can be up to about 10 m from the place; a code with 3 characters after the <code>+</code> (11 in total) covers about 3 m, so the gap is only about 2 m. For an exact location, paste the place’s share link instead, or confirm by the name and sign when you get there.',
-  quotaLine: 'Query quota remaining — Kakao today {d}% (daily limit, busiest type, Korea time)'
 },
 id: {
   docTitle: 'Konverter Peta Naver · Kakao · Yahoo JP · Google',
@@ -666,7 +663,6 @@ id: {
   guideNote1: 'Aplikasi hanya menampilkan <strong>kode pendek</strong> — selalu tempel bersama nama kotanya.',
   guideNote2: 'Huruf sel yang berbeda berarti tempat yang berbeda: <code>F6</code> adalah hotel, <code>FVG</code> adalah taman di sebelahnya, berjarak sekitar 150 m. Pastikan kode berasal dari kartu tempat, bukan dari menekan lama peta.',
   guideNote3: 'Plus Code mewakili sebuah area, bukan pin yang persis; halaman ini memakai pusat area tersebut. Kode dengan 2 karakter setelah <code>+</code> (total 10 karakter setelah dipulihkan) mencakup sekitar 14 m, jadi pusatnya bisa meleset hingga sekitar 10 m dari tempatnya; kode dengan 3 karakter setelah <code>+</code> (total 11) mencakup sekitar 3 m, jadi selisihnya hanya sekitar 2 m. Untuk lokasi persis, tempel tautan bagikan tempat tersebut, atau konfirmasi dengan nama dan papan nama saat tiba.',
-  quotaLine: 'Sisa kuota pencarian — Kakao hari ini {d}% (batas harian, jenis tersibuk, waktu Korea)'
 }
 };
 let LANG = 'zh';
@@ -686,42 +682,8 @@ function specText(spec) {
   for (const k in (spec.v || {})) { const val = spec.v[k]; v[k] = (val && typeof val === 'object' && val.k) ? specText(val) : val; }
   return T(spec.k, v);
 }
-// FIX fix73: 頁尾查詢額度剩餘 — 只顯示 Kakao 可查詢額度（使用者定：頁面不放系統資訊，Worker/Cloudflare 數字只在每日報表）。
-// 讀 Worker 公開 /stats（kst 日界＋KST 曆月）：每日剩餘以「用量最高的一類 Kakao API」對每日 100,000 上限計
-// （最先耗盡的那一類）；每月以 kakao_total 對每月 3,000,000 上限計。
-let quotaVals = null;
-function renderQuota() {
-  const el = $('quotaLine');
-  if (!el || !quotaVals) return;
-  el.textContent = T('quotaLine', quotaVals);
-  el.hidden = false;
-}
-async function loadQuota() {
-  // FIX fix81: 使用者實機回報「要等一陣子才出現」——實測每日端點 0.7 秒、每月加總端點 14 秒
-  // （Worker 逐日讀 KV 彙總整月），舊版等兩者都回來才顯示。改為分段：每日先到先顯示（月欄先佔位 …），每月到齊再補上。
-  // 位置維持頁尾原處（使用者定「只需放在原本地方」，fix80 曾加第 3 步上方一份，已撤）。
-  // FIX fix82: 使用者選定加速 1＋2——(1) 上次餘額存 localStorage，開頁先即時顯示（同 KST 日的日欄、同 KST 月的月欄才沿用，
-  // 過期欄位顯示 …等新值）；背景抓到新值再覆寫並存回。(2) head 加 preconnect 先暖 Worker 連線。
-  // 每月端點本身由 Worker fix82 改為月份前綴一次列舉（14 秒→約 1 秒，需使用者部署後生效）。
-  const base = 'https://map-resolve.tsai0215.workers.dev/stats';
-  const left = (used, limit) => Math.max(0, 100 - used / limit * 100).toFixed(2);
-  const nowIso = new Date(Date.now() + 9 * 3600 * 1000).toISOString();
-  const now = { date: nowIso.slice(0, 10), month: nowIso.slice(0, 7) };
-  const save = () => { try { localStorage.setItem('mcQuota', JSON.stringify({ d: quotaVals.d, date: now.date })); } catch (e) {} };
-  try {
-    const c = JSON.parse(localStorage.getItem('mcQuota') || 'null');
-    if (c && c.date === now.date && c.d) { quotaVals = { d: c.d }; renderQuota(); }
-  } catch (e) {}
-  // FIX fix83: 使用者定「每月不須顯示」——頁面只顯示今日額度，不再呼叫每月加總端點（慢的根源直接移除；
-  // 本月累計仍保留在每日 08:00 報表與月結算裡）。Worker fix82 的每月加速因此只嘉惠報表，頁面不依賴。
-  try {
-    const kd = await fetch(base + '?tz=kst').then(r => r.json());
-    if (!kd || kd.error) return;
-    const maxType = Math.max(kd.kakao_keyword || 0, kd.kakao_coord2address || 0, kd.kakao_address || 0, kd.kakao_category || 0);
-    quotaVals = { d: left(maxType, 100000) };
-    renderQuota(); save();
-  } catch (e) {}
-}
+// FIX fix84: 使用者定用量數字「只需提供後台每月每日報表」——頁面額度行整段移除，頁面不再呼叫 /stats；
+// 用量只出現在每日 08:00 後台報表（今日＋本月累計＋月結算，讀 Worker /stats）。fix73–83 的頁面額度顯示至此結案。
 function applyLang(l) {
   LANG = (l === 'en' || l === 'id') ? l : 'zh';
   try { localStorage.setItem('mcLang', LANG); } catch (e) {}
@@ -736,7 +698,6 @@ function applyLang(l) {
     if (b) { b.style.background = LANG === code ? '#111' : '#fff'; b.style.color = LANG === code ? '#fff' : '#111'; }
   }
   updateLinks();
-  renderQuota();
   if (els.candidateBox && !els.candidateBox.hidden) renderCandidateList();
 }
 function wgsToMerc(lng,lat){
@@ -1749,7 +1710,6 @@ $('langZh').addEventListener('click',()=>applyLang('zh'));
 $('langEn').addEventListener('click',()=>applyLang('en'));
 $('langId').addEventListener('click',()=>applyLang('id'));
 applyLang(LANG); setStatus('',true);
-loadQuota();
 </script>
 
 <!-- FIX fix27: Google Maps Plus Code 使用說明與教學（可收合，預設收起，不干擾簡化版面） -->
