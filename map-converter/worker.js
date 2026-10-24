@@ -32,12 +32,10 @@ export default {
         await env.STATS.put(key, String(cur + (n || 1)));
       } catch (e) {}
     }
-    // fix69b: 保險庫／外部工具驗證金鑰時通常打根路徑；帶正確 key 時回 200，其餘維持原行為（落入 /resolve 的 400）。
+    // fix69b/c: 連接頁驗證主機時會打根路徑（可能不帶金鑰）；根路徑無條件回 200 服務資訊
+    // （轉換器只用 /resolve /local /nearby /place /stats，根路徑原本只是落入 /resolve 回 400，無人依賴）。
     if (u.pathname === '/') {
-      const key = u.searchParams.get('key') || '';
-      if (env && env.STATS_KEY && key === env.STATS_KEY) {
-        return new Response(JSON.stringify({ ok: true, service: 'map-resolve' }), { headers: cors });
-      }
+      return new Response(JSON.stringify({ ok: true, service: 'map-resolve' }), { headers: cors });
     }
     if (u.pathname === '/stats') {
       const key = u.searchParams.get('key') || '';
