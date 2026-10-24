@@ -48,6 +48,9 @@ button,.btn{appearance:none;border:0;border-radius:999px;padding:14px 20px;min-h
 .ready{margin-top:16px;padding:16px;border-radius:14px;background:#dcfae6;border:2px solid #067647;color:#05603a;font-size:19px;font-weight:700}
 .candidate{margin:10px 0;padding:14px;border-radius:14px;background:#fff7d6;border:2px solid #b54708;color:#7a2e0e;font-size:17px;font-weight:600}
 .candidate .cand-btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.candidate .candsec{margin:12px 0 4px;font-size:16px;font-weight:800;color:#7a2e0e}
+.candidate .candrow{display:block;width:100%;margin:6px 0;padding:12px 14px;border-radius:12px;border:2px solid #b54708;background:#fffdf4;color:#7a2e0e;font-size:17px;font-weight:600;text-align:left;white-space:pre-line;cursor:pointer;min-height:54px;line-height:1.45}
+.candidate .candrow:active{background:#ffedb3}
 .ready span{display:block;margin-top:4px;font-size:17px;font-weight:600}
 .advanced{margin:4px 0 14px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#f9fafb}
 .advanced summary{font-size:16px;font-weight:700;cursor:pointer;padding:6px 0}
@@ -129,10 +132,23 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note" style="margin-top:2px" data-i18n="landmarkNote">座標只是大概位置（例如 Plus Code）時，在這裡找一次、確認一次就好。確認後，Naver、Kakao、Google、Yahoo 都會改用這個查證過的地標。</p>
       <button class="btn btn-landmark" id="findBtn" type="button" style="display:none;width:100%;margin:6px 0" data-i18n="findBtn">🔍 找地標並確認</button>
       <div class="candidate" id="candidateBox" hidden>
-        <div id="candidateText">—</div>
+        <div id="candidateHead" style="white-space:pre-line">—</div>
+        <p class="candsec" id="candSecAddr" data-i18n="candSecAddr" hidden>📍 地址</p>
+        <button class="candrow" id="candRow0" type="button" hidden></button>
+        <p class="candsec" id="candSecPlaces" data-i18n="candSecPlaces" hidden>🏠 店名</p>
+        <button class="candrow" id="candRow1" type="button" hidden></button>
+        <button class="candrow" id="candRow2" type="button" hidden></button>
+        <button class="candrow" id="candRow3" type="button" hidden></button>
+        <button class="candrow" id="candRow4" type="button" hidden></button>
+        <button class="candrow" id="candRow5" type="button" hidden></button>
+        <button class="candrow" id="candRow6" type="button" hidden></button>
+        <button class="candrow" id="candRow7" type="button" hidden></button>
+        <button class="candrow" id="candRow8" type="button" hidden></button>
+        <button class="candrow" id="candRow9" type="button" hidden></button>
+        <button class="candrow" id="candRow10" type="button" hidden></button>
+        <button class="candrow" id="candRow11" type="button" hidden></button>
+        <button class="candrow" id="candRow12" type="button" hidden></button>
         <div class="cand-btns">
-          <button class="btn btn-landmark" id="candidateYes" type="button" data-i18n="candYes">就是這家</button>
-          <button class="btn btn-ghost" id="candidateNext" type="button" data-i18n="candNext">不是，換一家</button>
           <button class="btn btn-ghost" id="candidateClose" type="button" data-i18n="candClose">關閉</button>
         </div>
       </div>
@@ -215,7 +231,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-24-fix76</p>
+  <p class="note" style="text-align:center">v2026-10-24-fix77</p>
 </div>
 
 <script>
@@ -225,8 +241,9 @@ const els = {paste:$('paste'),name:$('name'),lat:$('lat'),lng:$('lng'),mx:$('mx'
   googleLink:$('googleLink'),googleApp:$('googleApp'),googleOpen:$('googleOpen'),googleCoordOpen:$('googleCoordOpen'),
   googleAppIOS:$('googleAppIOS'),googleAppAndroid:$('googleAppAndroid'),googleNameFallback:$('googleNameFallback'),
   naverLink:$('naverLink'),naverApp:$('naverApp'),naverOpen:$('naverOpen'),naverCoordOpen:$('naverCoordOpen'),naverAppOpen:$('naverAppOpen'),
-  findBtn:$('findBtn'),candidateBox:$('candidateBox'),candidateText:$('candidateText'),
-  candidateYes:$('candidateYes'),candidateNext:$('candidateNext'),candidateClose:$('candidateClose'),
+  findBtn:$('findBtn'),candidateBox:$('candidateBox'),candidateHead:$('candidateHead'),
+  candSecAddr:$('candSecAddr'),candSecPlaces:$('candSecPlaces'),candidateClose:$('candidateClose'),
+  candRows:Array.from({length:13},(_,i)=>$('candRow'+i)),
   naverAppAndroid:$('naverAppAndroid'),naverAppAndroidText:$('naverAppAndroidText'),naverNameFallback:$('naverNameFallback'),
   yahooLink:$('yahooLink'),yahooOpen:$('yahooOpen'),yahooNameFallback:$('yahooNameFallback'),
   kakaoLink:$('kakaoLink'),kakaoOpen:$('kakaoOpen'),kakaoAppOpen:$('kakaoAppOpen'),kakaoAppAndroid:$('kakaoAppAndroid'),kakaoBadge:$('kakaoBadge'),yahooBadge:$('yahooBadge'),status:$('parseStatus'),
@@ -241,7 +258,6 @@ let currentKakaoId = '';
 // FIX fix40: Naver 官方地區搜尋 API 只能回傳候選店名/地址/座標，沒有 place ID。
 // 流程：以韓文店名查詢 → 以距離排序 → 使用者一鍵確認 → Naver 按鈕改用該候選在 Naver 資料中的座標。
 let naverCandidates = [];
-let naverCandidateIdx = 0;
 let naverOverride = null; // {title,address,lat,lng,distanceM} 已確認的 Naver 候選座標
 let candidateSource = 'name'; // fix47: 'name'（韓文店名查詢）或 'address'（無店名→座標反查地址）
 const LOCAL_WORKER = 'https://map-resolve.tsai0215.workers.dev/local';
@@ -278,7 +294,7 @@ zh: {
   nameLabel: '地點名稱（不用填也可以）', namePh: '例如：飯店或景點名稱',
   step3Title: '第 3 步：確認地標', landmarkHead: '✅ 確認地標', landmarkBadge: 'Naver・Kakao 共用',
   landmarkNote: '座標只是大概位置（例如 Plus Code）時，在這裡找一次、確認一次就好。確認後，Naver、Kakao、Google、Yahoo 都會改用這個查證過的地標。',
-  findBtn: '🔍 找地標並確認', candYes: '就是這家', candNext: '不是，換一家', candClose: '關閉',
+  findBtn: '🔍 找地標並確認', candClose: '關閉', candListHead: '找到 {n} 個候選，點一個就是確認——所有地圖按鈕會改用你點的那個地點：', candSecAddr: '📍 地址', candSecPlaces: '🏠 店名', candCat: '分類：{cat}',
   step4Title: '第 4 步：點一個地圖打開',
   advGoogle: '進階：查看或更改經緯度（一般不用點）', advNaver: '進階：查看或更改座標（一般不用點）',
   latPh: '緯度', lngPh: '經度', latAria: 'Google 緯度', lngAria: 'Google 經度', mxPh: 'X', myPh: 'Y', mxAria: 'Naver X 座標', myAria: 'Naver Y 座標',
@@ -366,8 +382,7 @@ zh: {
   candDistCoord: '與目前座標相距約 {d} 公尺。',
   candDistNone: '（目前沒有出發座標，確認後就會補上這家的座標。）',
   candFar: '⚠ 距離超過 200 公尺，可能不是同一家，請仔細確認。',
-  candAddrText: '用目前座標查到的韓國地址（第 {i} / {n} 個候選）：{title}\n{dist}{far}\n如果位置正確，請按「就是這家」，所有地圖按鈕會改用這個查證過的座標（比 Plus Code 的大概位置準）。要找附近的店家，請按「不是，換一家」往下看。',
-  candPlaceText: '找到最接近的地點（第 {i} / {n} 家）：{title}\n地址：{addr}\n{dist}{far}\n如果就是這家，請按「就是這家」，所有地圖按鈕會改用這家查證過的座標。',
+
   candEnGtx: '英文參考（Google 機翻，非官方名）：{t}',
   candEnMm: '英文參考（MyMemory 機翻，非官方名）：{t}',
   guideSummary: '📍 Google Maps Plus Code 使用說明（點開看教學）',
@@ -408,7 +423,7 @@ en: {
   nameLabel: 'Place name (optional)', namePh: 'e.g. a hotel or attraction name',
   step3Title: 'Step 3: Confirm the landmark', landmarkHead: '✅ Confirm landmark', landmarkBadge: 'Shared by Naver · Kakao',
   landmarkNote: 'When the coordinates are only approximate (e.g. from a Plus Code), find and confirm the place here once. After that, Naver, Kakao, Google and Yahoo will all use the verified landmark.',
-  findBtn: '🔍 Find & confirm landmark', candYes: 'This is the one', candNext: 'Not this one, next', candClose: 'Close',
+  findBtn: '🔍 Find & confirm landmark', candClose: 'Close', candListHead: 'Found {n} candidates — tap one to confirm it; all map buttons will use the place you tap:', candSecAddr: '📍 Address', candSecPlaces: '🏠 Places', candCat: 'Category: {cat}',
   step4Title: 'Step 4: Tap a map to open it',
   advGoogle: 'Advanced: view or edit latitude/longitude (usually not needed)', advNaver: 'Advanced: view or edit X/Y (usually not needed)',
   latPh: 'Latitude', lngPh: 'Longitude', latAria: 'Google latitude', lngAria: 'Google longitude', mxPh: 'X', myPh: 'Y', mxAria: 'Naver X coordinate', myAria: 'Naver Y coordinate',
@@ -496,8 +511,7 @@ en: {
   candDistCoord: 'About {d} m from the current coordinates.',
   candDistNone: '(There are no starting coordinates yet; confirming will fill in this place’s coordinates.)',
   candFar: '⚠ More than 200 m away — it may not be the same place, please check carefully.',
-  candAddrText: 'Korean address found for the current coordinates (candidate {i} of {n}): {title}\n{dist}{far}\nIf the location is right, tap “This is the one” — all map buttons will use this verified coordinate (more accurate than a Plus Code approximation). To see the nearby shops, tap “Not this one, next”.',
-  candPlaceText: 'Nearest place found ({i} of {n}): {title}\nAddress: {addr}\n{dist}{far}\nIf this is the one, tap “This is the one” — all map buttons will use this place’s verified coordinates.',
+
   candEnGtx: 'English reference (Google machine translation, not an official name): {t}',
   candEnMm: 'English reference (MyMemory machine translation, not an official name): {t}',
   guideSummary: '📍 Google Maps Plus Code guide (tap to open)',
@@ -538,7 +552,7 @@ id: {
   nameLabel: 'Nama tempat (boleh kosong)', namePh: 'mis. nama hotel atau tempat wisata',
   step3Title: 'Langkah 3: Konfirmasi landmark', landmarkHead: '✅ Konfirmasi landmark', landmarkBadge: 'Dipakai bersama Naver · Kakao',
   landmarkNote: 'Jika koordinat hanya perkiraan (mis. dari Plus Code), cari dan konfirmasi tempatnya di sini satu kali. Setelah itu, Naver, Kakao, Google, dan Yahoo semuanya memakai landmark terverifikasi ini.',
-  findBtn: '🔍 Cari & konfirmasi landmark', candYes: 'Ya, ini tempatnya', candNext: 'Bukan, berikutnya', candClose: 'Tutup',
+  findBtn: '🔍 Cari & konfirmasi landmark', candClose: 'Tutup', candListHead: 'Ditemukan {n} kandidat — ketuk satu untuk mengonfirmasi; semua tombol peta akan memakai tempat yang Anda ketuk:', candSecAddr: '📍 Alamat', candSecPlaces: '🏠 Nama tempat', candCat: 'Kategori: {cat}',
   step4Title: 'Langkah 4: Ketuk peta untuk membuka',
   advGoogle: 'Lanjutan: lihat atau ubah lintang/bujur (biasanya tidak perlu)', advNaver: 'Lanjutan: lihat atau ubah X/Y (biasanya tidak perlu)',
   latPh: 'Lintang', lngPh: 'Bujur', latAria: 'Lintang Google', lngAria: 'Bujur Google', mxPh: 'X', myPh: 'Y', mxAria: 'Koordinat X Naver', myAria: 'Koordinat Y Naver',
@@ -626,8 +640,7 @@ id: {
   candDistCoord: 'Sekitar {d} m dari koordinat saat ini.',
   candDistNone: '(Belum ada koordinat awal; mengonfirmasi akan mengisi koordinat tempat ini.)',
   candFar: '⚠ Lebih dari 200 m jauhnya — mungkin bukan tempat yang sama, periksa dengan teliti.',
-  candAddrText: 'Alamat Korea yang ditemukan untuk koordinat saat ini (kandidat {i} dari {n}): {title}\n{dist}{far}\nJika lokasinya benar, ketuk “Ya, ini tempatnya” — semua tombol peta akan memakai koordinat terverifikasi ini (lebih akurat daripada perkiraan Plus Code). Untuk melihat toko di sekitar, ketuk “Bukan, berikutnya”.',
-  candPlaceText: 'Tempat terdekat ditemukan ({i} dari {n}): {title}\nAlamat: {addr}\n{dist}{far}\nJika ini tempatnya, ketuk “Ya, ini tempatnya” — semua tombol peta akan memakai koordinat terverifikasi tempat ini.',
+
   candEnGtx: 'Referensi Inggris (terjemahan mesin Google, bukan nama resmi): {t}',
   candEnMm: 'Referensi Inggris (terjemahan mesin MyMemory, bukan nama resmi): {t}',
   guideSummary: '📍 Panduan Plus Code Google Maps (ketuk untuk membuka)',
@@ -704,7 +717,7 @@ function applyLang(l) {
   }
   updateLinks();
   renderQuota();
-  if (els.candidateBox && !els.candidateBox.hidden) showNaverCandidate();
+  if (els.candidateBox && !els.candidateBox.hidden) renderCandidateList();
 }
 function wgsToMerc(lng,lat){
   const x = lng * R / 180;
@@ -1184,7 +1197,7 @@ function parseInput(){
   // FIX fix17: 解析新輸入時先清空舊 ID，避免殘留上一個地點的 ftid / pinId 被誤用。
   currentPinId = ''; currentGoogleId = ''; currentKakaoId = '';
   // FIX fix40: 新輸入也要清掉上一個地點已確認的 Naver 候選，避免誤用到新地點。
-  naverOverride = null; naverCandidates = []; naverCandidateIdx = 0;
+  naverOverride = null; naverCandidates = [];
   if(els.candidateBox) els.candidateBox.hidden = true;
   const expandBtn = $('expandBtn');
   // FIX fix6: 貼上整段分享文字（[NAVER Maps]\n店名\n地址\n短連結）時，必須先取出乾淨的 URL，
@@ -1506,41 +1519,108 @@ function translateBoth(title){
 }
 // FIX fix59: 確認地標獨立成一區（fix58 曾在 Naver/Kakao 兩面板各放一份，使用者改定：獨立一區共用、只找一次）。
 function hideCandidateBoxes(){ if(els.candidateBox) els.candidateBox.hidden = true; }
-function showNaverCandidate(){
-  const c = naverCandidates[naverCandidateIdx];
-  const cb = { box: els.candidateBox, text: els.candidateText };
-  if(!c){ hideCandidateBoxes(); return; }
-  const far = c.distanceM > 200 ? T('candFar') : '';
-  // FIX fix47: 地址模式（無店名→座標反查）文案不同：這不是店家，是查證過的韓國地址座標。
-  // FIX fix49: 地址模式的候選混有附近實際地點（kind='place'），與地址候選（kind='address'）文案分開；
-  // 舊版 Worker 只有單一地址候選時 kind 可能缺失，非 'place' 一律當地址候選顯示。
-  // FIX fix51: 附上使用者原本貼的名稱（多為英文/中文）對照 — Kakao 候選只有韓文名（來源無英文字段），
-  // 不懂韓文的使用者靠這行＋距離核對是不是同一家。名稱欄與候選標題相同時不重複顯示。
-  const srcName = els.name.value.trim();
-  const refLine = (srcName && srcName !== c.title) ? T('candRefLine',{name:srcName}) + '\n' : '';
-  // FIX fix64: 無出發座標（店名查）時沒有距離可顯示，改說明確認後會補上座標。
-  const distText = isFinite(c.distanceM) ? T('candDistCoord',{d:Math.round(c.distanceM)}) : T('candDistNone');
-  cb.text.textContent = refLine + ((candidateSource === 'address' && c.kind !== 'place')
-    ? T('candAddrText',{i:naverCandidateIdx+1, n:naverCandidates.length, title:c.title, dist:distText, far})
-    : T('candPlaceText',{i:naverCandidateIdx+1, n:naverCandidates.length, title:c.title, addr:(c.roadAddress||c.address||'—'), dist:distText, far}));
-  cb.box.hidden = false;
-  // FIX fix52: 店家候選（kind='place'）附機翻英文參考行；地址候選不翻。非同步補上，切換候選後只認標題相同者，避免貼到別家。
-  // FIX fix54: 雙來源（Google＋MyMemory）並列，來源標明；譯文相同只顯示一行。
-  // FIX fix75: 使用者實機回報「地址候選沒看到英文」——地址候選也納入機翻英文參考行（看不懂韓文時地址最需要對照）；
-  // 仍維持使用者定的規則：機翻永遠只做韓→英，不隨介面語系（中/英/印尼）改變目標語言。
-  if(/[\uAC00-\uD7A3]/.test(c.title)){
-    const shownTitle = c.title;
-    const textEl = cb.text;
-    const baseText = textEl.textContent;
-    translateBoth(shownTitle).then(tr => {
-      if(!tr || !(naverCandidates[naverCandidateIdx] && naverCandidates[naverCandidateIdx].title === shownTitle)) return;
-      const lines = [];
-      if(tr.gtx && tr.gtx !== shownTitle) lines.push(T('candEnGtx',{t:tr.gtx}));
-      if(tr.mm && tr.mm !== shownTitle && tr.mm !== tr.gtx) lines.push(T('candEnMm',{t:tr.mm}));
-      if(lines.length) textEl.textContent = baseText + '\n' + lines.join('\n');
-    });
-  }
+// FIX fix77: 候選改「清單列表」（使用者定：1.地址 2.店名 3.分類）——一次全列出、點一列即確認，
+// 不再用「不是，換一家」逐家翻。地址固定第一區、店名第二區；店名（座標模式）依 Kakao 分類分組、組內照距離。
+const CAT_GLOSS = {
+  '음식점': {zh:'餐廳', en:'Restaurant', id:'Restoran'},
+  '카페': {zh:'咖啡廳', en:'Café', id:'Kafe'},
+  '대형마트': {zh:'大型超市', en:'Hypermarket', id:'Hipermarket'},
+  '편의점': {zh:'便利商店', en:'Convenience store', id:'Minimarket'},
+  '숙박': {zh:'住宿', en:'Accommodation', id:'Penginapan'},
+  '관광명소': {zh:'景點', en:'Attraction', id:'Objek wisata'},
+  '지하철역': {zh:'地鐵站', en:'Subway station', id:'Stasiun bawah tanah'},
+  '주차장': {zh:'停車場', en:'Parking', id:'Parkir'},
+  '쇼핑': {zh:'購物', en:'Shopping', id:'Belanja'},
+  '시장': {zh:'市場', en:'Market', id:'Pasar'},
+  '병원': {zh:'醫院', en:'Hospital', id:'Rumah sakit'},
+  '약국': {zh:'藥局', en:'Pharmacy', id:'Apotek'},
+  '은행': {zh:'銀行', en:'Bank', id:'Bank'},
+  '주유소': {zh:'加油站', en:'Gas station', id:'SPBU'},
+  '학교': {zh:'學校', en:'School', id:'Sekolah'}
+};
+function candGroupKey(category){
+  // Kakao category_name 是寬→細路徑（例：음식점 > 카페）：由最細一段往回找第一個已知分類；末段是品牌名（如 다이소）時自動退回上層。
+  const segs = String(category || '').split('>').map(s => s.trim()).filter(Boolean);
+  for(let i = segs.length - 1; i >= 0; i--){ if(CAT_GLOSS[segs[i]]) return segs[i]; }
+  return segs[0] || '';
 }
+function candGroupLabel(category){
+  const key = candGroupKey(category);
+  if(!key) return '';
+  const g = CAT_GLOSS[key];
+  return g ? (g[LANG] || g.zh) : key;
+}
+let displayCandidates = [];
+function groupPlacesByCategory(places){
+  const order = [], groups = new Map();
+  for(const p of places){
+    const k = candGroupKey(p.category);
+    if(!groups.has(k)){ groups.set(k, []); order.push(k); }
+    groups.get(k).push(p);
+  }
+  return order.flatMap(k => groups.get(k));
+}
+function candRowText(c){
+  const lines = [c.title];
+  if(c.kind === 'place'){
+    const a = c.roadAddress || c.address;
+    if(a && a !== c.title) lines.push(a);
+  }
+  const meta = [];
+  if(c.kind === 'place'){
+    const gl = candGroupLabel(c.category);
+    if(gl) meta.push(T('candCat',{cat:gl}));
+  }
+  // FIX fix64: 無出發座標（店名查）時沒有距離可顯示，改說明確認後會補上座標。
+  meta.push(isFinite(c.distanceM) ? T('candDistCoord',{d:Math.round(c.distanceM)}) : T('candDistNone'));
+  if(c.distanceM > 200) meta.push(T('candFar').trim());
+  lines.push(meta.join(' '));
+  return lines.join('\n');
+}
+function renderCandidateList(){
+  const box = els.candidateBox;
+  if(!box) return;
+  if(!naverCandidates.length){ box.hidden = true; return; }
+  // FIX fix51: 附上使用者原本貼的名稱（多為英文/中文）對照 — Kakao 候選只有韓文名（來源無英文字段），靠這行核對。
+  const srcName = els.name.value.trim();
+  const first = naverCandidates[0];
+  let head = (srcName && first && srcName !== first.title) ? T('candRefLine',{name:srcName}) + '\n' : '';
+  head += T('candListHead',{n:naverCandidates.length});
+  els.candidateHead.textContent = head;
+  const addr = naverCandidates.find(x => x.kind !== 'place') || null;
+  let places = naverCandidates.filter(x => x.kind === 'place');
+  if(candidateSource !== 'name') places = groupPlacesByCategory(places);
+  displayCandidates = [addr].concat(places);
+  if(els.candSecAddr) els.candSecAddr.hidden = !addr;
+  if(els.candSecPlaces) els.candSecPlaces.hidden = !places.length;
+  els.candRows.forEach((rowEl, i) => {
+    const c = displayCandidates[i];
+    if(!c){ rowEl.hidden = true; rowEl.textContent = ''; return; }
+    rowEl.hidden = false;
+    rowEl.textContent = candRowText(c);
+    // FIX fix75: 每列附機翻英文參考行（地址＋店家皆附）；機翻永遠只做韓→英，不隨介面語系改變。
+    if(/[\uAC00-\uD7A3]/.test(c.title)){
+      const shownTitle = c.title, baseText = rowEl.textContent;
+      translateBoth(shownTitle).then(tr => {
+        if(!tr || displayCandidates[i] !== c) return;
+        const lines = [];
+        if(tr.gtx && tr.gtx !== shownTitle) lines.push(T('candEnGtx',{t:tr.gtx}));
+        if(tr.mm && tr.mm !== shownTitle && tr.mm !== tr.gtx) lines.push(T('candEnMm',{t:tr.mm}));
+        if(lines.length && !rowEl.hidden) rowEl.textContent = baseText + '\n' + lines.join('\n');
+      });
+    }
+  });
+  box.hidden = false;
+}
+function confirmCandidate(c){
+  if(!c) return;
+  naverOverride = c;
+  hideCandidateBoxes();
+  // FIX fix47: 確認後把頁面座標本身換成查證過的候選座標 — Google/Naver/Yahoo 全部按鈕一起升級。
+  updateFromLatLng(c.lat, c.lng);
+  setStatus(T('stConfirmed',{title:c.title, d:Math.round(c.distanceM)}),true);
+}
+if(els.candRows) els.candRows.forEach((rowEl, i) => rowEl.addEventListener('click', () => { const c = displayCandidates[i]; if(c) confirmCandidate(c); }));
 async function findNearestNaver(){
   const name = els.name.value.trim();
   const lat = parseFloat(els.lat.value), lng = parseFloat(els.lng.value);
@@ -1580,14 +1660,14 @@ async function findNearestNaver(){
       roadAddress: it.roadAddress || '',
       link: it.link || '',
       kind: it.kind || (byName ? 'place' : 'address'),
+      category: it.category || '',
       lat: normalizeNaverCoord(it.mapy),
       lng: normalizeNaverCoord(it.mapx),
     })).filter(c=>isFinite(c.lat) && isFinite(c.lng))
       .map(c=>({...c, distanceM: (isFinite(lat) && isFinite(lng)) ? distanceMeters(lat,lng,c.lat,c.lng) : NaN}))
       .sort((a,b)=> (isFinite(a.distanceM) && isFinite(b.distanceM)) ? a.distanceM-b.distanceM : 0);
     if(!naverCandidates.length){ setStatus(byName ? T('stNoCandName',{name}) : T('stNoCandAddr'),false); return; }
-    naverCandidateIdx = 0;
-    showNaverCandidate();
+    renderCandidateList();
     setStatus(byName
       ? ((isFinite(lat) && isFinite(lng)) ? T('stCandFoundNameCoord',{n:naverCandidates.length}) : T('stCandFoundNameNoCoord',{n:naverCandidates.length}))
       : T('stCandFoundAddr'),true);
@@ -1596,27 +1676,7 @@ async function findNearestNaver(){
   }
 }
 if(els.findBtn) els.findBtn.addEventListener('click', findNearestNaver);
-function onCandidateNext(){
-  if(!naverCandidates.length) return;
-  naverCandidateIdx = (naverCandidateIdx+1) % naverCandidates.length;
-  showNaverCandidate();
-}
-function onCandidateYes(){
-  const c = naverCandidates[naverCandidateIdx];
-  if(!c) return;
-  naverOverride = c;
-  hideCandidateBoxes();
-  // FIX fix47: 確認後把頁面座標本身換成查證過的候選座標 — Google/Naver/Yahoo 全部按鈕一起升級。
-  // （實機回報「Google 坐標偏差」：來源只有 Plus Code 時中心點最多差約 9 公尺；
-  //   確認候選就是把大概位置換成查證位置的唯一途徑，只改 Naver 不夠。）
-  updateFromLatLng(c.lat, c.lng);
-  setStatus(T('stConfirmed',{title:c.title, d:Math.round(c.distanceM)}),true);
-}
-if(els.candidateNext) els.candidateNext.addEventListener('click', onCandidateNext);
-if(els.candidateClose) els.candidateClose.addEventListener('click', hideCandidateBoxes);
-if(els.candidateYes) els.candidateYes.addEventListener('click', onCandidateYes);
-
-$('clearBtn').addEventListener('click',()=>{ els.paste.value=''; els.name.value=''; els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value=''; currentPinId=''; currentGoogleId=''; currentKakaoId=''; naverOverride=null; naverCandidates=[]; naverCandidateIdx=0; if(els.candidateBox) els.candidateBox.hidden=true; coordsValidForName=false; hasReadyResult=false; readySpec=null; document.querySelectorAll('details.advanced').forEach(d=>{ d.open=false; }); updateLinks(); setStatus('',true); els.paste.focus(); });
+$('clearBtn').addEventListener('click',()=>{ els.paste.value=''; els.name.value=''; els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value=''; currentPinId=''; currentGoogleId=''; currentKakaoId=''; naverOverride=null; naverCandidates=[]; if(els.candidateBox) els.candidateBox.hidden=true; coordsValidForName=false; hasReadyResult=false; readySpec=null; document.querySelectorAll('details.advanced').forEach(d=>{ d.open=false; }); updateLinks(); setStatus('',true); els.paste.focus(); });
 
 $('pasteBtn').addEventListener('click', async ()=>{
   try{

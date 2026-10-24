@@ -155,33 +155,32 @@ rows.push(row('T5', '有座標再貼純店名→座標清空', async (c) => {
   await pasteAndParse('명동교자 본점');
   check(c, 'coords cleared', E('lat').value === '', E('lat').value + '|' + E('name').value);
 }));
-rows.push(row('K1', '候選流程（fixture 1 筆）＋確認', async (c) => {
+rows.push(row('K1', '候選流程（fixture 1 筆）＋清單點按確認（fix77）', async (c) => {
   E('name').value = '명동교자 분점';
   await pasteAndParse('https://www.google.com/maps/search/?api=1&query=37.5634375,126.9850625');
   check(c, 'find btn visible', E('findBtn').style.display === '', E('findBtn').style.display);
   E('findBtn').dispatch('click'); await flush();
   check(c, 'candidate box', E('candidateBox').hidden === false, String(E('candidateBox').hidden));
-  check(c, 'candidate text', E('candidateText').textContent.includes('명동교자 분점') && E('candidateText').textContent.includes('第 1 / 1 家') && E('candidateText').textContent.includes('7 公尺'), E('candidateText').textContent.slice(0, 90));
-  E('candidateYes').dispatch('click'); await flush();
+  check(c, 'list head counts', E('candidateHead').textContent.includes('找到 1 個候選'), E('candidateHead').textContent.slice(0, 60));
+  check(c, 'one row title+dist', candRows().length === 1 && candRows()[0].textContent.includes('명동교자 분점') && candRows()[0].textContent.includes('7 公尺'), candAllText().slice(0, 120));
+  candYes(); await flush();
   check(c, 'override label', E('naverOpen').textContent.includes('已確認地點'), E('naverOpen').textContent);
   check(c, 'override href (place → name page, fix50)', E('naverOpen').href === 'https://map.naver.com/p/search/' + encodeURIComponent('명동교자 분점'), E('naverOpen').href);
 }));
-rows.push(row('K2', '候選 2 筆換一家＋遠距警告', async (c) => {
+rows.push(row('K2', '候選 2 筆清單並列＋遠距警告（fix77）', async (c) => {
   E('name').value = '김해가야테마파크';
   await pasteAndParse('https://map.naver.com/v5/?c=14348386.54,4198130.13,15,0,0,0,dh');
   E('findBtn').dispatch('click'); await flush();
-  check(c, 'first of 2', E('candidateText').textContent.includes('第 1 / 2 家'), E('candidateText').textContent.slice(0, 60));
-  E('candidateNext').dispatch('click'); await flush();
-  check(c, 'second + warn', E('candidateText').textContent.includes('第 2 / 2 家') && E('candidateText').textContent.includes('⚠'), E('candidateText').textContent.slice(0, 90));
-  E('candidateNext').dispatch('click'); await flush();
-  check(c, 'cycles back', E('candidateText').textContent.includes('第 1 / 2 家'), '');
+  check(c, 'two rows listed', candRows().length === 2, String(candRows().length));
+  check(c, 'first row park', candRows()[0].textContent.includes('김해가야테마파크') && !candRows()[0].textContent.includes('주차장'), candRows()[0].textContent.slice(0, 60));
+  check(c, 'second row parking + warn', candRows()[1].textContent.includes('주차장') && candRows()[1].textContent.includes('⚠'), candRows()[1].textContent.slice(0, 90));
 }));
 rows.push(row('K3', '中文店名→走地址備援出現候選（fix47，取代 fix45 的韓文死路）', async (c) => {
   await pasteAndParse('https://maps.app.goo.gl/8jUa4Jxcuvq4KEk78');
   check(c, 'find btn visible', E('findBtn').style.display === '', E('findBtn').style.display);
   E('findBtn').dispatch('click'); await flush();
   check(c, 'address candidate box', E('candidateBox').hidden === false, String(E('candidateBox').hidden));
-  check(c, 'address candidate text', E('candidateText').textContent.includes('부산'), E('candidateText').textContent.slice(0, 90));
+  check(c, 'address candidate listed', candAllText().includes('부산'), candAllText().slice(0, 90));
 }));
 rows.push(row('K4', '搜尋空結果（fixture）', async (c) => {
   await pasteAndParse('37.5634829, 126.9851666');
@@ -220,26 +219,23 @@ rows.push(row('N8', '中文店名不可傳給 Naver App 圖釘 name（fix48 實�
 rows.push(row('N9', '確認附近店家後 Naver 網頁按鈕開店名頁（fix50 實機回報）', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');
   E('findBtn').dispatch('click'); await flush();
-  E('candidateNext').dispatch('click'); await flush();
-  E('candidateYes').dispatch('click'); await flush();
+  candNext(); candYes(); await flush();
   check(c, 'naver href is place page', E('naverOpen').href === 'https://map.naver.com/p/search/' + encodeURIComponent('다이소 부산남포점'), E('naverOpen').href);
   check(c, 'google uses candidate coords', E('googleOpen').href.includes('35.0984'), E('googleOpen').href.slice(0, 80));
 }));
-rows.push(row('K9', '候選框附原本名稱對照行（fix51：英文名連結→地址模式候選）', async (c) => {
+rows.push(row('K9', '候選清單附原本名稱對照行（fix51：英文名連結→地址模式候選）', async (c) => {
   await pasteAndParse('https://www.google.com/maps/place/Brosis+Hotel/@35.0986,129.0309,17z');
   check(c, 'place name parsed with @coords', E('name').value === 'Brosis Hotel', E('name').value);
   E('findBtn').dispatch('click'); await flush();
-  check(c, 'ref line shown', E('candidateText').textContent.includes('你原本查的是：Brosis Hotel'), E('candidateText').textContent.slice(0, 60));
-  E('candidateNext').dispatch('click'); await flush();
-  check(c, 'ref line kept on place candidate', E('candidateText').textContent.includes('你原本查的是：Brosis Hotel'), E('candidateText').textContent.slice(0, 60));
+  check(c, 'ref line in head', E('candidateHead').textContent.includes('你原本查的是：Brosis Hotel'), E('candidateHead').textContent.slice(0, 60));
+  check(c, 'place rows listed', candAllText().includes('다이소 부산남포점'), candAllText().slice(0, 60));
 }));
-rows.push(row('K10', '店家候選附雙來源機翻英文參考、地址候選也附英文參考（fix52/54/75）', async (c) => {
+rows.push(row('K10', '店家列與地址列皆附雙來源機翻英文參考（fix52/54/75/77）', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');
   E('findBtn').dispatch('click'); await flush();
-  check(c, 'address candidate has translation (fix75)', E('candidateText').textContent.includes('英文參考（Google 機翻，非官方名）：5, Gudeok-ro 34beon-gil'), E('candidateText').textContent.slice(-120));
-  E('candidateNext').dispatch('click'); await flush();
-  check(c, 'google translation line', E('candidateText').textContent.includes('英文參考（Google 機翻，非官方名）：Daiso Busan Nampo Branch'), E('candidateText').textContent.slice(-120));
-  check(c, 'mymemory translation line (differs → also shown)', E('candidateText').textContent.includes('英文參考（MyMemory 機翻，非官方名）：Daiso Busan Nampo'), E('candidateText').textContent.slice(-120));
+  check(c, 'address row has translation (fix75)', candRows()[0].textContent.includes('英文參考（Google 機翻，非官方名）：5, Gudeok-ro 34beon-gil'), candRows()[0].textContent.slice(-120));
+  check(c, 'google translation line', candRows()[1].textContent.includes('英文參考（Google 機翻，非官方名）：Daiso Busan Nampo Branch'), candRows()[1].textContent.slice(-120));
+  check(c, 'mymemory translation line (differs → also shown)', candRows()[1].textContent.includes('英文參考（MyMemory 機翻，非官方名）：Daiso Busan Nampo'), candRows()[1].textContent.slice(-120));
 }));
 rows.push(row('M1', 'Kakao 面板：座標狀態三按鈕格式（fix56）', async (c) => {
   await pasteAndParse('(35.098562, 129.030938)');
@@ -251,7 +247,7 @@ rows.push(row('M2', 'Kakao 面板：已確認店家開 place ID 頁面（fix56�
   E('name').value = '명동교자 분점';
   await pasteAndParse('https://www.google.com/maps/search/?api=1&query=37.5634375,126.9850625');
   E('findBtn').dispatch('click'); await flush();
-  E('candidateYes').dispatch('click'); await flush();
+  candYes(); await flush();
   check(c, 'web place id page', E('kakaoOpen').href === 'https://map.kakao.com/link/map/18577297', E('kakaoOpen').href);
   check(c, 'web label confirmed', E('kakaoOpen').textContent.includes('已確認地點'), E('kakaoOpen').textContent);
   check(c, 'app uses candidate coords', E('kakaoAppOpen').href === 'kakaomap://look?p=37.5634555,126.9851365', E('kakaoAppOpen').href);
@@ -273,14 +269,14 @@ rows.push(row('K13', 'Kakao 連結輸入：place ID 只有 ID（fix57）', async
   check(c, 'kakao opens id page', E('kakaoOpen').href === 'https://map.kakao.com/link/map/18577297', E('kakaoOpen').href);
   check(c, 'status mentions kakao id', E('parseStatus').textContent.includes('Kakao ID 18577297'), E('parseStatus').textContent.slice(0, 60));
 }));
-rows.push(row('M3', '確認地標獨立區：找一次＋確認，Naver/Kakao 同步（fix59）', async (c) => {
+rows.push(row('M3', '確認地標獨立區：找一次＋清單確認，Naver/Kakao 同步（fix59/77）', async (c) => {
   E('name').value = '명동교자 분점';
   await pasteAndParse('https://www.google.com/maps/search/?api=1&query=37.5634375,126.9850625');
   check(c, 'find visible', E('findBtn').style.display === '', E('findBtn').style.display);
   E('findBtn').dispatch('click'); await flush();
   check(c, 'candidate shown', E('candidateBox').hidden === false, String(E('candidateBox').hidden));
-  check(c, 'candidate text', E('candidateText').textContent.includes('명동교자 분점') && E('candidateText').textContent.includes('第 1 / 1 家'), E('candidateText').textContent.slice(0, 60));
-  E('candidateYes').dispatch('click'); await flush();
+  check(c, 'candidate row', candRows().length === 1 && candRows()[0].textContent.includes('명동교자 분점'), candAllText().slice(0, 60));
+  candYes(); await flush();
   check(c, 'kakao place page after yes', E('kakaoOpen').href === 'https://map.kakao.com/link/map/18577297', E('kakaoOpen').href);
   check(c, 'naver place page too', E('naverOpen').href === 'https://map.naver.com/p/search/' + encodeURIComponent('명동교자 분점'), E('naverOpen').href.slice(0, 80));
 }));
@@ -288,7 +284,7 @@ rows.push(row('M4', '確認後找地標按鈕隱藏（只找一次，fix59）', 
   E('name').value = '명동교자 분점';
   await pasteAndParse('https://www.google.com/maps/search/?api=1&query=37.5634375,126.9850625');
   E('findBtn').dispatch('click'); await flush();
-  E('candidateYes').dispatch('click'); await flush();
+  candYes(); await flush();
   check(c, 'find hidden after confirm', E('findBtn').style.display === 'none', E('findBtn').style.display);
   check(c, 'candidate box hidden', E('candidateBox').hidden === true, String(E('candidateBox').hidden));
 }));
@@ -336,8 +332,8 @@ rows.push(row('X6', '互通：Google ftid＋韓文名（無座標）→找地標
   await pasteAndParse('https://maps.app.goo.gl/SAMRANGJIN');
   check(c, 'find visible without coords', E('findBtn').style.display === '', E('findBtn').style.display);
   E('findBtn').dispatch('click'); await flush();
-  check(c, 'candidate by name', E('candidateText').textContent.includes('삼랑진생태문화공원'), E('candidateText').textContent.slice(0, 60));
-  E('candidateYes').dispatch('click'); await flush();
+  check(c, 'candidate by name', candAllText().includes('삼랑진생태문화공원'), candAllText().slice(0, 60));
+  candYes(); await flush();
   check(c, 'google opens', E('googleOpen').href.includes('35.3994'), E('googleOpen').href.slice(0, 80));
   check(c, 'naver opens (place page)', E('naverOpen').href === 'https://map.naver.com/p/search/' + encodeURIComponent('삼랑진생태문화공원'), E('naverOpen').href.slice(0, 90));
   check(c, 'kakao opens', E('kakaoOpen').href.includes('35.3994'), E('kakaoOpen').href);
@@ -348,8 +344,8 @@ rows.push(row('X7', '互通：Naver 只有 ID→輸入韓文名→找地標→�
   typeInto(E('name'), '롯데호텔앤리조트 김해'); await flush();
   check(c, 'find visible after name', E('findBtn').style.display === '', E('findBtn').style.display);
   E('findBtn').dispatch('click'); await flush();
-  check(c, 'candidate by name', E('candidateText').textContent.includes('롯데호텔앤리조트 김해'), E('candidateText').textContent.slice(0, 60));
-  E('candidateYes').dispatch('click'); await flush();
+  check(c, 'candidate by name', candAllText().includes('롯데호텔앤리조트 김해'), candAllText().slice(0, 60));
+  candYes(); await flush();
   check(c, 'google opens', E('googleOpen').href.includes('35.1917'), E('googleOpen').href.slice(0, 80));
   check(c, 'kakao place page', E('kakaoOpen').href === 'https://map.kakao.com/link/map/27584217', E('kakaoOpen').href);
 }));
@@ -394,23 +390,21 @@ rows.push(row('K6', '無店名（只有 Plus Code）→找地點走地址備援�
   check(c, 'find btn visible', E('findBtn').style.display === '', E('findBtn').style.display);
   E('findBtn').dispatch('click'); await flush();
   check(c, 'address candidate box', E('candidateBox').hidden === false, String(E('candidateBox').hidden));
-  check(c, 'address candidate text', E('candidateText').textContent.includes('부산'), E('candidateText').textContent.slice(0, 90));
+  check(c, 'address candidate text', candAllText().includes('부산'), candAllText().slice(0, 90));
 }));
-rows.push(row('K8', '地址模式可換一家：地址→附近地點→再換→繞回（fix49）', async (c) => {
+rows.push(row('K8', '地址模式清單：地址第一列＋店名列並列（fix49/77）', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');
   E('findBtn').dispatch('click'); await flush();
-  check(c, 'first is address', E('candidateText').textContent.includes('查到的韓國地址') && E('candidateText').textContent.includes('구덕로'), E('candidateText').textContent.slice(0, 90));
-  E('candidateNext').dispatch('click'); await flush();
-  check(c, 'second is place 2/3', E('candidateText').textContent.includes('第 2 / 3 家') && E('candidateText').textContent.includes('다이소'), E('candidateText').textContent.slice(0, 90));
-  E('candidateNext').dispatch('click'); await flush();
-  check(c, 'third is place 3/3', E('candidateText').textContent.includes('第 3 / 3 家') && E('candidateText').textContent.includes('남포역'), E('candidateText').textContent.slice(0, 90));
-  E('candidateNext').dispatch('click'); await flush();
-  check(c, 'cycles to address', E('candidateText').textContent.includes('查到的韓國地址'), E('candidateText').textContent.slice(0, 90));
+  check(c, 'three rows', candRows().length === 3, String(candRows().length));
+  check(c, 'sections visible', E('candSecAddr').hidden === false && E('candSecPlaces').hidden === false, '');
+  check(c, 'first row is address', candRows()[0].textContent.includes('구덕로'), candRows()[0].textContent.slice(0, 60));
+  check(c, 'second row daiso', candRows()[1].textContent.includes('다이소'), candRows()[1].textContent.slice(0, 60));
+  check(c, 'third row station', candRows()[2].textContent.includes('남포역'), candRows()[2].textContent.slice(0, 60));
 }));
 rows.push(row('K7', '確認地址候選→全部面板改用確認座標', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');
   E('findBtn').dispatch('click'); await flush();
-  E('candidateYes').dispatch('click'); await flush();
+  candYes(); await flush();
   check(c, 'lat field upgraded', Math.abs(parseFloat(E('lat').value) - 35.0987) < 1e-6, E('lat').value);
   check(c, 'google href upgraded', E('googleOpen').href.includes('35.0987'), E('googleOpen').href.slice(0, 90));
   check(c, 'naver href upgraded', E('naverOpen').href.includes('35.0987'), E('naverOpen').href.slice(0, 90));
@@ -435,16 +429,15 @@ rows.push(row('L2', '切換 English：全按鈕與徽章變英文、href 不變�
   E('langZh').dispatch('click'); await flush();
   check(c, 'back to zh', E('naverOpen').textContent.includes('在 Naver 開啟 (座標)'), E('naverOpen').textContent);
 }));
-rows.push(row('L3', '英文模式完整流程：Plus Code→找地標（英文候選框）→確認（fix72）', async (c) => {
+rows.push(row('L3', '英文模式完整流程：Plus Code→找地標（英文清單）→確認（fix72/77）', async (c) => {
   E('langEn').dispatch('click'); await flush();
   await pasteAndParse('32XJ+C9 釜山 南韓');
   check(c, 'coords decoded en', Math.abs(parseFloat(E('lat').value) - 35.0985625) < 0.001, E('lat').value);
   check(c, 'ready en plus', E('readyText').textContent.includes('approximate location'), E('readyText').textContent.slice(0, 80));
   E('findBtn').dispatch('click'); await flush();
-  check(c, 'candidate en', E('candidateText').textContent.includes('Korean address found for the current coordinates'), E('candidateText').textContent.slice(0, 90));
-  E('candidateNext').dispatch('click'); await flush();
-  check(c, 'candidate place en', E('candidateText').textContent.includes('Nearest place found (2 of 3)'), E('candidateText').textContent.slice(0, 90));
-  E('candidateYes').dispatch('click'); await flush();
+  check(c, 'list head en + addr row', E('candidateHead').textContent.includes('Found 3 candidates') && candRows()[0].textContent.includes('구덕로'), (E('candidateHead').textContent + candRows()[0].textContent).slice(0, 90));
+  check(c, 'place row en category', candRows()[1].textContent.includes('Category: Shopping') && candRows()[1].textContent.includes('다이소'), candRows()[1].textContent.slice(0, 90));
+  candNext(); candYes(); await flush();
   check(c, 'confirmed status en', st().includes('Place confirmed:'), st().slice(0, 60));
   E('langZh').dispatch('click'); await flush();
 }));
@@ -480,17 +473,30 @@ rows.push(row('L6', '切換 Indonesia：印尼語標籤＋href 不變＋額度�
   E('langZh').dispatch('click'); await flush();
   check(c, 'back to zh', E('naverOpen').textContent.includes('在 Naver 開啟 (座標)'), E('naverOpen').textContent);
 }));
-rows.push(row('K9', '地址候選也附英文機翻參考行（fix75）；印尼語介面下譯文仍為英文', async (c) => {
+rows.push(row('K9', '地址列也附英文機翻參考行（fix75/77）；印尼語介面下譯文仍為英文', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');
   E('findBtn').dispatch('click'); await flush();
-  check(c, 'address candidate', E('candidateText').textContent.includes('구덕로'), E('candidateText').textContent.slice(0, 60));
-  check(c, 'en line present (zh ui)', E('candidateText').textContent.includes('英文參考（Google 機翻，非官方名）：5, Gudeok-ro 34beon-gil'), E('candidateText').textContent.slice(-120));
+  check(c, 'address row', candRows()[0].textContent.includes('구덕로'), candRows()[0].textContent.slice(0, 60));
+  check(c, 'en line present (zh ui)', candRows()[0].textContent.includes('英文參考（Google 機翻，非官方名）：5, Gudeok-ro 34beon-gil'), candRows()[0].textContent.slice(-120));
   E('langId').dispatch('click'); await flush();
-  check(c, 'id label, en text kept', E('candidateText').textContent.includes('Referensi Inggris (terjemahan mesin Google') && E('candidateText').textContent.includes('5, Gudeok-ro 34beon-gil'), E('candidateText').textContent.slice(-140));
+  check(c, 'id label, en text kept', candRows()[0].textContent.includes('Referensi Inggris (terjemahan mesin Google') && candRows()[0].textContent.includes('5, Gudeok-ro 34beon-gil'), candRows()[0].textContent.slice(-140));
   E('langZh').dispatch('click'); await flush();
 }));
-rows.push(row('K11', '地址候選顯示編號與店家指引（fix76）', async (c) => {
+rows.push(row('K11', '候選清單結構：地址區＋店名區＋分類標籤（fix77）', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');
   E('findBtn').dispatch('click'); await flush();
-  check(c, 'address shows 1/3 + shop hint', E('candidateText').textContent.includes('（第 1 / 3 個候選）') && E('candidateText').textContent.includes('要找附近的店家'), E('candidateText').textContent.slice(0, 80));
+  check(c, 'head counts', E('candidateHead').textContent.includes('找到 3 個候選'), E('candidateHead').textContent.slice(0, 60));
+  check(c, 'sections shown', E('candSecAddr').hidden === false && E('candSecPlaces').hidden === false, '');
+  check(c, 'daiso category gloss', candRows()[1].textContent.includes('分類：購物'), candRows()[1].textContent.slice(0, 90));
+  check(c, 'station category gloss', candRows()[2].textContent.includes('分類：地鐵站'), candRows()[2].textContent.slice(0, 90));
+}));
+
+rows.push(row('K12', '店名依分類分組：同類相鄰、組序照最近距離（fix77）', async (c) => {
+  await pasteAndParse('37.4496919, 126.4524038');
+  E('findBtn').dispatch('click'); await flush();
+  check(c, 'four rows', candRows().length === 4, String(candRows().length));
+  check(c, 'row1 cafe near', candRows()[1].textContent.includes('공항카페'), candRows()[1].textContent.slice(0, 50));
+  check(c, 'row2 same cafe group', candRows()[2].textContent.includes('공항서점'), candRows()[2].textContent.slice(0, 50));
+  check(c, 'row3 station last despite nearer', candRows()[3].textContent.includes('공항역'), candRows()[3].textContent.slice(0, 50));
+  check(c, 'cafe gloss zh', candRows()[1].textContent.includes('分類：咖啡廳'), candRows()[1].textContent.slice(0, 80));
 }));
