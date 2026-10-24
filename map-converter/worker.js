@@ -38,8 +38,10 @@ export default {
       return new Response(JSON.stringify({ ok: true, service: 'map-resolve' }), { headers: cors });
     }
     if (u.pathname === '/stats') {
-      const key = u.searchParams.get('key') || '';
-      if (!env || !env.STATS_KEY || key !== env.STATS_KEY) {
+      // fix69d: 金鑰送法多路涵蓋（連接頁檢查可能用不同參數名或 Bearer 標頭送金鑰）
+      const bearer = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+      const cands = [u.searchParams.get('key'), u.searchParams.get('access_token'), u.searchParams.get('api_key'), u.searchParams.get('token'), bearer];
+      if (!env || !env.STATS_KEY || !cands.some(c => c && c === env.STATS_KEY)) {
         return new Response(JSON.stringify({ error: 'forbidden' }), { status: 403, headers: cors });
       }
       if (!env.STATS) return new Response(JSON.stringify({ error: 'stats_not_configured' }), { status: 503, headers: cors });
@@ -157,7 +159,6 @@ export default {
         const CATS = ['FD6', 'CE7', 'AD5', 'AT4', 'MT1', 'CS2', 'SW8', 'PK6'];
         const catLists = await Promise.all(CATS.map(async (code) => {
           try {
-            await bump('kakao_category');
             const r = await fetch('https://dapi.kakao.com/v2/local/search/category.json?category_group_code=' + code + '&x=' + lng + '&y=' + lat + '&radius=300&sort=distance&size=5', { headers: h });
             if (!r.ok) return [];
             const d = await r.json();
@@ -176,6 +177,8 @@ export default {
             }));
           } catch (e) { return []; }
         }));
+        // fix69d: 類別呼叫計數改為平行完成後一次彙總計入（逐次在平行迴圈內 get-modify-put 會互相覆蓋少計）
+        await bump('kakao_category', CATS.length);
         const seen = new Set([item.title + '|' + item.mapx + '|' + item.mapy]);
         const places = [];
         for (const list of catLists) for (const p of list) {
