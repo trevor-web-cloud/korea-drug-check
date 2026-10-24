@@ -213,7 +213,8 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note" data-i18n="yahooNote">日本地圖。用 /place/ 連結開啟會出現紅色圖釘（2026-10-23 瀏覽器實測；舊的置中形式沒有圖釘，已停用）。注意：從 Yahoo 手機版分享回來的連結，座標是當時的「地圖中心」而非圖釘，可能差幾十公尺（實測約 82 公尺）；韓國地點貼入後，請用第 3 步「確認地標」校正。</p>
     </div>
   </section>
-  <p class="note" style="text-align:center">v2026-10-24-fix72</p>
+  <p class="note" id="quotaLine" style="text-align:center" hidden></p>
+  <p class="note" style="text-align:center">v2026-10-24-fix73</p>
 </div>
 
 <script>
@@ -382,7 +383,8 @@ zh: {
   guideNoteH: '注意事項',
   guideNote1: 'App 顯示的都是<strong>短碼</strong>，務必連城市名一起貼。',
   guideNote2: '短碼的格子字不同就是不同位置：<code>F6</code> 是飯店、<code>FVG</code> 是旁邊公園，相差約 150 公尺。請確認是從地點卡片複製的碼，不是長按空地拿到的碼。',
-  guideNote3: 'Plus Code 代表一塊範圍，不是精確圖釘；轉換頁放的是範圍中心。<code>+</code> 後面 2 字、還原後共 10 字的碼，範圍約 14 公尺見方，中心和店家最多可能差約 10 公尺；<code>+</code> 後面 3 字、還原後共 11 字的碼，範圍約 3 公尺見方，落差才約 2 公尺。要精準找店，請改貼店家的分享連結，或到現場再以店名、招牌確認。'
+  guideNote3: 'Plus Code 代表一塊範圍，不是精確圖釘；轉換頁放的是範圍中心。<code>+</code> 後面 2 字、還原後共 10 字的碼，範圍約 14 公尺見方，中心和店家最多可能差約 10 公尺；<code>+</code> 後面 3 字、還原後共 11 字的碼，範圍約 3 公尺見方，落差才約 2 公尺。要精準找店，請改貼店家的分享連結，或到現場再以店名、招牌確認。',
+  quotaLine: '查詢額度剩餘 — 今日 Kakao {d}%（每日上限以用量最高一類計，韓國時間）・本月 Kakao {m}%'
 },
 en: {
   docTitle: 'Naver · Kakao · Yahoo JP · Google Map Converter',
@@ -511,7 +513,8 @@ en: {
   guideNoteH: 'Notes',
   guideNote1: 'The app only shows <strong>short codes</strong> — always paste the city name with them.',
   guideNote2: 'Different cell letters mean a different place: <code>F6</code> is the hotel, <code>FVG</code> is the park next door, about 150 m apart. Make sure the code came from the place card, not from long-pressing the map.',
-  guideNote3: 'A Plus Code stands for an area, not an exact pin; this page uses the center of the area. A code with 2 characters after the <code>+</code> (10 characters in total once restored) covers about 14 m across, so the center can be up to about 10 m from the place; a code with 3 characters after the <code>+</code> (11 in total) covers about 3 m, so the gap is only about 2 m. For an exact location, paste the place’s share link instead, or confirm by the name and sign when you get there.'
+  guideNote3: 'A Plus Code stands for an area, not an exact pin; this page uses the center of the area. A code with 2 characters after the <code>+</code> (10 characters in total once restored) covers about 14 m across, so the center can be up to about 10 m from the place; a code with 3 characters after the <code>+</code> (11 in total) covers about 3 m, so the gap is only about 2 m. For an exact location, paste the place’s share link instead, or confirm by the name and sign when you get there.',
+  quotaLine: 'Query quota remaining — Kakao today {d}% (daily limit, busiest type, Korea time) · Kakao this month {m}%'
 }
 };
 let LANG = 'zh';
@@ -531,6 +534,30 @@ function specText(spec) {
   for (const k in (spec.v || {})) { const val = spec.v[k]; v[k] = (val && typeof val === 'object' && val.k) ? specText(val) : val; }
   return T(spec.k, v);
 }
+// FIX fix73: 頁尾查詢額度剩餘 — 只顯示 Kakao 可查詢額度（使用者定：頁面不放系統資訊，Worker/Cloudflare 數字只在每日報表）。
+// 讀 Worker 公開 /stats（kst 日界＋KST 曆月）：每日剩餘以「用量最高的一類 Kakao API」對每日 100,000 上限計
+// （最先耗盡的那一類）；每月以 kakao_total 對每月 3,000,000 上限計。
+let quotaVals = null;
+function renderQuota() {
+  const el = $('quotaLine');
+  if (!el || !quotaVals) return;
+  el.textContent = T('quotaLine', quotaVals);
+  el.hidden = false;
+}
+async function loadQuota() {
+  try {
+    const base = 'https://map-resolve.tsai0215.workers.dev/stats';
+    const [kd, km] = await Promise.all([
+      fetch(base + '?tz=kst').then(r => r.json()),
+      fetch(base + '?tz=kst&sum=month').then(r => r.json())
+    ]);
+    if (!kd || kd.error || !km || !km.month) return;
+    const maxType = Math.max(kd.kakao_keyword || 0, kd.kakao_coord2address || 0, kd.kakao_address || 0, kd.kakao_category || 0);
+    const left = (used, limit) => Math.max(0, 100 - used / limit * 100).toFixed(2);
+    quotaVals = { d: left(maxType, 100000), m: left(km.kakao_total || 0, 3000000) };
+    renderQuota();
+  } catch (e) {}
+}
 function applyLang(l) {
   LANG = (l === 'en') ? 'en' : 'zh';
   try { localStorage.setItem('mcLang', LANG); } catch (e) {}
@@ -544,6 +571,7 @@ function applyLang(l) {
   if (zb) { zb.style.background = LANG === 'zh' ? '#111' : '#fff'; zb.style.color = LANG === 'zh' ? '#fff' : '#111'; }
   if (eb) { eb.style.background = LANG === 'en' ? '#111' : '#fff'; eb.style.color = LANG === 'en' ? '#fff' : '#111'; }
   updateLinks();
+  renderQuota();
   if (els.candidateBox && !els.candidateBox.hidden) showNaverCandidate();
 }
 function wgsToMerc(lng,lat){
@@ -1497,6 +1525,7 @@ currentPinId=''; currentGoogleId=''; coordsValidForName=false;
 $('langZh').addEventListener('click',()=>applyLang('zh'));
 $('langEn').addEventListener('click',()=>applyLang('en'));
 applyLang(LANG); setStatus('',true);
+loadQuota();
 </script>
 
 <!-- FIX fix27: Google Maps Plus Code 使用說明與教學（可收合，預設收起，不干擾簡化版面） -->

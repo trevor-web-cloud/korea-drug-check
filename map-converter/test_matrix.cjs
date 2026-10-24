@@ -46,7 +46,11 @@ const LOCAL_FIXTURES = [
 global.fetch = async (url) => {
   const u = String(url);
   let body = { error: 'no fixture' };
-  if (u.includes('/resolve')) {
+  if (u.includes('/stats')) {
+    if (u.includes('sum=month')) body = { date: '2026-10-24', tz: 'kst', month: '2026-10', worker_requests: 900, kakao_keyword: 300, kakao_coord2address: 600, kakao_address: 600, kakao_category: 1500, place_fetch: 200, kakao_total: 30000 };
+    else if (u.includes('tz=utc')) body = { date: '2026-10-24', tz: 'utc', worker_requests: 250, kakao_keyword: 0, kakao_coord2address: 0, kakao_address: 0, kakao_category: 0, place_fetch: 0, kakao_total: 0 };
+    else body = { date: '2026-10-24', tz: 'kst', worker_requests: 40, kakao_keyword: 100, kakao_coord2address: 200, kakao_address: 300, kakao_category: 500, place_fetch: 60, kakao_total: 1100 };
+  } else if (u.includes('/resolve')) {
     const target = decodeURIComponent(u.split('url=')[1] || '');
     if (target.includes('FP8gOoAY')) body = { status: 302, location: NAVER_RESOLVED };
     else if (target.includes('8jUa4Jxcuvq4KEk78')) body = { status: 302, location: LOTTE_RESOLVED };

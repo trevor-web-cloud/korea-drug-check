@@ -56,25 +56,43 @@ export default {
       const off = tz === 'kst' ? 9 : tz === 'utc' ? 0 : 8;
       const date = /^\d{4}-\d{2}-\d{2}$/.test(u.searchParams.get('date') || '') ? u.searchParams.get('date') : dayIn(off);
       const metrics = ['worker_requests', 'kakao_keyword', 'kakao_coord2address', 'kakao_address', 'kakao_category', 'place_fetch'];
-      const out = { date, tz };
       // fix71: 總數 = 舊鍵底值（fix69 舊格式＋fix70 s: 鍵，時間窗與事件鍵不重疊）＋事件鍵加總。
-      for (const m of metrics) {
-        let base = parseInt((await env.STATS.get('s:' + tz + ':' + date + ':' + m)) || '0', 10) || 0;
-        if (tz === 'tpe') base += parseInt((await env.STATS.get('s:' + date + ':' + m)) || '0', 10) || 0;
-        out[m] = base;
+      // fix73: 單日讀取抽成 readDay；?sum=month 時回傳該月 1 日到 date 當日的逐日加總（頁尾額度顯示用）。
+      const readDay = async (d) => {
+        const o = {};
+        for (const m of metrics) {
+          let base = parseInt((await env.STATS.get('s:' + tz + ':' + d + ':' + m)) || '0', 10) || 0;
+          if (tz === 'tpe') base += parseInt((await env.STATS.get('s:' + d + ':' + m)) || '0', 10) || 0;
+          o[m] = base;
+        }
+        try {
+          let cursor;
+          do {
+            const page = await env.STATS.list({ prefix: 'e:' + tz + ':' + d + ':', cursor });
+            for (const k of page.keys) {
+              const parts = k.name.split(':');
+              if (parts.length >= 6 && metrics.includes(parts[3])) o[parts[3]] += parseInt(parts[4], 10) || 0;
+            }
+            cursor = page.list_complete ? null : page.cursor;
+          } while (cursor);
+        } catch (e) {}
+        o.kakao_total = o.kakao_keyword + o.kakao_coord2address + o.kakao_address + o.kakao_category;
+        return o;
+      };
+      if (u.searchParams.get('sum') === 'month') {
+        const ym = date.slice(0, 7);
+        const agg = { date, tz, month: ym };
+        for (const m of metrics) agg[m] = 0;
+        agg.kakao_total = 0;
+        const lastDay = parseInt(date.slice(8, 10), 10);
+        for (let d = 1; d <= lastDay; d++) {
+          const day = await readDay(ym + '-' + String(d).padStart(2, '0'));
+          for (const m of metrics) agg[m] += day[m];
+          agg.kakao_total += day.kakao_total;
+        }
+        return new Response(JSON.stringify(agg), { headers: cors });
       }
-      try {
-        let cursor;
-        do {
-          const page = await env.STATS.list({ prefix: 'e:' + tz + ':' + date + ':', cursor });
-          for (const k of page.keys) {
-            const parts = k.name.split(':');
-            if (parts.length >= 6 && metrics.includes(parts[3])) out[parts[3]] += parseInt(parts[4], 10) || 0;
-          }
-          cursor = page.list_complete ? null : page.cursor;
-        } while (cursor);
-      } catch (e) {}
-      out.kakao_total = out.kakao_keyword + out.kakao_coord2address + out.kakao_address + out.kakao_category;
+      const out = { date, tz, ...(await readDay(date)) };
       return new Response(JSON.stringify(out), { headers: cors });
     }
     await bump('worker_requests');
