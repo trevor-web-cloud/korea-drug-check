@@ -215,7 +215,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-24-fix75</p>
+  <p class="note" style="text-align:center">v2026-10-24-fix76</p>
 </div>
 
 <script>
@@ -366,7 +366,7 @@ zh: {
   candDistCoord: '與目前座標相距約 {d} 公尺。',
   candDistNone: '（目前沒有出發座標，確認後就會補上這家的座標。）',
   candFar: '⚠ 距離超過 200 公尺，可能不是同一家，請仔細確認。',
-  candAddrText: '用目前座標查到的韓國地址：{title}\n{dist}{far}\n如果位置正確，請按「就是這家」，所有地圖按鈕會改用這個查證過的座標（比 Plus Code 的大概位置準）。不對的話，按「不是，換一家」看附近的地點。',
+  candAddrText: '用目前座標查到的韓國地址（第 {i} / {n} 個候選）：{title}\n{dist}{far}\n如果位置正確，請按「就是這家」，所有地圖按鈕會改用這個查證過的座標（比 Plus Code 的大概位置準）。要找附近的店家，請按「不是，換一家」往下看。',
   candPlaceText: '找到最接近的地點（第 {i} / {n} 家）：{title}\n地址：{addr}\n{dist}{far}\n如果就是這家，請按「就是這家」，所有地圖按鈕會改用這家查證過的座標。',
   candEnGtx: '英文參考（Google 機翻，非官方名）：{t}',
   candEnMm: '英文參考（MyMemory 機翻，非官方名）：{t}',
@@ -496,7 +496,7 @@ en: {
   candDistCoord: 'About {d} m from the current coordinates.',
   candDistNone: '(There are no starting coordinates yet; confirming will fill in this place’s coordinates.)',
   candFar: '⚠ More than 200 m away — it may not be the same place, please check carefully.',
-  candAddrText: 'Korean address found for the current coordinates: {title}\n{dist}{far}\nIf the location is right, tap “This is the one” — all map buttons will use this verified coordinate (more accurate than a Plus Code approximation). If not, tap “Not this one, next” to see nearby places.',
+  candAddrText: 'Korean address found for the current coordinates (candidate {i} of {n}): {title}\n{dist}{far}\nIf the location is right, tap “This is the one” — all map buttons will use this verified coordinate (more accurate than a Plus Code approximation). To see the nearby shops, tap “Not this one, next”.',
   candPlaceText: 'Nearest place found ({i} of {n}): {title}\nAddress: {addr}\n{dist}{far}\nIf this is the one, tap “This is the one” — all map buttons will use this place’s verified coordinates.',
   candEnGtx: 'English reference (Google machine translation, not an official name): {t}',
   candEnMm: 'English reference (MyMemory machine translation, not an official name): {t}',
@@ -626,7 +626,7 @@ id: {
   candDistCoord: 'Sekitar {d} m dari koordinat saat ini.',
   candDistNone: '(Belum ada koordinat awal; mengonfirmasi akan mengisi koordinat tempat ini.)',
   candFar: '⚠ Lebih dari 200 m jauhnya — mungkin bukan tempat yang sama, periksa dengan teliti.',
-  candAddrText: 'Alamat Korea yang ditemukan untuk koordinat saat ini: {title}\n{dist}{far}\nJika lokasinya benar, ketuk “Ya, ini tempatnya” — semua tombol peta akan memakai koordinat terverifikasi ini (lebih akurat daripada perkiraan Plus Code). Jika bukan, ketuk “Bukan, berikutnya” untuk melihat tempat di sekitar.',
+  candAddrText: 'Alamat Korea yang ditemukan untuk koordinat saat ini (kandidat {i} dari {n}): {title}\n{dist}{far}\nJika lokasinya benar, ketuk “Ya, ini tempatnya” — semua tombol peta akan memakai koordinat terverifikasi ini (lebih akurat daripada perkiraan Plus Code). Untuk melihat toko di sekitar, ketuk “Bukan, berikutnya”.',
   candPlaceText: 'Tempat terdekat ditemukan ({i} dari {n}): {title}\nAlamat: {addr}\n{dist}{far}\nJika ini tempatnya, ketuk “Ya, ini tempatnya” — semua tombol peta akan memakai koordinat terverifikasi tempat ini.',
   candEnGtx: 'Referensi Inggris (terjemahan mesin Google, bukan nama resmi): {t}',
   candEnMm: 'Referensi Inggris (terjemahan mesin MyMemory, bukan nama resmi): {t}',
@@ -1521,7 +1521,7 @@ function showNaverCandidate(){
   // FIX fix64: 無出發座標（店名查）時沒有距離可顯示，改說明確認後會補上座標。
   const distText = isFinite(c.distanceM) ? T('candDistCoord',{d:Math.round(c.distanceM)}) : T('candDistNone');
   cb.text.textContent = refLine + ((candidateSource === 'address' && c.kind !== 'place')
-    ? T('candAddrText',{title:c.title, dist:distText, far})
+    ? T('candAddrText',{i:naverCandidateIdx+1, n:naverCandidates.length, title:c.title, dist:distText, far})
     : T('candPlaceText',{i:naverCandidateIdx+1, n:naverCandidates.length, title:c.title, addr:(c.roadAddress||c.address||'—'), dist:distText, far}));
   cb.box.hidden = false;
   // FIX fix52: 店家候選（kind='place'）附機翻英文參考行；地址候選不翻。非同步補上，切換候選後只認標題相同者，避免貼到別家。

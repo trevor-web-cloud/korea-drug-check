@@ -489,3 +489,8 @@ rows.push(row('K9', '地址候選也附英文機翻參考行（fix75）；印尼
   check(c, 'id label, en text kept', E('candidateText').textContent.includes('Referensi Inggris (terjemahan mesin Google') && E('candidateText').textContent.includes('5, Gudeok-ro 34beon-gil'), E('candidateText').textContent.slice(-140));
   E('langZh').dispatch('click'); await flush();
 }));
+rows.push(row('K11', '地址候選顯示編號與店家指引（fix76）', async (c) => {
+  await pasteAndParse('32XJ+C9 釜山 南韓');
+  E('findBtn').dispatch('click'); await flush();
+  check(c, 'address shows 1/3 + shop hint', E('candidateText').textContent.includes('（第 1 / 3 個候選）') && E('candidateText').textContent.includes('要找附近的店家'), E('candidateText').textContent.slice(0, 80));
+}));
