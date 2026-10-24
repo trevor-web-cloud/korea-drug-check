@@ -130,7 +130,6 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     <div class="panel-head landmark"><span data-i18n="landmarkHead">✅ 確認地標</span><span class="badge" data-i18n="landmarkBadge">Naver・Kakao 共用</span></div>
     <div class="panel-body">
       <p class="note" style="margin-top:2px" data-i18n="landmarkNote">座標只是大概位置（例如 Plus Code）時，在這裡找一次、確認一次就好。確認後，Naver、Kakao、Google、Yahoo 都會改用這個查證過的地標。</p>
-      <p class="note" id="quotaLineTop" style="margin:6px 0" hidden></p>
       <button class="btn btn-landmark" id="findBtn" type="button" style="display:none;width:100%;margin:6px 0" data-i18n="findBtn">🔍 找地標並確認</button>
       <div class="candidate" id="candidateBox" hidden>
         <div id="candidateHead" style="white-space:pre-line">—</div>
@@ -233,7 +232,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-24-fix80</p>
+  <p class="note" style="text-align:center">v2026-10-24-fix81</p>
 </div>
 
 <script>
@@ -691,27 +690,27 @@ function specText(spec) {
 // （最先耗盡的那一類）；每月以 kakao_total 對每月 3,000,000 上限計。
 let quotaVals = null;
 function renderQuota() {
-  if (!quotaVals) return;
-  // FIX fix80: 使用者定「每日可查詢餘額也應該在查詢前顯示」——第 3 步找地標按鈕上方同步一份（與頁尾同一份資料）。
-  for (const id of ['quotaLine', 'quotaLineTop']) {
-    const el = $(id);
-    if (!el) continue;
-    el.textContent = T('quotaLine', quotaVals);
-    el.hidden = false;
-  }
+  const el = $('quotaLine');
+  if (!el || !quotaVals) return;
+  el.textContent = T('quotaLine', quotaVals);
+  el.hidden = false;
 }
 async function loadQuota() {
+  // FIX fix81: 使用者實機回報「要等一陣子才出現」——實測每日端點 0.7 秒、每月加總端點 14 秒
+  // （Worker 逐日讀 KV 彙總整月），舊版等兩者都回來才顯示。改為分段：每日先到先顯示（月欄先佔位 …），每月到齊再補上。
+  // 位置維持頁尾原處（使用者定「只需放在原本地方」，fix80 曾加第 3 步上方一份，已撤）。
+  const base = 'https://map-resolve.tsai0215.workers.dev/stats';
+  const left = (used, limit) => Math.max(0, 100 - used / limit * 100).toFixed(2);
   try {
-    const base = 'https://map-resolve.tsai0215.workers.dev/stats';
-    const [kd, km] = await Promise.all([
-      fetch(base + '?tz=kst').then(r => r.json()),
-      fetch(base + '?tz=kst&sum=month').then(r => r.json())
-    ]);
-    if (!kd || kd.error || !km || !km.month) return;
+    const kd = await fetch(base + '?tz=kst').then(r => r.json());
+    if (!kd || kd.error) return;
     const maxType = Math.max(kd.kakao_keyword || 0, kd.kakao_coord2address || 0, kd.kakao_address || 0, kd.kakao_category || 0);
-    const left = (used, limit) => Math.max(0, 100 - used / limit * 100).toFixed(2);
-    quotaVals = { d: left(maxType, 100000), m: left(km.kakao_total || 0, 3000000) };
+    quotaVals = { d: left(maxType, 100000), m: '…' };
     renderQuota();
+  } catch (e) { return; }
+  try {
+    const km = await fetch(base + '?tz=kst&sum=month').then(r => r.json());
+    if (km && km.month && quotaVals) { quotaVals.m = left(km.kakao_total || 0, 3000000); renderQuota(); }
   } catch (e) {}
 }
 function applyLang(l) {
