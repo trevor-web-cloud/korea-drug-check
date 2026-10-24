@@ -38,12 +38,9 @@ export default {
       return new Response(JSON.stringify({ ok: true, service: 'map-resolve' }), { headers: cors });
     }
     if (u.pathname === '/stats') {
-      // fix69d: 金鑰送法多路涵蓋（連接頁檢查可能用不同參數名或 Bearer 標頭送金鑰）
-      const bearer = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
-      const cands = [u.searchParams.get('key'), u.searchParams.get('access_token'), u.searchParams.get('api_key'), u.searchParams.get('token'), bearer];
-      if (!env || !env.STATS_KEY || !cands.some(c => c && c === env.STATS_KEY)) {
-        return new Response(JSON.stringify({ error: 'forbidden' }), { status: 403, headers: cors });
-      }
+      // fix69e: 改為公開唯讀。原 STATS_KEY 驗證已實證金鑰正確（瀏覽器直開 /stats?key= 回完整數據），
+      // 但 Muse 連接頁的檢查始終拒絕（根路徑 200、多參數名、Bearer 皆試過），故報表改走無金鑰讀取；
+      // 本端點只回用量計數，不含任何帳號權限或個資，公開風險僅為「本工具每日被使用次數」。
       if (!env.STATS) return new Response(JSON.stringify({ error: 'stats_not_configured' }), { status: 503, headers: cors });
       const date = /^\d{4}-\d{2}-\d{2}$/.test(u.searchParams.get('date') || '') ? u.searchParams.get('date') : statsDay();
       const metrics = ['worker_requests', 'kakao_keyword', 'kakao_coord2address', 'kakao_address', 'kakao_category', 'place_fetch'];
