@@ -687,3 +687,13 @@ rows.push(row('W6', '無查證來源地區→Google 查 Plus Code 輔助鈕（fi
   await pasteAndParse('35.098606, 129.0309021'); await flush();
   check(c, 'hidden in KR (Kakao source exists)', E('plusHelpBtn').style.display === 'none', String(E('plusHelpBtn').style.display));
 }));
+
+rows.push(row('W7', 'TomTom 地區→Google 查 Plus Code 輔助鈕也顯示（fix105，平鎮）', async (c) => {
+  await pasteAndParse('7QP3W686+P7'); await flush();
+  check(c, 'button visible in TW (tt region)', E('plusHelpBtn').style.display !== 'none', String(E('plusHelpBtn').style.display));
+  check(c, 'href opens google search with coords', (E('plusHelpBtn').href || '').includes('google.com/maps/search/?api=1&query=24.9168125'), E('plusHelpBtn').href);
+  check(c, 'hint visible', E('plusHelpHint').style.display !== 'none', String(E('plusHelpHint').style.display));
+  check(c, 'tt candidates still open (API primary)', E('candidateBox').hidden === false && candRows().length >= 2, 'hidden=' + E('candidateBox').hidden + ' rows=' + candRows().length);
+  candYes(); await flush();
+  check(c, 'hidden after confirm', E('plusHelpBtn').style.display === 'none', String(E('plusHelpBtn').style.display));
+}));

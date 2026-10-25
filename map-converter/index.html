@@ -266,7 +266,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-26-fix104</p>
+  <p class="note" style="text-align:center">v2026-10-26-fix105</p>
 </div>
 
 <script>
@@ -975,10 +975,12 @@ function updateLinks(){
   }
   // FIX fix104（使用者核准）：無查證來源地區（jp/other）顯示 Google 查 Plus Code 輔助——Google 沒有給一般網頁的回呼機制，
   // 採半自動流程：按鈕開 Google 地圖網頁版搜尋（帶名稱優先、否則帶座標），使用者複製資訊面板的 Plus Code 貼回第 1 步解碼。
+  // FIX fix105（使用者核准）：TomTom 地區（tt）也顯示——TomTom 對小型獨立店有長尾缺口（實例：瑞麟美而美平鎮上海路店 Google 有、TomTom 無），
+  // 查碼鈕定位為 API 候選之後的輔助；韓國 Kakao 收錄完整，不顯示以免干擾。
   { const pb = $('plusHelpBtn'), ph = $('plusHelpHint');
     if(pb){
       const reg = hasCoords ? regionOf(lat, lng) : '';
-      const showPlus = hasCoords && coordsPrimary && !naverOverride && (reg === 'jp' || reg === 'other');
+      const showPlus = hasCoords && coordsPrimary && !naverOverride && (reg === 'jp' || reg === 'other' || reg === 'tt');
       pb.style.display = showPlus ? '' : 'none';
       pb.textContent = T('plusHelpBtn');
       if(ph){ ph.style.display = showPlus ? '' : 'none'; ph.textContent = T('plusHelpHint'); }
