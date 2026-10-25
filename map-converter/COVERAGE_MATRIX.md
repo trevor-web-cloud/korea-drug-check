@@ -188,3 +188,11 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 ## 2026-10-25 Worker fix91（請求彙總計數，使用者核准「每個請求寫一筆」精確加權）
 - 緣起：當晚測試馬拉松觸發 Cloudflare KV 每日操作量 50% 警示（20:40 寄達）。計數改制：bumpBg 呼叫點與時機不變，改請求內累加，結束時每桶寫 1 支 batch 鍵（e:<tz>:<date>:batch:<rand>，值為 JSON 精確增量）；/nearby 一趟 KV 寫入 12→3。readDay 同一次 list 辨認 batch 鍵 GET 加總，舊事件鍵/s: 底值/f: 定版全相容；總和與舊制逐項相同（非估算）。
 - 本地假 KV 驗證全過（3 請求=9 支 batch 鍵、新舊混合加總正確、定版不動、/stats 不寫入）。使用者部署後線上驗收：基準 kst 83/254 → 打 /local＋/nearby 各一 → 75 秒後 85/265，增量 +2/+1/+1/+1/+8/+0/+11 分毫不差，新舊格式無縫接續。退回 fix90 的注意：舊版讀不到 batch 鍵（功能無礙、報表不可見該段期間）。
+
+## 2026-10-26 Worker fix92 + 頁面 fix102（TomTom 優勢國家地標查證，使用者指定「針對 TomTom 有優勢國家寫入 Worker」）
+- 實測依據（2026-10-26，約 45 次 TomTom 呼叫、已知地標測試集）：台灣強（台北車站/101 名稱命中、平鎮周邊 POI 密度 2–13m、逆編碼回完整門牌）；歐洲/北美/大洋洲/新加坡地標名稱誤差多在 100m 內；**韓國不可用**（POI 0 命中、逆編碼僅市層級，續走 Kakao）、**日本弱**（東京駅名稱搜尋不回本體、日文 language 參數不支援、大阪城未命中——不接，待 HERE/Google/Zenrin 另案）。
+- Worker fix92：新增 /tt-search（名稱搜尋，limit 5，可帶 lat/lng 偏置與 cc 國家碼）與 /tt-nearby（逆編碼地址候選＋周邊 300m 地點），回傳形狀與 /local、/nearby 完全相同（title/address/roadAddress/mapx/mapy/kind/category），頁面候選流程共用。金鑰只放 Worker Secret `TOMTOM_API_KEY`（未設回 not_configured_tt）；計數新增 tomtom_search/tomtom_reverse（/stats metrics 與 tomtom_total 同步；逆編碼與搜尋在 TomTom 是不同免費桶：Reverse 20,000/月、Search 2,500/月）。
+- 頁面 fix102：regionOf(座標）分流——kr（韓國框；東緣對馬島重疊帶以緯度 34.85 切給 jp）→ Kakao 原路徑；tt（台灣 21.8–26.6N/118.1–122.1E、新加坡、歐洲、北美、大洋洲框）→ /tt-nearby；jp/other → 不打任何 API、直接 stNoSource 誠實訊息。名稱模式新增備援鏈：中文名先 Kakao（fix98 不變，W5 守門），Kakao 無候選才以原始中文名查 /tt-search（台北車站形狀，W2）；國際字串組 stNoSource/stNoAddrIntl/stCandAddrIntl/stNotConfTt/stNoCandNameIntl 三語齊備。
+- 連帶修正（皆經等價性檢查）：候選 30m 分層門檻由 `!byName` 改以 candidateSource 判定、名稱模式截 5 筆改以 source='name' 判定（TomTom 名稱候選 kind 為正式 place，舊門檻會以 distanceM=NaN 全濾）；成功訊息改以 candidateSource 選句（順帶修正 fix98 成功時誤顯示「已用座標查到韓國地址」的舊措辭）；Naver 確認店名頁（fix50）加韓文門檻——非韓文標題退座標連結（fix48 同課，W4 守門）。
+- 新列 W1（TW 座標→/tt-nearby、Kakao 不被打、地址列第一、確認升級）、W2（中文名 Kakao 空→TomTom 備援命中台北車站並確認）、W3（JP 座標→無來源訊息且零 API 呼叫）、W4（柏林→TomTom＋確認後 Naver 走座標連結）、W5（韓國中文名 Kakao 命中不觸發備援）。本地 88/88 PASS（原 83 列全數未改斷言續過）。
+

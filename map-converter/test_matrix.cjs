@@ -77,6 +77,25 @@ global.fetch = async (url) => {
   } else if (u.includes('/place?')) {
     if (u.includes('id=338712143')) body = { id: '338712143', name: '브로시스호텔', lat: 35.0985955, lng: 129.0308898 };
     else body = { error: 'not_found' };
+  } else if (u.includes('/tt-nearby') && u.includes('lat=24.91')) {
+    // fix102: TomTom 台灣（平鎮實測形狀：地址候選＋2m/5m/13m 處地點）
+    body = { provider: 'tomtom', total: 4, items: [
+      { title: '桃園市平鎮區中豐路南勢二段100號', address: '324032桃園市平鎮區中豐路南勢二段100號', roadAddress: '', kind: 'address', mapx: '1212108380', mapy: '249167880', link: '', category: '', telephone: '' },
+      { title: '遠傳桃園平鎮南勢直營門市', address: '桃園市平鎮區中豐路南勢二段104號', roadAddress: '', kind: 'place', mapx: '1212107000', mapy: '249168000', link: '', category: 'Telecommunications', telephone: '' },
+      { title: '聯恩診所', address: '桃園市平鎮區中豐路南勢二段100號', roadAddress: '', kind: 'place', mapx: '1212106460', mapy: '249168270', link: '', category: 'Clinic', telephone: '' },
+      { title: '南勢藥局', address: '桃園市平鎮區中豐路南勢二段90巷', roadAddress: '', kind: 'place', mapx: '1212107000', mapy: '249167000', link: '', category: 'Pharmacy', telephone: '' }] };
+  } else if (u.includes('/tt-nearby') && u.includes('lat=52.51')) {
+    // fix102: TomTom 歐洲（柏林布蘭登堡門實測形狀）
+    body = { provider: 'tomtom', total: 2, items: [
+      { title: 'Pariser Platz 1, 10117 Berlin', address: 'Pariser Platz 1, 10117 Berlin', roadAddress: '', kind: 'address', mapx: '133776000', mapy: '525163000', link: '', category: '', telephone: '' },
+      { title: 'Brandenburger Tor', address: 'Pariser Platz, 10117 Berlin', roadAddress: '', kind: 'place', mapx: '133777220', mapy: '525162670', link: '', category: 'Attraction', telephone: '' }] };
+  } else if (u.includes('/tt-nearby')) {
+    body = { provider: 'tomtom', total: 0, items: [] };
+  } else if (u.includes('/tt-search')) {
+    const q = decodeURIComponent((u.match(/[?&]q=([^&]*)/) || [])[1] || '');
+    if (q.includes('台北車站')) body = { provider: 'tomtom', total: 1, items: [
+      { title: '台北車站', address: '100009台北市中正區北平西路3號', roadAddress: '', kind: 'place', mapx: '1215170290', mapy: '250472450', link: '', category: 'Rail Station', telephone: '' }] };
+    else body = { provider: 'tomtom', total: 0, items: [] };
   } else if (u.includes('/nearby') && u.includes('37.5666103')) {
     const items = [{ title: '서울특별시 중구 세종대로 110', address: '서울 중구 태평로1가 31', roadAddress: '서울 중구 세종대로 110', kind: 'address', mapx: '1269784000', mapy: '375666200', link: '', category: '', telephone: '' }];
     for (let i = 1; i <= 12; i++) items.push({ title: '시청가게' + String(i).padStart(2, '0'), address: '서울 중구 세종대로 ' + (110 + i), roadAddress: '', kind: 'place', mapx: String(1269783882 + i * 100), mapy: String(375666103 + i * 200), link: '', category: '음식점 > 한식', telephone: '' });

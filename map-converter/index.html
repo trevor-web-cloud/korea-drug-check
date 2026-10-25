@@ -264,7 +264,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-25-fix101</p>
+  <p class="note" style="text-align:center">v2026-10-26-fix102</p>
 </div>
 
 <script>
@@ -300,6 +300,21 @@ let candWidened = false;
 let findBtnMode = 'primary'; // fix97: 'primary' 大按鈕（尚未搜尋/失敗重試）｜'retry' 小按鈕（清單已開，只供重搜） // fix95: 30m 內無店家時放寬到 100m 的旗標（清單頭要註明） // fix47: 'name'（韓文店名查詢）或 'address'（無店名→座標反查地址）
 const LOCAL_WORKER = 'https://map-resolve.tsai0215.workers.dev/local';
 const NEARBY_WORKER = 'https://map-resolve.tsai0215.workers.dev/nearby';
+const TT_SEARCH_WORKER = 'https://map-resolve.tsai0215.workers.dev/tt-search';
+const TT_NEARBY_WORKER = 'https://map-resolve.tsai0215.workers.dev/tt-nearby';
+// FIX fix102（使用者指定「針對 TomTom 有優勢國家寫入」；實測依據 2026-10-26）：座標 → 第 3 步查證來源分流。
+// kr = Kakao（韓國在地資料最強）；tt = TomTom 優勢區（台灣/新加坡/歐洲/北美/大洋洲，實測命中且座標準）；
+// jp = 日本（TomTom 實測弱、尚無在地來源）；other = 尚無來源。韓國框東緣與對馬島重疊帶以緯度 34.85 切分（對馬歸 jp）。
+function regionOf(lat, lng){
+  if(lat >= 33.0 && lat <= 43.0 && lng >= 124.0 && lng <= 132.0 && !(lng >= 129.0 && lat < 34.85)) return 'kr';
+  if(lat >= 21.8 && lat <= 26.6 && lng >= 118.1 && lng <= 122.1) return 'tt'; // 台灣（含金門/馬祖/澎湖）
+  if(lat >= 1.22 && lat <= 1.48 && lng >= 103.6 && lng <= 104.05) return 'tt'; // 新加坡
+  if(lat >= 34.5 && lat <= 71.5 && lng >= -25.0 && lng <= 45.0) return 'tt'; // 歐洲
+  if(lat >= 14.0 && lat <= 72.0 && lng >= -170.0 && lng <= -52.0) return 'tt'; // 北美
+  if(lat >= -48.0 && lat <= 0.5 && lng >= 110.0 && lng <= 180.0) return 'tt'; // 大洋洲
+  if(lat >= 24.0 && lat <= 46.0 && lng >= 122.0 && lng <= 146.0) return 'jp';
+  return 'other';
+}
 // FIX fix13: 不以店名/地名為主 — 座標/ID 優先，但必須是「這間店的」座標才優先。
 // 座標與店名從同一條連結一起解析出來時，coordsValidForName=true，座標優先；
 // 使用者手動改店名時，舊座標不再保證是這間店的，coordsValidForName=false，店名搜尋優先（避免南浦洞舊座標誤開）。
@@ -407,6 +422,11 @@ zh: {
   stSearching: '正在查詢附近地點，請稍等…',
   stNotConfigured: '附近地點搜尋還沒設定完成：請先在 Cloudflare 的 map-resolve 加上 KAKAO_REST_KEY 這個 Secret。',
   stNoAddress: '這個座標查不到韓國地址（這個功能只支援韓國境內）。要精準找店，請改貼店家的分享連結。',
+  stNoSource: '這個地區目前沒有地標查證資料（韓國用 Kakao 查證；台灣、歐洲、北美、大洋洲、新加坡用 TomTom 查證）。要精準找店，請改貼店家的分享連結。',
+  stNoAddrIntl: '這個座標查不到地址資料。要精準找店，請改貼店家的分享連結。',
+  stCandAddrIntl: '已用座標查到地址與附近地點，請在「確認地標」區的清單點一個確認。',
+  stNotConfTt: '國際地標搜尋還沒設定完成：請先在 Cloudflare 的 map-resolve 加上 TOMTOM_API_KEY 這個 Secret。',
+  stNoCandNameIntl: '找不到「{name}」的候選地點，請換個寫法再試。',
   stFindFailName: '附近地點搜尋失敗，請稍後再試。',
   stFindFailAddr: '找附近地點需要韓文店名（資料來源 Kakao 只能用韓文查）。請先把店名改成韓文原名再試。',
   stNoCandName: '找不到「{name}」的候選地點，請確認是韓文原名，或換個寫法再試。',
@@ -538,6 +558,11 @@ en: {
   stSearching: 'Looking up nearby places, please wait…',
   stNotConfigured: 'Nearby-place search is not set up yet: add the KAKAO_REST_KEY secret to map-resolve in Cloudflare first.',
   stNoAddress: 'No Korean address was found for these coordinates (this feature only works inside South Korea). For an exact place, paste its share link instead.',
+  stNoSource: 'No landmark-verification data is available for this area yet (South Korea is verified via Kakao; Taiwan, Europe, North America, Oceania and Singapore via TomTom). For an exact place, paste its share link instead.',
+  stNoAddrIntl: 'No address data was found for these coordinates. For an exact place, paste its share link instead.',
+  stCandAddrIntl: 'Found the address and nearby places for these coordinates. Please tap one in the “Confirm landmark” list to confirm it.',
+  stNotConfTt: 'International landmark search is not set up yet: add the TOMTOM_API_KEY secret to map-resolve in Cloudflare first.',
+  stNoCandNameIntl: 'No candidates found for “{name}”. Please try a different spelling.',
   stFindFailName: 'The nearby-place search failed. Please try again later.',
   stFindFailAddr: 'Finding nearby places needs a Korean name (the Kakao data source only searches in Korean). Change the name to the original Korean name and try again.',
   stNoCandName: 'No candidates found for “{name}”. Please check it is the original Korean name, or try a different spelling.',
@@ -669,6 +694,11 @@ id: {
   stSearching: 'Mencari tempat di sekitar, mohon tunggu…',
   stNotConfigured: 'Pencarian tempat sekitar belum disiapkan: tambahkan secret KAKAO_REST_KEY ke map-resolve di Cloudflare dulu.',
   stNoAddress: 'Tidak ditemukan alamat Korea untuk koordinat ini (fitur ini hanya berfungsi di dalam Korea Selatan). Untuk tempat yang persis, tempel tautan bagikannya.',
+  stNoSource: 'Belum ada data verifikasi landmark untuk area ini (Korea Selatan diverifikasi lewat Kakao; Taiwan, Eropa, Amerika Utara, Oseania, dan Singapura lewat TomTom). Untuk tempat yang persis, tempel tautan bagikannya.',
+  stNoAddrIntl: 'Tidak ditemukan data alamat untuk koordinat ini. Untuk tempat yang persis, tempel tautan bagikannya.',
+  stCandAddrIntl: 'Alamat dan tempat sekitar untuk koordinat ini ditemukan. Ketuk satu di daftar “Konfirmasi landmark” untuk mengonfirmasi.',
+  stNotConfTt: 'Pencarian landmark internasional belum disiapkan: tambahkan secret TOMTOM_API_KEY ke map-resolve di Cloudflare dulu.',
+  stNoCandNameIntl: 'Tidak ditemukan kandidat untuk “{name}”. Coba ejaan lain.',
   stFindFailName: 'Pencarian tempat sekitar gagal. Coba lagi nanti.',
   stFindFailAddr: 'Mencari tempat sekitar memerlukan nama Korea (sumber data Kakao hanya bisa mencari dalam bahasa Korea). Ubah nama menjadi nama asli Korea lalu coba lagi.',
   stNoCandName: 'Tidak ditemukan kandidat untuk “{name}”. Periksa bahwa itu nama asli Korea, atau coba ejaan lain.',
@@ -942,7 +972,9 @@ function updateLinks(){
     // FIX fix50: 已確認的是「店家」(kind='place') 時，網頁按鈕改開店名頁 — 座標連結在 Naver 只置中/泛標示，
     // 使用者實機回報「已選了正確店名，在 Naver 開啟卻沒圖釘」。店名是 Kakao 韓文原名，Naver 搜尋可直接命中該店面板＋紅圖釘。
     // 地址候選（kind='address'）與未確認狀態維持座標連結（地址本身就是標示，fix47 實機驗證有藍圖釘＋地址面板）。
-    const confirmedPlaceWeb = (naverOverride && naverOverride.kind === 'place' && naverOverride.title)
+    // FIX fix102: 店名頁只適用韓文原名（fix50 的命中前提）；非韓文標題（TomTom 國際候選）退回座標連結，
+    // 避免重演 fix48「非韓文名被 Naver 重新對應到別家」的實機問題。
+    const confirmedPlaceWeb = (naverOverride && naverOverride.kind === 'place' && naverOverride.title && /[\uAC00-\uD7A3]/.test(naverOverride.title))
       ? 'https://map.naver.com/p/search/' + encodeURIComponent(naverOverride.title) : '';
     els.naverOpen.href = confirmedPlaceWeb || nCoordWeb || '#';
     els.naverOpen.textContent = naverOverride ? T('nOpenConfirmed') : T('nOpenCoord');
@@ -1763,6 +1795,8 @@ async function findNearestNaver(){
   // fix98 分流：中文名「無座標」時才走機翻店名搜尋（唯一出路）；「有座標」時維持 fix47 的 /nearby 地址備援（K3 實例：樂天超市濟州店），不搶路。
   const cjkName = !byName && /[\u4E00-\u9FFF]/.test(name);
   const enName = !byName && !cjkName && /[A-Za-z]/.test(name); // fix99: 純英文名（英文介面分享）備援
+  const region = (isFinite(lat) && isFinite(lng)) ? regionOf(lat, lng) : ''; // fix102: 座標分流（kr/tt/jp/other）
+  const ttQuery = (((name.split(',')[0] || '').match(/^[^0-9A-Za-z]+/) || [''])[0] || '').trim() || (name.split(',')[0] || '').trim(); // fix102: TomTom 備援查詢詞＝原始名稱第一段（去數字/英文前綴）
   // FIX fix96（使用者實例 maps.app.goo.gl/rcjYcLtRMDYfDdRVA）：Google App 分享展開為 ?q=Brosis Hotel, 구덕로48번길 4, 남포, 부산…&ftid=
   // ——整串是「英文名＋韓文地址」的郵遞式字串，原樣送 Kakao 關鍵字必 0 結果（回報：搜尋失敗、未自動啟動）。
   // 送查前若為逗號複合字串，抽出韓文道路地址段落（한글＋로/길/대로＋數字）當查詢詞——實測 /local?q=구덕로48번길 4 第一筆即該店。
@@ -1796,9 +1830,24 @@ async function findNearestNaver(){
       const ko = await mtZhToKo(seg || query);
       if(ko && /[\uAC00-\uD7A3]/.test(ko)) query = ko;
     }
-    const res = await fetch(useLocal ? LOCAL_WORKER+'?q='+encodeURIComponent(query)+'&display=5' : NEARBY_WORKER+'?lat='+lat+'&lng='+lng, {signal: ctrl.signal});
+    // FIX fix102: 座標模式只有 kr（Kakao）與 tt（TomTom 優勢區）有查證來源；jp/other 直接給誠實訊息，不再打 Kakao 拿「只支援韓國」回覆。
+    if(!useLocal && isFinite(lat) && region !== 'kr' && region !== 'tt'){ setStatus(T('stNoSource'),false); return; }
+    const res = await fetch(useLocal ? LOCAL_WORKER+'?q='+encodeURIComponent(query)+'&display=5' : (region === 'tt' ? TT_NEARBY_WORKER : NEARBY_WORKER)+'?lat='+lat+'&lng='+lng, {signal: ctrl.signal});
     clearTimeout(timer);
-    const data = await res.json();
+    let data = await res.json();
+    // FIX fix102: TomTom 端點的專屬錯誤訊息（國際座標不可再出現「只支援韓國」字樣）。
+    if(data && data.error === 'not_configured_tt'){ setStatus(T('stNotConfTt'),false); return; }
+    if(data && data.error === 'no_address' && region === 'tt'){ setStatus(T('stNoAddrIntl'),false); return; }
+    // FIX fix102: 中文名備援鏈——先 Kakao（fix98 機翻韓文，韓國中文名靠它命中）；Kakao 無候選時改用原始中文名查 TomTom
+    // （台灣等地中文索引實測可命中，如台北車站）。僅名稱模式觸發；Kakao 設定錯誤時不備援（先修設定）。
+    if(useLocal && cjkName && data && data.error !== 'not_configured' && (!Array.isArray(data.items) || !data.items.length) && ttQuery){
+      try{
+        const r2 = await fetch(TT_SEARCH_WORKER+'?q='+encodeURIComponent(ttQuery), {signal: ctrl.signal});
+        const d2 = await r2.json();
+        if(d2 && Array.isArray(d2.items) && d2.items.length) data = d2;
+        else if(d2 && d2.error === 'not_configured_tt'){ setStatus(T('stNotConfTt'),false); return; }
+      }catch(e){}
+    }
     if(data && data.error === 'not_configured'){
       setStatus(T('stNotConfigured'),false);
       return;
@@ -1826,7 +1875,9 @@ async function findNearestNaver(){
       .sort((a,b)=> (isFinite(a.distanceM) && isFinite(b.distanceM)) ? a.distanceM-b.distanceM : 0);
     // FIX fix79: 使用者定「店名候選名單只提供 30 公尺內、數量控制 10 個內；fix89 使用者改定「地標搜尋改為 5 家即可」→ 上限改 5」——只套座標模式（/nearby）：
     // 店名模式是查特定店家，套 30 公尺會誤濾遠處目標。地址候選是該點門牌、不受限；店名取最近 10 家。
-    if(!byName){
+    // FIX fix102: 門檻改以 candidateSource 判定（原 !byName）——中文名經 TomTom 備援時 kind 為正式 place，
+    // 若照舊以 !byName 套 30m 過濾，無出發座標（distanceM=NaN）會把候選全濾掉；以來源判定與既有各路徑結果等價。
+    if(candidateSource === 'address'){
       const addrC = naverCandidates.filter(x => x.kind !== 'place');
       let placeC = naverCandidates.filter(x => x.kind === 'place' && isFinite(x.distanceM) && x.distanceM <= 30).slice(0, 5);
       candWidened = false;
@@ -1839,12 +1890,12 @@ async function findNearestNaver(){
       naverCandidates = addrC.concat(placeC);
     }
     // FIX fix90: 使用者定「都改為 5 家 提高效能」——店名模式也只取前 5 家；Worker /local 同步改 size=5 從源頭少傳少解析。
-    if(byName){ naverCandidates = naverCandidates.slice(0, 5); }
-    if(!naverCandidates.length){ setStatus(useLocal ? T('stNoCandName',{name}) : T('stNoCandAddr'),false); return; }
+    if(candidateSource === 'name'){ naverCandidates = naverCandidates.slice(0, 5); }
+    if(!naverCandidates.length){ setStatus(useLocal ? T(cjkName ? 'stNoCandNameIntl' : 'stNoCandName',{name}) : T('stNoCandAddr'),false); return; }
     renderCandidateList();
-    setStatus((byName
+    setStatus((candidateSource === 'name'
       ? ((isFinite(lat) && isFinite(lng)) ? T('stCandFoundNameCoord',{n:naverCandidates.length}) : T('stCandFoundNameNoCoord',{n:naverCandidates.length}))
-      : T('stCandFoundAddr')) + (inputWasYahoo ? T('yahooShareNote') : '') + ((readySpec && readySpec.k === 'readyMismatch') ? ' ' + specText({k:'mismatchStatus', v:{detail: readySpec.v.detail}}) : ''),true); // fix94: 自動搜尋完成後保留 fix39 的 Plus Code 落差警告（同 fix92 的 Yahoo 備註保留）
+      : (region === 'tt' ? T('stCandAddrIntl') : T('stCandFoundAddr'))) + (inputWasYahoo ? T('yahooShareNote') : '') + ((readySpec && readySpec.k === 'readyMismatch') ? ' ' + specText({k:'mismatchStatus', v:{detail: readySpec.v.detail}}) : ''),true); // fix94: 自動搜尋完成後保留 fix39 的 Plus Code 落差警告（同 fix92 的 Yahoo 備註保留）
   }catch(e){
     setStatus(T('stOffline'),false);
   }

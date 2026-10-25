@@ -1,7 +1,8 @@
-// Cloudflare Worker — map-resolve（fix91 請求彙總計數 + fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查 + fix49 附近地點 + fix52 機翻 + fix55 附近地點距離排序 + fix61 短連結 GET 重試 + fix63 Kakao ID 撈座標 + fix69 用量計數）
+// Cloudflare Worker — map-resolve（fix92 TomTom 國際地標查證 + fix91 請求彙總計數 + fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查 + fix49 附近地點 + fix52 機翻 + fix55 附近地點距離排序 + fix61 短連結 GET 重試 + fix63 Kakao ID 撈座標 + fix69 用量計數）
 // 部署：貼到 Cloudflare Dashboard → Workers → map-resolve → Edit code 全文取代；
 //       另需在 Settings → Variables and Secrets 新增一個 Secret：
 //       KAKAO_REST_KEY（Kakao Local API 的 REST API 金鑰；金鑰只放 Worker Secret，不進前端）
+//       TOMTOM_API_KEY（fix92：TomTom Search API 金鑰；同樣只放 Worker Secret，不進前端）
 //       fix69 用量報表另需：Settings → Bindings 新增 KV Namespace 綁定，變數名 STATS；
 //       並新增一個 Secret：STATS_KEY（自訂一串密碼，讀 /stats 報表時用）。
 // 端點：
@@ -10,6 +11,10 @@
 //        （正規化為 title/address/roadAddress/mapx/mapy；座標來源是 Kakao，確認後頁面以該座標開 Naver）
 //   GET /nearby?lat={緯度}&lng={經度} → fix47 無店名備援：coord2address 取韓國道路地址，
 //        再以 address 搜尋取該地址的官方座標，回傳單一候選（title=道路地址）
+//   GET /tt-search?q={關鍵字}&lat=&lng=&cc= → fix92 TomTom 名稱搜尋（TomTom 優勢國家專用；
+//        回傳形狀與 /local 相同，頁面共用候選流程）
+//   GET /tt-nearby?lat={緯度}&lng={經度} → fix92 TomTom 座標查證：逆編碼地址候選＋周邊地點
+//        （回傳形狀與 /nearby 相同）
 //   GET /translate?text={韓文} → {"en":"..."}（fix52：Google 免費翻譯端點轉發，韓→英，只供辨認參考）
 export default {
   async fetch(request, env, ctx) {
@@ -64,7 +69,7 @@ export default {
       const tz = ['tpe', 'kst', 'utc'].includes(u.searchParams.get('tz')) ? u.searchParams.get('tz') : 'tpe';
       const off = tz === 'kst' ? 9 : tz === 'utc' ? 0 : 8;
       const date = /^\d{4}-\d{2}-\d{2}$/.test(u.searchParams.get('date') || '') ? u.searchParams.get('date') : dayIn(off);
-      const metrics = ['worker_requests', 'kakao_keyword', 'kakao_coord2address', 'kakao_address', 'kakao_category', 'place_fetch'];
+      const metrics = ['worker_requests', 'kakao_keyword', 'kakao_coord2address', 'kakao_address', 'kakao_category', 'place_fetch', 'tomtom_search', 'tomtom_reverse'];
       // fix71: 總數 = 舊鍵底值（fix69 舊格式＋fix70 s: 鍵，時間窗與事件鍵不重疊）＋事件鍵加總。
       // fix73: 單日讀取抽成 readDay；?sum=month 時回傳該月 1 日到 date 當日的逐日加總（頁尾額度顯示用）。
       const readDay = async (d) => {
@@ -105,6 +110,7 @@ export default {
           }));
         } catch (e) {}
         o.kakao_total = o.kakao_keyword + o.kakao_coord2address + o.kakao_address + o.kakao_category;
+        o.tomtom_total = (o.tomtom_search || 0) + (o.tomtom_reverse || 0);
         if (isPast) {
           const dayEndUtc = Date.parse(d + 'T00:00:00Z') - off * 3600 * 1000 + 86400 * 1000;
           if (Date.now() > dayEndUtc + 900 * 1000) {
@@ -124,6 +130,7 @@ export default {
         const agg = { date, tz, month: ym };
         for (const m of metrics) agg[m] = parts.reduce((a, p) => a + (p[m] || 0), 0);
         agg.kakao_total = agg.kakao_keyword + agg.kakao_coord2address + agg.kakao_address + agg.kakao_category;
+        agg.tomtom_total = (agg.tomtom_search || 0) + (agg.tomtom_reverse || 0);
         return new Response(JSON.stringify(agg), { headers: cors });
       }
       const out = { date, tz, ...(await readDay(date)) };
@@ -273,6 +280,103 @@ export default {
         for (const p of places) delete p._d;
         const items = [item, ...places.slice(0, 12)];
         return new Response(JSON.stringify({ provider: 'kakao-address', total: items.length, items }), { headers: cors });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: 'fetch_failed' }), { status: 502, headers: cors });
+      }
+    }
+
+    // fix92（使用者指定「針對 TomTom 有優勢國家寫入」）：TomTom 國際地標查證。
+    // 實測依據（2026-10-26 已知地標測試集）：台灣強（名稱搜尋/周邊密度/門牌逆編碼皆佳）、
+    // 歐洲/北美/大洋洲/新加坡強；日本弱、韓國不可用——故分流在頁面：韓國續走 Kakao、日本不接，
+    // 本端點只在 TomTom 優勢區被呼叫。金鑰只放 Worker Secret（TOMTOM_API_KEY）。
+    // 回傳形狀與 /local、/nearby 完全相同（title/address/roadAddress/mapx/mapy/kind/category），頁面共用候選流程。
+    function ttNormalize(r) {
+      const poi = r.poi || {};
+      const addr = (r.address && r.address.freeformAddress) || '';
+      const pos = r.position || {};
+      if (!isFinite(pos.lat) || !isFinite(pos.lon)) return null;
+      const cats = (poi.categories && poi.categories.length) ? poi.categories : [];
+      return {
+        title: poi.name || addr,
+        link: '',
+        category: cats[0] || '',
+        description: '',
+        telephone: poi.phone || '',
+        address: addr,
+        roadAddress: '',
+        kind: poi.name ? 'place' : 'address',
+        mapx: String(Math.round(pos.lon * 1e7)),
+        mapy: String(Math.round(pos.lat * 1e7)),
+      };
+    }
+    async function ttJson(url) {
+      const r = await fetch(url, { headers: { 'User-Agent': 'map-resolve-worker' } });
+      if (!r.ok) return null;
+      return r.json().catch(() => null);
+    }
+    if (u.pathname === '/tt-search') {
+      const q = (u.searchParams.get('q') || '').trim();
+      if (!q) return new Response(JSON.stringify({ error: 'missing q' }), { status: 400, headers: cors });
+      if (!env || !env.TOMTOM_API_KEY) {
+        return new Response(JSON.stringify({ error: 'not_configured_tt' }), { status: 503, headers: cors });
+      }
+      try {
+        bumpBg('tomtom_search');
+        let url = 'https://api.tomtom.com/search/2/search/' + encodeURIComponent(q) + '.json?key=' + encodeURIComponent(env.TOMTOM_API_KEY) + '&limit=5';
+        const lat = parseFloat(u.searchParams.get('lat')), lng = parseFloat(u.searchParams.get('lng'));
+        if (isFinite(lat) && isFinite(lng)) url += '&lat=' + lat + '&lon=' + lng;
+        const cc = (u.searchParams.get('cc') || '').trim().toUpperCase();
+        if (/^[A-Z]{2}$/.test(cc)) url += '&countrySet=' + cc;
+        const d = await ttJson(url);
+        if (!d) return new Response(JSON.stringify({ error: 'fetch_failed' }), { status: 502, headers: cors });
+        const items = (d.results || []).map(ttNormalize).filter(Boolean).slice(0, 5);
+        return new Response(JSON.stringify({ provider: 'tomtom', total: items.length, items }), { headers: cors });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: 'fetch_failed' }), { status: 502, headers: cors });
+      }
+    }
+    if (u.pathname === '/tt-nearby') {
+      const lat = parseFloat(u.searchParams.get('lat'));
+      const lng = parseFloat(u.searchParams.get('lng'));
+      if (!isFinite(lat) || !isFinite(lng)) {
+        return new Response(JSON.stringify({ error: 'missing lat/lng' }), { status: 400, headers: cors });
+      }
+      if (!env || !env.TOMTOM_API_KEY) {
+        return new Response(JSON.stringify({ error: 'not_configured_tt' }), { status: 503, headers: cors });
+      }
+      try {
+        bumpBg('tomtom_reverse');
+        bumpBg('tomtom_search');
+        const key = encodeURIComponent(env.TOMTOM_API_KEY);
+        const [rev, near] = await Promise.all([
+          ttJson('https://api.tomtom.com/search/2/reverseGeocode/' + lat + ',' + lng + '.json?key=' + key + '&radius=100'),
+          ttJson('https://api.tomtom.com/search/2/nearbySearch/.json?key=' + key + '&lat=' + lat + '&lon=' + lng + '&radius=300&limit=10'),
+        ]);
+        if (!rev && !near) return new Response(JSON.stringify({ error: 'fetch_failed' }), { status: 502, headers: cors });
+        const items = [];
+        const ra = rev && rev.addresses && rev.addresses[0];
+        if (ra && ra.address && ra.address.freeformAddress) {
+          const pp = String(ra.position || '').split(',').map(Number);
+          const aLat = isFinite(pp[0]) ? pp[0] : lat, aLng = isFinite(pp[1]) ? pp[1] : lng;
+          items.push({
+            title: ra.address.freeformAddress,
+            link: '',
+            category: '',
+            description: '',
+            telephone: '',
+            address: ra.address.freeformAddress,
+            roadAddress: '',
+            kind: 'address',
+            mapx: String(Math.round(aLng * 1e7)),
+            mapy: String(Math.round(aLat * 1e7)),
+          });
+        }
+        const seen = new Set(items.map(i => i.title + '|' + i.mapx + '|' + i.mapy));
+        const places = ((near && near.results) || []).map(ttNormalize).filter(Boolean)
+          .filter(p => { const k = p.title + '|' + p.mapx + '|' + p.mapy; if (!p.title || seen.has(k)) return false; seen.add(k); return true; });
+        const all = items.concat(places.slice(0, 12));
+        if (!all.length) return new Response(JSON.stringify({ error: 'no_address' }), { headers: cors });
+        return new Response(JSON.stringify({ provider: 'tomtom', total: all.length, items: all }), { headers: cors });
       } catch (e) {
         return new Response(JSON.stringify({ error: 'fetch_failed' }), { status: 502, headers: cors });
       }

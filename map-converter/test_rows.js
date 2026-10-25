@@ -621,3 +621,58 @@ rows.push(row('U2', '叫車同區塊：Kakao T/k.ride 開 App＋複製目的地�
   await clearAll();
   check(c, 'dest cleared', E('rideDest').textContent === '—', E('rideDest').textContent);
 }));
+
+rows.push(row('W1', '台灣座標→TomTom 查證（fix102，平鎮實測形狀）', async (c) => {
+  const log0 = FETCH_LOG.length;
+  await pasteAndParse('24.9168125, 121.2106875'); await flush();
+  const log = FETCH_LOG.slice(log0);
+  check(c, 'tt-nearby called', log.some(u => u.includes('/tt-nearby') && u.includes('lat=24.9168125')), log.join(' | ').slice(0, 140));
+  check(c, 'kakao nearby NOT called', !log.some(u => u.includes('/nearby?lat=24.9168125')), 'kakao nearby called');
+  check(c, 'candidates open', E('candidateBox').hidden === false && candRows().length >= 2, 'hidden=' + E('candidateBox').hidden + ' rows=' + candRows().length);
+  check(c, 'address row first', !!(candRows()[0] && candRows()[0].textContent.includes('中豐路南勢二段100號')), candRows().map(r => r.textContent.slice(0, 14)).join('|'));
+  check(c, 'nearby place listed', candRows().some(x => x.textContent.includes('遠傳桃園平鎮南勢直營門市')), candAllText().slice(0, 80));
+  candYes(); await flush();
+  check(c, 'confirmed address coords', near(latV(), 24.916788, 1e-6) && near(lngV(), 121.210838, 1e-6), E('lat').value + ',' + E('lng').value);
+  check(c, 'status confirmed', st().includes('已確認地點'), st().slice(0, 40));
+}));
+
+rows.push(row('W2', '中文名無座標→Kakao 無候選時 TomTom 備援（fix102，台北車站）', async (c) => {
+  const log0 = FETCH_LOG.length;
+  await pasteAndParse('https://maps.google.com/?q=%E5%8F%B0%E5%8C%97%E8%BB%8A%E7%AB%99&ftid=0x3442fa7ecce7c1b9:0x12779fb177b58b02'); await flush();
+  const log = FETCH_LOG.slice(log0);
+  check(c, 'kakao tried first', log.some(u => u.includes('/local')), log.join('|').slice(0, 100));
+  const tt = log.find(u => u.includes('/tt-search'));
+  check(c, 'tt-search fallback fired', !!tt && decodeURIComponent(tt).includes('q=台北車站'), tt || 'no tt call');
+  check(c, 'candidates from tomtom', E('candidateBox').hidden === false && candRows().some(x => x.textContent.includes('台北車站')), candAllText().slice(0, 60));
+  const rowEl = candRows().find(x => x.textContent.includes('台北車站'));
+  if(rowEl) rowEl.dispatch('click'); await flush();
+  check(c, 'confirmed coords = tomtom pin', near(latV(), 25.047245, 1e-6) && near(lngV(), 121.517029, 1e-6), E('lat').value + ',' + E('lng').value);
+}));
+
+rows.push(row('W3', '日本座標→尚無查證來源（fix102，誠實訊息、不打任何 API）', async (c) => {
+  const log0 = FETCH_LOG.length;
+  await pasteAndParse('35.681236, 139.767125'); await flush();
+  const log = FETCH_LOG.slice(log0);
+  check(c, 'no-source status', st().includes('沒有地標查證資料'), st().slice(0, 60));
+  check(c, 'no provider calls', !log.some(u => u.includes('/nearby') || u.includes('/local') || u.includes('/tt-')), log.join('|').slice(0, 100));
+  check(c, 'candidate box hidden', E('candidateBox').hidden === true, 'hidden=' + E('candidateBox').hidden);
+}));
+
+rows.push(row('W4', '歐洲座標→TomTom 查證＋非韓文標題不走 Naver 店名頁（fix102，柏林）', async (c) => {
+  const log0 = FETCH_LOG.length;
+  await pasteAndParse('52.516267, 13.377722'); await flush();
+  const log = FETCH_LOG.slice(log0);
+  check(c, 'tt-nearby called', log.some(u => u.includes('/tt-nearby') && u.includes('lat=52.516267')), log.join('|').slice(0, 100));
+  const rowEl = candRows().find(x => x.textContent.includes('Brandenburger Tor'));
+  check(c, 'landmark listed', !!rowEl, candAllText().slice(0, 80));
+  if(rowEl) rowEl.dispatch('click'); await flush();
+  check(c, 'naver uses coord link not name search', (E('naverOpen').href || '').includes('map.naver.com/?lat=52.516267') && !(E('naverOpen').href || '').includes('/p/search/'), E('naverOpen').href);
+}));
+
+rows.push(row('W5', '韓國中文名→Kakao 命中就不觸發 TomTom 備援（fix102，海東龍宮寺）', async (c) => {
+  const log0 = FETCH_LOG.length;
+  await pasteAndParse('https://maps.google.com/?q=%E6%B5%B7%E6%9D%B1%E9%BE%8D%E5%AE%AE%E5%AF%BA86+Yonggung-gil%2C+Gijang-gun%2C+Busan%2C+%E5%8D%97%E9%9F%93&ftid=0x35688c1bbbdea6c1:0xa141406d6f112e5c'); await flush();
+  const log = FETCH_LOG.slice(log0);
+  check(c, 'kakao candidates', candRows().some(x => x.textContent.includes('해동용궁사')), candAllText().slice(0, 60));
+  check(c, 'no tt-search', !log.some(u => u.includes('/tt-search')), log.filter(u => u.includes('tt-')).join('|') || 'none');
+}));
