@@ -206,6 +206,7 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 - 背景：使用者問「Google map 有辦法開啟網頁版搜尋再回傳 Plus Code 嗎」——查證：網頁版資訊面板/右鍵資訊卡皆顯示 Plus Code，但 Google 未提供一般網頁的回呼機制（自動回傳需 Places API、綁卡），故採半自動：按鈕開 Google 地圖網頁版搜尋（query 帶名稱優先、否則座標），使用者複製 Plus Code 貼回第 1 步（既有解碼路徑）完成回傳。
 - 實作（純頁面，Worker 不變）：第 3 步 findBtn 下方新增 plusHelpBtn＋plusHelpHint（三語字串）；顯示條件由 updateLinks 統一判定——有主座標、未確認地標、且 regionOf 為 jp/other（kr/tt 有查證來源不顯示）。
 - W6 首跑抓到真 bug：updateLinks 空狀態早退（無座標/無名/無 ID）有一份 fix20 的顯式重置清單、會在到達 fix104 區塊前 return → 清除後按鈕殘留可見；已把 plusHelpBtn/Hint 補進該重置清單。新列 W6（東京顯示＋href 帶座標、清除後隱藏、釜山不顯示）。本地 89/89 PASS。
+- 線上驗收：頁尾 fix104、md5 一致（09ec03af…），線上矩陣 89/89 PASS。
 
 
 
