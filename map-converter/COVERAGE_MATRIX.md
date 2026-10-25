@@ -214,6 +214,11 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 - 備註（已向使用者說明）：以目前實際用量（單帳號免費額度的 10% 以下），備援實際上幾乎不會觸發，屬保險性質。
 - 線上驗收（2026-10-26 使用者部署後）：/tt-search 台北車站回 5 筆（座標 1215170290/250472450 與實測基準一致）；/tt-nearby 平鎮回地址候選（中豐路南勢二段100號）＋遠傳門市/聯恩診所/南勢藥局等 11 筆、柏林回地址＋周邊 11 筆；Kakao /local 브로시스호텔 回歸正常（ID 338712143）；CORS * 正常。計數驗收：tomtom_search 4、tomtom_reverse 3、tomtom_total 7，與測試呼叫組合（tt-search 1＋tt-nearby 3）逐項吻合。
 
+## 2026-10-26 Worker fix94（三組 TomTom 金鑰接力，使用者申請第三組帳號 eolab.ntu@gmail.com 後核准接入）
+- 第三組帳號：eolab.ntu@gmail.com，key「Search API Key」遮罩 RtAP…kzB1（ID 50d93c92-…，類別同前兩組）。改法：ttKeys() 加第三順位 TOMTOM_API_KEY_3；ttJson 依序接力（429/403/連線失敗才換下一組、400 不重試），任一組單獨存在亦可運作。
+- 本地假 fetch 驗證 9/9：fix93 原 6 案回歸全過＋新 3 案（K1、K2 連續 429→K3 接手且順序正確、只設 K3 可用、403 只接力到 K2 不驚動 K3）。頁面不需改版。合計上限：Search 7,500/月、Reverse 60,000/月；每日用量報表對照基準已同步改為 7,500／60,000。
+- 待使用者：Cloudflare 新增 Secret TOMTOM_API_KEY_3（eolab 組）＋部署本版 Worker；部署後做線上 /tt-* 冒煙測試。
+
 ## 2026-10-26 頁面 fix105（Google 查碼鈕擴及 TomTom 地區，使用者 iPhone 實測瑞麟美而美後核准）
 - 緣起：使用者以 Google 上查到的 Plus Code（W674+GG）實測瑞麟美而美平鎮上海路店，地址候選正確（169號、6m）但店家不在 TomTom 候選——查證為 TomTom 未收錄該分店（名稱搜尋只回其他分店、300m 周邊鄰居皆在唯獨它缺席），屬台灣 POI 長尾缺口。
 - 改法：plusHelpBtn 顯示條件由 jp/other 擴及 tt（有座標、座標為主、尚未確認）；韓國維持不顯示。新增矩陣 W7（平鎮 Plus Code→鈕顯示＋href 帶座標、候選清單仍開、確認後鈕隱藏）。
