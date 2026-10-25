@@ -235,7 +235,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-25-fix93</p>
+  <p class="note" style="text-align:center">v2026-10-25-fix94</p>
 </div>
 
 <script>
@@ -885,7 +885,9 @@ function updateLinks(){
   // 改為有有效座標且無 pinId/未確認候選就顯示；韓文店名改在點擊時檢查並提示（findNearestNaver 內）。
   if(els.findBtn){
     // FIX fix64: 無座標但有韓文店名也可找地標（店名查不需要座標）— Google ftid 分享、Naver 只有 ID 時靠它補座標，讓三家都能開。
-    const canFind = !naverOverride && ((hasCoords && coordsPrimary && !currentPinId) || (!hasCoords && /[\uAC00-\uD7A3]/.test(name)));
+    // FIX fix94（2026-10-25 使用者實例 naver.me/x4lws2zw）：展開後有座標＋pinId＋中文店名，舊規則「有 pinId 就不給第 3 步」→永遠沒有候選清單；
+    // 且與 Google 連結（有 ftid 照樣自動搜尋）不一致。改：只要有主座標且尚未確認地標，就能找地標（pinId 只滿足 Naver 面板，Kakao 查證對四家都有益）。
+    const canFind = !naverOverride && ((hasCoords && coordsPrimary) || (!hasCoords && /[\uAC00-\uD7A3]/.test(name)));
     els.findBtn.style.display = canFind ? '' : 'none';
     { const wn = $('findWaitNote'); if(wn) wn.style.display = canFind ? '' : 'none'; }
     // FIX fix92: 使用者定「第一步完成就自動啟動第三步」——解析完成（autoFindArmed）且可找地標時自動搜尋一次；
@@ -1729,7 +1731,7 @@ async function findNearestNaver(){
     renderCandidateList();
     setStatus((byName
       ? ((isFinite(lat) && isFinite(lng)) ? T('stCandFoundNameCoord',{n:naverCandidates.length}) : T('stCandFoundNameNoCoord',{n:naverCandidates.length}))
-      : T('stCandFoundAddr')) + (inputWasYahoo ? T('yahooShareNote') : ''),true);
+      : T('stCandFoundAddr')) + (inputWasYahoo ? T('yahooShareNote') : '') + ((readySpec && readySpec.k === 'readyMismatch') ? ' ' + specText({k:'mismatchStatus', v:{detail: readySpec.v.detail}}) : ''),true); // fix94: 自動搜尋完成後保留 fix39 的 Plus Code 落差警告（同 fix92 的 Yahoo 備註保留）
   }catch(e){
     setStatus(T('stOffline'),false);
   }

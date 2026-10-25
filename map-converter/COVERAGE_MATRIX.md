@@ -139,3 +139,11 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 
 - 2026-10-24 fix85（使用者更正）：前台恢復顯示每日餘額（僅今日；fix84 整段移除 overshoot），每月不顯示、只在後台每日／每月報表；頁面只呼叫每日端點，L5 新增「不呼叫 sum=month」斷言。線上 md5 全檔比對一致，**76 列全 PASS**。
 - 2026-10-24 矩陣必要性審查（使用者問「是否都為必要性」→選定修編號＋退役＋合併）：76 → **71 列**。退役 K5（Worker 未設定，正式站永遠不會發生）。合併：N8→N7（Naver App name 兩規則同列兩段）、P7→P6（Plus Code 兩拒絕路徑）、T4→T3（fix41 兩組欄位）、原 fix77 K11→K8（清單結構斷言併入）。修編號：審查發現 K9/K11/K12/K13/K14 五個編號各被用兩次（fix57 輸入列與 fix77 之後清單列撞號）——fix75 列 K9→K15、fix77 分組 K12→K16、fix78 列 K13→K17、fix79 列 K14→K18，fix77 K11 併入 K8 後自然消失；全表編號已零重複。頁面本身未改（仍 fix85）。本地＋線上 **71 列全 PASS**。
+
+### fix93（2026-10-25）— ID-only 輸入韓文名自動啟動 + 引導文字改自動語意
+- 新增 K21（ID-only→輸入韓文名→950ms 後自動出候選免點按鈕）。本地 75/75 PASS；線上 md5 相同、75/75 PASS（頁尾 fix93）。
+- 背景：四家真實連結實測（瀏覽器）——Google 座標連結、Kakao 分享、Yahoo 分享皆自動啟動；Naver 座標+ID 連結不需啟動（四家可直開）；Naver ID-only 無名無座標無法搜尋 → 本 fix 補上「輸入店名後自動接續」。
+
+### fix94（2026-10-25）— 有座標＋pinId 也要能確認地標（使用者實例 naver.me/x4lws2zw）
+- 實例：展開含 lat/lng＋pinId＋中文店名（樂天酒店&度假村Gimhae），舊 canFind 以 !currentPinId 排除 → 第 3 步永遠無清單；與 Google（ftid 不擋）不一致。改：有主座標且未確認即可搜尋。
+- 新增 K22（NAVER_FULL_RESOLVED→自動出候選）。迴歸：S1 的 Plus Code 落差警告被完成訊息覆蓋 → 比照 Yahoo 備註作法，完成訊息後重附 mismatch 警告（readySpec 偵測）。本地 76/76 PASS。

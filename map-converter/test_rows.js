@@ -543,3 +543,9 @@ rows.push(row('K21', '只有 ID 時輸入韓文名→自動啟動搜尋免點按
   await new Promise(r2 => setTimeout(r2, 950));
   check(c, 'auto after name typed', E('candidateBox').hidden === false && candRows().length >= 1, 'hidden=' + E('candidateBox').hidden + ' rows=' + candRows().length);
 }));
+
+rows.push(row('K22', 'Naver 完整分享（座標＋pinId＋中文名）也要自動出候選清單（fix94，x4lws2zw 實例）', async (c) => {
+  await pasteAndParse(NAVER_FULL_RESOLVED); await flush();
+  check(c, 'auto candidates despite pinId', E('candidateBox').hidden === false && candRows().length >= 1, 'hidden=' + E('candidateBox').hidden + ' rows=' + candRows().length);
+  check(c, 'find btn visible', E('findBtn').style.display !== 'none', E('findBtn').style.display);
+}));
