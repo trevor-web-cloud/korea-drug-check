@@ -200,5 +200,6 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 - 現象：線上矩陣（對 live HTML 跑）W3 失敗——東京座標貼上後狀態停在「已解析 緯度，經度。」，stNoSource 沒顯示；本地首跑 88/88、其後慢速環境重跑穩定重現（87/88），屬時序競態非邏輯錯。
 - 根因：自動搜尋由 updateLinks 觸發，而 updateLinks 是 updateFromLatLng 在寫解析狀態「之前」呼叫的；fetch 路徑的結果狀態都經過 await、天然在解析狀態之後落地，唯獨 fix102 的無來源 gate 是同步寫入，當場被隨後的解析狀態覆蓋。按鈕手動觸發則無此問題（無解析狀態跟隨）。
 - 修法（純頁面一行）：gate 寫入前先 `await Promise.resolve()`，與其他結果路徑同一個落地順序。慢速環境本地連跑兩次 88/88 穩定通過。
+- 線上驗收：頁尾 fix103、md5 本地↔線上一致（a5a0af2f…），線上矩陣 88/88 PASS。Worker fix92 尚待使用者部署（設 Secret＋貼檔），部署後再做 /tt-* 線上實測（平鎮點＋台北車站）。
 
 
