@@ -152,3 +152,8 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 - 空白列根因（jsdom 真實資料重現）：candRow 是預置固定按鈕池，未用列靠 hidden 屬性藏，但 .candrow 的作者 CSS display 蓋過 UA 的 [hidden] 隱藏 → 真實瀏覽器顯示 8 個空框。CSS 補 `[hidden]{display:none!important}` 全站根治。
 - 放寬：座標模式 30m 內店家為空集時，改取 100m 內最近 5 家並於清單頭註明（candWidened 三語）。實例：金海樂天錨點→Kakao 圖釘 50.3m（分享座標 35.1809933,128.8250727 vs 飯店 35.1810612,128.8256188）；同型前例 樂天超市濟州 42.9m。有 30m 內候選時不放寬、精度不變。
 - 新增 K23（金海幾何 fixture：飯店 ~50m 入列、~250m 遠店排除、放寬註明、無可見空白列、CSS 守門字串）。本地 77/77 PASS；真實 /nearby 資料 jsdom 重演：5 候選（地址＋飯店 50m 等）。
+
+### fix96（2026-10-25）— Google App 分享 ?q= 複合字串抽地址段落（使用者實例 goo.gl/rcjYcLtRMDYfDdRVA）
+- 實例：Google App 分享展開為 maps.google.com?q=Brosis Hotel, 구덕로48번길 4, 남포, 부산…&ftid=（無座標）——整串原樣送 Kakao 關鍵字必 0 結果（使用者回報「搜尋失敗 未自動啟動」）。
+- 修法（純頁面）：findNearestNaver 送查前，逗號複合字串抽韓文道路地址段落（한글＋로/길/대로＋數字）當查詢詞。實測線上 /local?q=구덕로48번길 4 第一筆即 브로시스호텔（Kakao 圖釘座標）。新增 K24（候選自動出現＋FETCH_LOG 驗查詢詞為路段）。本地 78/78 PASS。
+- 同場加驗：短碼「32XJ+C9 釜山 南韓」jsdom 重演正常（還原中心 35.0985625,129.0309375＋自動啟動）——使用者端未啟動研判為手機快取舊版。

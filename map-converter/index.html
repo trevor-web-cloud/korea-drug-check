@@ -236,7 +236,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-25-fix95</p>
+  <p class="note" style="text-align:center">v2026-10-25-fix96</p>
 </div>
 
 <script>
@@ -1679,6 +1679,15 @@ async function findNearestNaver(){
   const name = els.name.value.trim();
   const lat = parseFloat(els.lat.value), lng = parseFloat(els.lng.value);
   const byName = /[\uAC00-\uD7A3]/.test(name);
+  // FIX fix96（使用者實例 maps.app.goo.gl/rcjYcLtRMDYfDdRVA）：Google App 分享展開為 ?q=Brosis Hotel, 구덕로48번길 4, 남포, 부산…&ftid=
+  // ——整串是「英文名＋韓文地址」的郵遞式字串，原樣送 Kakao 關鍵字必 0 結果（回報：搜尋失敗、未自動啟動）。
+  // 送查前若為逗號複合字串，抽出韓文道路地址段落（한글＋로/길/대로＋數字）當查詢詞——實測 /local?q=구덕로48번길 4 第一筆即該店。
+  let query = name;
+  if(name.includes(',')){
+    const segs = name.split(',').map(x => x.trim()).filter(Boolean);
+    const road = segs.find(x => /[\uAC00-\uD7A3]/.test(x) && /(로|길|대로)/.test(x) && /\d/.test(x));
+    if(road) query = road;
+  }
   // FIX fix64: 沒有座標但有韓文店名 → 用店名查（Kakao /local 不需要座標）。
   // Google ftid 分享、Naver 只有 ID 的連結靠這條補座標，讓三家都能開（使用者定：三種連結貼上後都能找地標）。
   if(!isFinite(lat) || !isFinite(lng)){
@@ -1692,7 +1701,7 @@ async function findNearestNaver(){
   try{
     const ctrl = new AbortController();
     const timer = setTimeout(()=>ctrl.abort(), 12000);
-    const res = await fetch(byName ? LOCAL_WORKER+'?q='+encodeURIComponent(name)+'&display=5' : NEARBY_WORKER+'?lat='+lat+'&lng='+lng, {signal: ctrl.signal});
+    const res = await fetch(byName ? LOCAL_WORKER+'?q='+encodeURIComponent(query)+'&display=5' : NEARBY_WORKER+'?lat='+lat+'&lng='+lng, {signal: ctrl.signal});
     clearTimeout(timer);
     const data = await res.json();
     if(data && data.error === 'not_configured'){

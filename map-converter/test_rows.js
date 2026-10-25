@@ -559,3 +559,12 @@ rows.push(row('K23', '30m 內無店家→放寬 100m（fix95，金海樂天 50m 
   check(c, 'no visible blank row', rows.every(x => x.hidden || x.textContent.trim().length > 0), 'blank visible row');
   check(c, 'css hidden guard', PAGE_HTML.includes('[hidden]{display:none!important}'), 'css guard missing');
 }));
+
+rows.push(row('K24', 'Google App 分享 ?q=英文名＋韓文地址→抽地址段落自動搜到店（fix96）', async (c) => {
+  await pasteAndParse('https://maps.google.com/?q=Brosis+Hotel%2C+%EA%B5%AC%EB%8D%95%EB%A1%9C48%EB%B2%88%EA%B8%B8+4%2C+%EB%82%A8%ED%8F%AC%2C+%EB%B6%80%EC%82%B0&ftid=0x3568e953d7884ff3:0xd69fabe03e7ddf9d');
+  await flush();
+  const rows = candRows();
+  check(c, 'auto candidates', E('candidateBox').hidden === false && rows.some(x => x.textContent.includes('브로시스호텔')), rows.map(x => x.textContent.slice(0, 16)).join('|'));
+  const localCall = FETCH_LOG.find(u => u.includes('/local') && decodeURIComponent(u).includes('구덕로48번길'));
+  check(c, 'query is road segment', !!localCall && decodeURIComponent(localCall).includes('q=구덕로48번길 4'), localCall || 'no road-segment /local call');
+}));
