@@ -139,6 +139,8 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note" style="margin-top:2px" data-i18n="landmarkNote">座標只是大概位置（例如 Plus Code）時，在這裡找一次、確認一次就好。確認後，Naver、Kakao、Google、Yahoo 都會改用這個查證過的地標。</p>
       <button class="btn btn-landmark" id="findBtn" type="button" style="display:none;width:100%;margin:6px 0" data-i18n="findBtn">🔍 找地標並確認</button>
       <p class="note" id="findWaitNote" style="display:none" data-i18n="findWaitNote">⏳ 地標搜尋約需 2–5 秒，請稍等，不要重複點按。</p>
+      <a class="btn btn-google" id="plusHelpBtn" href="#" target="_blank" rel="noopener" style="display:none;width:100%;margin:6px 0;text-align:center;box-sizing:border-box" data-i18n="plusHelpBtn">🗺️ 用 Google 地圖查 Plus Code</a>
+      <p class="note" id="plusHelpHint" style="display:none" data-i18n="plusHelpHint">在 Google 地圖找到地點後，複製資訊面板裡的 Plus Code（⊕ 那一列），貼回第 1 步就會自動解碼。</p>
       <div class="candidate" id="candidateBox" hidden>
         <div id="candidateHead" style="white-space:pre-line">—</div>
         <p class="candsec" id="candSecAddr" data-i18n="candSecAddr" hidden>📍 地址</p>
@@ -264,7 +266,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-26-fix103</p>
+  <p class="note" style="text-align:center">v2026-10-26-fix104</p>
 </div>
 
 <script>
@@ -425,6 +427,8 @@ zh: {
   stNoSource: '這個地區目前沒有地標查證資料（韓國用 Kakao 查證；台灣、歐洲、北美、大洋洲、新加坡用 TomTom 查證）。要精準找店，請改貼店家的分享連結。',
   stNoAddrIntl: '這個座標查不到地址資料。要精準找店，請改貼店家的分享連結。',
   stCandAddrIntl: '已用座標查到地址與附近地點，請在「確認地標」區的清單點一個確認。',
+  plusHelpBtn: '🗺️ 用 Google 地圖查 Plus Code',
+  plusHelpHint: '在 Google 地圖找到地點後，複製資訊面板裡的 Plus Code（⊕ 那一列），貼回第 1 步就會自動解碼。',
   stNotConfTt: '國際地標搜尋還沒設定完成：請先在 Cloudflare 的 map-resolve 加上 TOMTOM_API_KEY 這個 Secret。',
   stNoCandNameIntl: '找不到「{name}」的候選地點，請換個寫法再試。',
   stFindFailName: '附近地點搜尋失敗，請稍後再試。',
@@ -561,6 +565,8 @@ en: {
   stNoSource: 'No landmark-verification data is available for this area yet (South Korea is verified via Kakao; Taiwan, Europe, North America, Oceania and Singapore via TomTom). For an exact place, paste its share link instead.',
   stNoAddrIntl: 'No address data was found for these coordinates. For an exact place, paste its share link instead.',
   stCandAddrIntl: 'Found the address and nearby places for these coordinates. Please tap one in the “Confirm landmark” list to confirm it.',
+  plusHelpBtn: '🗺️ Look up the Plus Code on Google Maps',
+  plusHelpHint: 'Find the place on Google Maps, copy the Plus Code from its info panel (the ⊕ row), and paste it into Step 1 — it will be decoded automatically.',
   stNotConfTt: 'International landmark search is not set up yet: add the TOMTOM_API_KEY secret to map-resolve in Cloudflare first.',
   stNoCandNameIntl: 'No candidates found for “{name}”. Please try a different spelling.',
   stFindFailName: 'The nearby-place search failed. Please try again later.',
@@ -697,6 +703,8 @@ id: {
   stNoSource: 'Belum ada data verifikasi landmark untuk area ini (Korea Selatan diverifikasi lewat Kakao; Taiwan, Eropa, Amerika Utara, Oseania, dan Singapura lewat TomTom). Untuk tempat yang persis, tempel tautan bagikannya.',
   stNoAddrIntl: 'Tidak ditemukan data alamat untuk koordinat ini. Untuk tempat yang persis, tempel tautan bagikannya.',
   stCandAddrIntl: 'Alamat dan tempat sekitar untuk koordinat ini ditemukan. Ketuk satu di daftar “Konfirmasi landmark” untuk mengonfirmasi.',
+  plusHelpBtn: '🗺️ Cari Plus Code di Google Maps',
+  plusHelpHint: 'Temukan tempatnya di Google Maps, salin Plus Code dari panel infonya (baris ⊕), lalu tempel ke Langkah 1 — kode akan diterjemahkan otomatis.',
   stNotConfTt: 'Pencarian landmark internasional belum disiapkan: tambahkan secret TOMTOM_API_KEY ke map-resolve di Cloudflare dulu.',
   stNoCandNameIntl: 'Tidak ditemukan kandidat untuk “{name}”. Coba ejaan lain.',
   stFindFailName: 'Pencarian tempat sekitar gagal. Coba lagi nanti.',
@@ -850,6 +858,7 @@ function updateLinks(){
     if(els.naverAppAndroid){ els.naverAppAndroid.href='#'; els.naverAppAndroid.textContent=T('appAndroid'); }
     if(els.googleNameFallback) els.googleNameFallback.style.display='none';
     if(els.naverNameFallback) els.naverNameFallback.style.display='none';
+    { const pb = $('plusHelpBtn'), ph = $('plusHelpHint'); if(pb) pb.style.display='none'; if(ph) ph.style.display='none'; } // fix104: 空狀態早退也要收起 Plus Code 輔助鈕（W6 抓到）
     if(els.findBtn) els.findBtn.style.display='none';
     { const wn = $('findWaitNote'); if(wn) wn.style.display='none'; }
     autoFindArmed = false; autoFindKey = '';
@@ -964,6 +973,17 @@ function updateLinks(){
       if (key !== autoFindKey) { autoFindKey = key; autoFindArmed = false; findNearestNaver(); }
     }
   }
+  // FIX fix104（使用者核准）：無查證來源地區（jp/other）顯示 Google 查 Plus Code 輔助——Google 沒有給一般網頁的回呼機制，
+  // 採半自動流程：按鈕開 Google 地圖網頁版搜尋（帶名稱優先、否則帶座標），使用者複製資訊面板的 Plus Code 貼回第 1 步解碼。
+  { const pb = $('plusHelpBtn'), ph = $('plusHelpHint');
+    if(pb){
+      const reg = hasCoords ? regionOf(lat, lng) : '';
+      const showPlus = hasCoords && coordsPrimary && !naverOverride && (reg === 'jp' || reg === 'other');
+      pb.style.display = showPlus ? '' : 'none';
+      pb.textContent = T('plusHelpBtn');
+      if(ph){ ph.style.display = showPlus ? '' : 'none'; ph.textContent = T('plusHelpHint'); }
+      if(showPlus) pb.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(hasName ? name : (latS + ',' + lngS));
+    } }
   els.naverApp.textContent = (hasName ? T('monoNameSearch',{u:nAppName}) : '') + (hasCoords ? (hasName ? '\n' : '') + T('coordPinLine',{u:nAppCoord}) : '');
   if(els.naverAppAndroidText) els.naverAppAndroidText.textContent = (hasName ? T('monoNameSearch',{u:nAppAndroidName}) : '') + (hasCoords ? (hasName ? '\n' : '') + T('coordPinLine',{u:nAppAndroidCoord}) : '');
   // FIX fix22: 以經緯度為主 — 有有效座標 → 座標；無座標時才用 pinId；兩者皆無 → 「ID 未找到」，不退回店名搜尋。店名搜尋僅為備援按鈕（naverNameFallback）。

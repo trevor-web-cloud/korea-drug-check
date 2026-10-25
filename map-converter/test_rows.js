@@ -676,3 +676,14 @@ rows.push(row('W5', '韓國中文名→Kakao 命中就不觸發 TomTom 備援（
   check(c, 'kakao candidates', candRows().some(x => x.textContent.includes('해동용궁사')), candAllText().slice(0, 60));
   check(c, 'no tt-search', !log.some(u => u.includes('/tt-search')), log.filter(u => u.includes('tt-')).join('|') || 'none');
 }));
+
+rows.push(row('W6', '無查證來源地區→Google 查 Plus Code 輔助鈕（fix104，東京）', async (c) => {
+  await pasteAndParse('35.681236, 139.767125'); await flush();
+  check(c, 'button visible in JP', E('plusHelpBtn').style.display !== 'none', String(E('plusHelpBtn').style.display));
+  check(c, 'href opens google search with coords', (E('plusHelpBtn').href || '').includes('google.com/maps/search/?api=1&query=35.681236'), E('plusHelpBtn').href);
+  check(c, 'hint visible', E('plusHelpHint').style.display !== 'none', String(E('plusHelpHint').style.display));
+  await clearAll();
+  check(c, 'hidden after clear', E('plusHelpBtn').style.display === 'none', String(E('plusHelpBtn').style.display));
+  await pasteAndParse('35.098606, 129.0309021'); await flush();
+  check(c, 'hidden in KR (Kakao source exists)', E('plusHelpBtn').style.display === 'none', String(E('plusHelpBtn').style.display));
+}));
