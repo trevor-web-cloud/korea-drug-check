@@ -168,3 +168,7 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 - 修法（純頁面）：無座標＋中文名 → 取第一段非英數前綴（店名本體）→ gtx zh-CN→ko 機翻 → Kakao /local 查。有座標＋中文名維持 fix47 /nearby 地址備援不搶路（K3）。mtZhToKo 對 AbortSignal.timeout 做 feature-check（舊 Safari 相容）。
 - 實測：海東龍宮寺→해동용궁사 機翻正確；/local 第一筆即本廟（place 8606230、용궁길 86）。新增 K26。本地 80/80 PASS。
 - 風險界定：翻譯只當搜尋關鍵字、不定座標；座標來自使用者點選的 Kakao 查證候選（原名對照行＋地址＋距離可核對）；翻錯多半 0 結果回到失敗提示。漢字正式名可靠，中文自創暱稱需多看一眼地址。
+
+### fix99（2026-10-25）— 英文名備援（使用者核准）
+- 缺口：英文介面 Google 分享 q=英文名＋羅馬拼音地址（無韓文/中文/座標）→ 無從查起。實測 Kakao 對部分英文店名有索引（/local?q=Brosis Hotel 第一筆即本店）。
+- 修法（純頁面）：無座標＋純拉丁字母名 → canFind 成立、findNearestNaver 以第一段英文名直接查 /local（enName 分流比照 cjkName）；查不到回店名版失敗訊息（stFindFail/stNoCand 改以 useLocal 選措辭）。新增 K27。本地 81/81 PASS。

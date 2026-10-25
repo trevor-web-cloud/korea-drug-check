@@ -589,3 +589,12 @@ rows.push(row('K26', 'Google 分享中文名＋羅馬拼音地址→機翻韓文
   const localCall = FETCH_LOG.find(u => u.includes('/local') && decodeURIComponent(u).includes('해동용궁사'));
   check(c, 'query is translated Korean name', !!localCall, localCall || 'no /local call with Korean name');
 }));
+
+rows.push(row('K27', '英文介面分享（英文名＋羅馬地址）→英文名直接查 Kakao（fix99）', async (c) => {
+  await pasteAndParse('https://maps.google.com/?q=Brosis+Hotel%2C+4+Gudeok-ro+48beon-gil%2C+Busan%2C+South+Korea&ftid=0x3568e953d7884ff3:0xd69fabe03e7ddf9d');
+  await flush();
+  const rows = candRows();
+  check(c, 'auto candidates via English name', E('candidateBox').hidden === false && rows.some(x => x.textContent.includes('브로시스호텔')), rows.map(x => x.textContent.slice(0, 16)).join('|'));
+  const localCall = FETCH_LOG.find(u => u.includes('/local') && decodeURIComponent(u).includes('q=Brosis Hotel'));
+  check(c, 'query is English first segment', !!localCall, localCall || 'no /local call with English name');
+}));

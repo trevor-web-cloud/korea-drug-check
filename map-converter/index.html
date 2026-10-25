@@ -236,7 +236,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-25-fix98</p>
+  <p class="note" style="text-align:center">v2026-10-25-fix99</p>
 </div>
 
 <script>
@@ -891,7 +891,7 @@ function updateLinks(){
     // FIX fix64: 無座標但有韓文店名也可找地標（店名查不需要座標）— Google ftid 分享、Naver 只有 ID 時靠它補座標，讓三家都能開。
     // FIX fix94（2026-10-25 使用者實例 naver.me/x4lws2zw）：展開後有座標＋pinId＋中文店名，舊規則「有 pinId 就不給第 3 步」→永遠沒有候選清單；
     // 且與 Google 連結（有 ftid 照樣自動搜尋）不一致。改：只要有主座標且尚未確認地標，就能找地標（pinId 只滿足 Naver 面板，Kakao 查證對四家都有益）。
-    const canFind = !naverOverride && ((hasCoords && coordsPrimary) || (!hasCoords && /[\uAC00-\uD7A3\u4E00-\u9FFF]/.test(name))); // fix98: 中文名也可找（先機翻成韓文再查，見 findNearestNaver）
+    const canFind = !naverOverride && ((hasCoords && coordsPrimary) || (!hasCoords && /[\uAC00-\uD7A3\u4E00-\u9FFF]/.test(name)) || (!hasCoords && /[A-Za-z]/.test(name))); // fix98 中文名（機翻）＋fix99 英文名（直接查 Kakao 英文索引）也可找
     els.findBtn.style.display = canFind ? '' : 'none';
     { const wn = $('findWaitNote'); if(wn) wn.style.display = (canFind && findBtnMode !== 'retry') ? '' : 'none'; }
     // FIX fix92: 使用者定「第一步完成就自動啟動第三步」——解析完成（autoFindArmed）且可找地標時自動搜尋一次；
@@ -1709,6 +1709,7 @@ async function findNearestNaver(){
   const byName = /[\uAC00-\uD7A3]/.test(name);
   // fix98 分流：中文名「無座標」時才走機翻店名搜尋（唯一出路）；「有座標」時維持 fix47 的 /nearby 地址備援（K3 實例：樂天超市濟州店），不搶路。
   const cjkName = !byName && /[\u4E00-\u9FFF]/.test(name);
+  const enName = !byName && !cjkName && /[A-Za-z]/.test(name); // fix99: 純英文名（英文介面分享）備援
   // FIX fix96（使用者實例 maps.app.goo.gl/rcjYcLtRMDYfDdRVA）：Google App 分享展開為 ?q=Brosis Hotel, 구덕로48번길 4, 남포, 부산…&ftid=
   // ——整串是「英文名＋韓文地址」的郵遞式字串，原樣送 Kakao 關鍵字必 0 結果（回報：搜尋失敗、未自動啟動）。
   // 送查前若為逗號複合字串，抽出韓文道路地址段落（한글＋로/길/대로＋數字）當查詢詞——實測 /local?q=구덕로48번길 4 第一筆即該店。
@@ -1721,7 +1722,7 @@ async function findNearestNaver(){
   // FIX fix64: 沒有座標但有韓文店名 → 用店名查（Kakao /local 不需要座標）。
   // Google ftid 分享、Naver 只有 ID 的連結靠這條補座標，讓三家都能開（使用者定：三種連結貼上後都能找地標）。
   if(!isFinite(lat) || !isFinite(lng)){
-    if(!byName && !cjkName){ setStatus(T('stNoCoordNoName'),false); return; }
+    if(!byName && !cjkName && !enName){ setStatus(T('stNoCoordNoName'),false); return; }
   }
   // FIX fix47: 沒有韓文店名時不再直接擋下 — 改用座標向 Kakao 反查韓國地址（Worker /nearby），
   // 取該地址的官方座標當候選（實機回報：只有 Plus Code、沒店名時舊版按了只跳紅字，像死按鈕）。
@@ -1731,9 +1732,12 @@ async function findNearestNaver(){
   try{
     const ctrl = new AbortController();
     const timer = setTimeout(()=>ctrl.abort(), 12000);
+    // FIX fix99（使用者核准）：英文介面分享 q=Brosis Hotel, 4 Gudeok-ro 48beon-gil, Busan, South Korea——無韓文無中文無座標。
+    // Kakao 對部分英文店名有索引（實測 /local?q=Brosis Hotel 第一筆即本店）→ 用第一段英文名直接查；查不到就回失敗提示，不再繞。
+    if(enName && !isFinite(lat) && query.includes(',')) query = (query.split(',')[0] || '').trim() || query;
     // FIX fix98（使用者實例 goo.gl/iCPRoNYK48GGh7316 海東龍宮寺）：Google 分享依分享者語系給名——中文名＋羅馬拼音地址時全程無韓文，
     // 舊版 canFind 不成立、第 3 步連入口都沒有。中文名先機翻成韓文（漢字名實測 海東龍宮寺→해동용궁사 完全正確）再送 Kakao 查。
-    const useLocal = byName || (cjkName && !isFinite(lat));
+    const useLocal = byName || ((cjkName || enName) && !isFinite(lat));
     if(useLocal && !/[\uAC00-\uD7A3]/.test(query) && /[\u4E00-\u9FFF]/.test(query)){
       const seg = (((query.split(',')[0] || '').match(/^[^0-9A-Za-z]+/) || [''])[0] || '').trim() || (query.split(',')[0] || '').trim(); // 店名在第一段開頭（海東龍宮寺86 Yonggung-gil → 海東龍宮寺）
       const ko = await mtZhToKo(seg || query);
@@ -1751,7 +1755,7 @@ async function findNearestNaver(){
       return;
     }
     if(!data || !Array.isArray(data.items)){
-      setStatus(byName ? T('stFindFailName') : T('stFindFailAddr'),false);
+      setStatus(useLocal ? T('stFindFailName') : T('stFindFailAddr'),false);
       return;
     }
     candidateSource = useLocal ? 'name' : 'address';
@@ -1783,7 +1787,7 @@ async function findNearestNaver(){
     }
     // FIX fix90: 使用者定「都改為 5 家 提高效能」——店名模式也只取前 5 家；Worker /local 同步改 size=5 從源頭少傳少解析。
     if(byName){ naverCandidates = naverCandidates.slice(0, 5); }
-    if(!naverCandidates.length){ setStatus(byName ? T('stNoCandName',{name}) : T('stNoCandAddr'),false); return; }
+    if(!naverCandidates.length){ setStatus(useLocal ? T('stNoCandName',{name}) : T('stNoCandAddr'),false); return; }
     renderCandidateList();
     setStatus((byName
       ? ((isFinite(lat) && isFinite(lng)) ? T('stCandFoundNameCoord',{n:naverCandidates.length}) : T('stCandFoundNameNoCoord',{n:naverCandidates.length}))

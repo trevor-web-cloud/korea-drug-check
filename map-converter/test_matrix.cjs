@@ -37,6 +37,8 @@ const NAVER_ID_RESOLVED = 'https://map.naver.com/p/entry/place/1943436990?placeP
 const NAVER_FULL_RESOLVED = 'https://map.naver.com/?version=2&lat=35.098606&title=Beurosiseu%20HOTEL&lng=129.0309021&app=Y&pinType=site&menu=location&pinId=1533218484&appMenu=location';
 const YAHOO_CENTER_RESOLVED = 'https://map.yahoo.co.jp/place/?lat=35.09787&lon=129.03090&z=17&zoom=17&maptype=basic';
 const LOCAL_FIXTURES = [
+  ['Brosis Hotel', { provider: 'kakao', total: 1, items: [
+    { title: '브로시스호텔', address: '부산 중구 남포동4가 5-3', roadAddress: '부산 중구 구덕로48번길 4', mapx: '1290308898', mapy: '350985955', link: 'http://place.map.kakao.com/338712143', category: '여행 > 숙박 > 여관,모텔', telephone: '051-256-5818' }] }],
   ['해동용궁사', { provider: 'kakao', total: 1, items: [
     { title: '해동용궁사', address: '부산 기장군 기장읍 시랑리 416-3', roadAddress: '부산 기장군 기장읍 용궁길 86', mapx: '1292231431', mapy: '351884028', link: 'http://place.map.kakao.com/8606230', category: '문화,예술 > 종교 > 불교 > 절,사찰', telephone: '051-722-7744' }] }],
   ['구덕로48번길', { provider: 'kakao', total: 2, items: [
