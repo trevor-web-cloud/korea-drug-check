@@ -208,5 +208,10 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 - W6 首跑抓到真 bug：updateLinks 空狀態早退（無座標/無名/無 ID）有一份 fix20 的顯式重置清單、會在到達 fix104 區塊前 return → 清除後按鈕殘留可見；已把 plusHelpBtn/Hint 補進該重置清單。新列 W6（東京顯示＋href 帶座標、清除後隱藏、釜山不顯示）。本地 89/89 PASS。
 - 線上驗收：頁尾 fix104、md5 一致（09ec03af…），線上矩陣 89/89 PASS。
 
+## 2026-10-26 Worker fix93（雙 TomTom 金鑰備援，使用者問「可以同時增加兩個 tomtom 帳號 key 嗎」）
+- 使用者同日申請第二組 TomTom 帳號（acrd0215@gmail.com）後希望兩組 key 都進 Worker。改法：Secret 分主備——`TOMTOM_API_KEY`（主）＋`TOMTOM_API_KEY_2`（備，選填）；ttJson 改為依序試金鑰：主金鑰回 429（額度）/403 或連線失敗才以備用金鑰重試同一請求；400 等請求本身錯誤不重試（換 key 結果相同）。只設任一組亦可運作；兩組皆無維持 not_configured_tt。
+- 本地假 fetch 驗證 6/6：429 切備援且順序正確、主正常時不打備援、只設備援可用、皆無回 503、/tt-nearby 兩子呼叫各自切備援、400 不重試回 502。頁面不需改版（端點與回傳形狀不變）。部署時取代 fix92 檔（fix92 未曾部署，無相容問題）。
+- 備註（已向使用者說明）：以目前實際用量（單帳號免費額度的 10% 以下），備援實際上幾乎不會觸發，屬保險性質。
+
 
 

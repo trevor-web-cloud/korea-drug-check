@@ -1,8 +1,9 @@
-// Cloudflare Worker — map-resolve（fix92 TomTom 國際地標查證 + fix91 請求彙總計數 + fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查 + fix49 附近地點 + fix52 機翻 + fix55 附近地點距離排序 + fix61 短連結 GET 重試 + fix63 Kakao ID 撈座標 + fix69 用量計數）
+// Cloudflare Worker — map-resolve（fix93 雙 TomTom 金鑰備援 + fix92 TomTom 國際地標查證 + fix91 請求彙總計數 + fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查 + fix49 附近地點 + fix52 機翻 + fix55 附近地點距離排序 + fix61 短連結 GET 重試 + fix63 Kakao ID 撈座標 + fix69 用量計數）
 // 部署：貼到 Cloudflare Dashboard → Workers → map-resolve → Edit code 全文取代；
 //       另需在 Settings → Variables and Secrets 新增一個 Secret：
 //       KAKAO_REST_KEY（Kakao Local API 的 REST API 金鑰；金鑰只放 Worker Secret，不進前端）
 //       TOMTOM_API_KEY（fix92：TomTom Search API 金鑰；同樣只放 Worker Secret，不進前端）
+//       TOMTOM_API_KEY_2（fix93：第二組 TomTom 金鑰，選填；主金鑰被拒 429/403 時自動切換備援）
 //       fix69 用量報表另需：Settings → Bindings 新增 KV Namespace 綁定，變數名 STATS；
 //       並新增一個 Secret：STATS_KEY（自訂一串密碼，讀 /stats 報表時用）。
 // 端點：
@@ -309,25 +310,40 @@ export default {
         mapy: String(Math.round(pos.lat * 1e7)),
       };
     }
-    async function ttJson(url) {
-      const r = await fetch(url, { headers: { 'User-Agent': 'map-resolve-worker' } });
-      if (!r.ok) return null;
-      return r.json().catch(() => null);
+    // fix93: 雙金鑰備援（使用者兩組 TomTom 帳號各一組 key）——TOMTOM_API_KEY 為主、TOMTOM_API_KEY_2 為備。
+    // 主金鑰被拒（429 額度用盡／403）或連線失敗才換備用金鑰重試同一個請求；400 等請求本身的錯誤不重試（換 key 結果相同）。
+    function ttKeys() {
+      const ks = [];
+      if (env && env.TOMTOM_API_KEY) ks.push(env.TOMTOM_API_KEY);
+      if (env && env.TOMTOM_API_KEY_2) ks.push(env.TOMTOM_API_KEY_2);
+      return ks;
+    }
+    async function ttJson(urlForKey) {
+      for (const k of ttKeys()) {
+        let r = null;
+        try { r = await fetch(urlForKey(encodeURIComponent(k)), { headers: { 'User-Agent': 'map-resolve-worker' } }); } catch (e) { r = null; }
+        if (r && r.ok) return r.json().catch(() => null);
+        if (r && r.status !== 429 && r.status !== 403) return null;
+      }
+      return null;
     }
     if (u.pathname === '/tt-search') {
       const q = (u.searchParams.get('q') || '').trim();
       if (!q) return new Response(JSON.stringify({ error: 'missing q' }), { status: 400, headers: cors });
-      if (!env || !env.TOMTOM_API_KEY) {
+      if (!ttKeys().length) {
         return new Response(JSON.stringify({ error: 'not_configured_tt' }), { status: 503, headers: cors });
       }
       try {
         bumpBg('tomtom_search');
-        let url = 'https://api.tomtom.com/search/2/search/' + encodeURIComponent(q) + '.json?key=' + encodeURIComponent(env.TOMTOM_API_KEY) + '&limit=5';
         const lat = parseFloat(u.searchParams.get('lat')), lng = parseFloat(u.searchParams.get('lng'));
-        if (isFinite(lat) && isFinite(lng)) url += '&lat=' + lat + '&lon=' + lng;
         const cc = (u.searchParams.get('cc') || '').trim().toUpperCase();
-        if (/^[A-Z]{2}$/.test(cc)) url += '&countrySet=' + cc;
-        const d = await ttJson(url);
+        const mk = (key) => {
+          let url = 'https://api.tomtom.com/search/2/search/' + encodeURIComponent(q) + '.json?key=' + key + '&limit=5';
+          if (isFinite(lat) && isFinite(lng)) url += '&lat=' + lat + '&lon=' + lng;
+          if (/^[A-Z]{2}$/.test(cc)) url += '&countrySet=' + cc;
+          return url;
+        };
+        const d = await ttJson(mk);
         if (!d) return new Response(JSON.stringify({ error: 'fetch_failed' }), { status: 502, headers: cors });
         const items = (d.results || []).map(ttNormalize).filter(Boolean).slice(0, 5);
         return new Response(JSON.stringify({ provider: 'tomtom', total: items.length, items }), { headers: cors });
@@ -341,16 +357,15 @@ export default {
       if (!isFinite(lat) || !isFinite(lng)) {
         return new Response(JSON.stringify({ error: 'missing lat/lng' }), { status: 400, headers: cors });
       }
-      if (!env || !env.TOMTOM_API_KEY) {
+      if (!ttKeys().length) {
         return new Response(JSON.stringify({ error: 'not_configured_tt' }), { status: 503, headers: cors });
       }
       try {
         bumpBg('tomtom_reverse');
         bumpBg('tomtom_search');
-        const key = encodeURIComponent(env.TOMTOM_API_KEY);
         const [rev, near] = await Promise.all([
-          ttJson('https://api.tomtom.com/search/2/reverseGeocode/' + lat + ',' + lng + '.json?key=' + key + '&radius=100'),
-          ttJson('https://api.tomtom.com/search/2/nearbySearch/.json?key=' + key + '&lat=' + lat + '&lon=' + lng + '&radius=300&limit=10'),
+          ttJson((key) => 'https://api.tomtom.com/search/2/reverseGeocode/' + lat + ',' + lng + '.json?key=' + key + '&radius=100'),
+          ttJson((key) => 'https://api.tomtom.com/search/2/nearbySearch/.json?key=' + key + '&lat=' + lat + '&lon=' + lng + '&radius=300&limit=10'),
         ]);
         if (!rev && !near) return new Response(JSON.stringify({ error: 'fetch_failed' }), { status: 502, headers: cors });
         const items = [];
