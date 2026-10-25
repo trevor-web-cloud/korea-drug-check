@@ -8,6 +8,7 @@
 <title>Naver Kakao Yahoo JP Google 地圖轉換</title>
 <meta name="description" content="Naver / Kakao / Yahoo JP / Google 地圖轉換：貼上任一邊連結，自動算出其他邊。座標通用 WGS84，只有 Naver 網址的 c= 是 Web Mercator (EPSG:3857) 公尺座標。">
 <style>
+  [hidden]{display:none!important} /* fix95: .candrow 等作者 display 會蓋過 hidden 屬性 → 未用列變空白框；全站強制 hidden 生效 */
 /* FIX fix16: 簡化頁面 — 只顯示必要按鈕，隱藏連結文字、複製按鈕、座標副按鈕與範例（JS 仍更新它們，僅不顯示）。 */
 #googleLink,#googleApp,#naverLink,#naverApp,#naverAppAndroidText,#yahooLink,#kakaoLink,#googleCoordOpen,#naverCoordOpen,#exampleBtn{display:none!important}
 *{box-sizing:border-box}
@@ -235,7 +236,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-25-fix94</p>
+  <p class="note" style="text-align:center">v2026-10-25-fix95</p>
 </div>
 
 <script>
@@ -266,7 +267,8 @@ let naverOverride = null;
 let autoFindArmed = false; let autoFindKey = ''; // fix92: 解析完成自動啟動第 3 步的武裝旗標與防重複鍵
 let inputWasYahoo = false;
 let nameAutoTimer = null; // fix93: 名稱輸入自動搜尋的防抖計時器 // fix92: Yahoo 輸入旗標——自動搜尋換狀態時把偏差提醒補回（fix68 的提醒不可被蓋掉） // {title,address,lat,lng,distanceM} 已確認的 Naver 候選座標
-let candidateSource = 'name'; // fix47: 'name'（韓文店名查詢）或 'address'（無店名→座標反查地址）
+let candidateSource = 'name';
+let candWidened = false; // fix95: 30m 內無店家時放寬到 100m 的旗標（清單頭要註明） // fix47: 'name'（韓文店名查詢）或 'address'（無店名→座標反查地址）
 const LOCAL_WORKER = 'https://map-resolve.tsai0215.workers.dev/local';
 const NEARBY_WORKER = 'https://map-resolve.tsai0215.workers.dev/nearby';
 // FIX fix13: 不以店名/地名為主 — 座標/ID 優先，但必須是「這間店的」座標才優先。
@@ -384,7 +386,7 @@ zh: {
   stCandFoundNameNoCoord: '找到 {n} 家候選，請在「確認地標」區確認是哪一家；確認後 Google、Naver、Kakao 都能開啟。',
   stCandFoundAddr: '已用座標查到韓國地址與附近地點，請在「確認地標」區的清單點一個確認。',
   candListFoot: '找不到你要找的地點？可以點最上面的地址那一列——那是這個位置查證過的門牌地址，所有地圖會開在那個地址。',
-  candNearbyRule: '（店名只列 30 公尺內、最多 5 家）',
+  candNearbyRule: '（店名只列 30 公尺內、最多 5 家）', candWidened: '（30 公尺內沒有店家，已放寬到 100 公尺內最近的幾家；距離標在每一列上，請挑最近的）',
   stOffline: '連不上附近地點搜尋服務，請檢查網路後再試。',
   stConfirmed: '已確認地點：{title}。所有地圖按鈕已改用查證過的座標（與原座標相距約 {d} 公尺）。',
   candRefLine: '你原本查的是：{name}',
@@ -515,7 +517,7 @@ en: {
   stCandFoundNameNoCoord: 'Found {n} candidates. Please confirm which one it is in the “Confirm landmark” section; after that, Google, Naver and Kakao can all open it.',
   stCandFoundAddr: 'Found the Korean address and nearby places for these coordinates. Please tap one in the “Confirm landmark” list to confirm it.',
   candListFoot: 'Can’t find your place? Tap the address row at the top — it is the verified street address of this spot, and all maps will open there.',
-  candNearbyRule: '(Places: within 30 m only, up to 5)',
+  candNearbyRule: '(Places: within 30 m only, up to 5)', candWidened: '(No places within 30 m, so widened to the nearest ones within 100 m; the distance is shown on each row — pick the nearest)',
   stOffline: 'Could not reach the nearby-place search service. Please check your connection and try again.',
   stConfirmed: 'Place confirmed: {title}. All map buttons now use the verified coordinates (about {d} m from the original ones).',
   candRefLine: 'You searched for: {name}',
@@ -646,7 +648,7 @@ id: {
   stCandFoundNameNoCoord: 'Ditemukan {n} kandidat. Konfirmasi yang mana di bagian “Konfirmasi landmark”; setelah itu Google, Naver, dan Kakao bisa membukanya.',
   stCandFoundAddr: 'Alamat Korea dan tempat sekitar untuk koordinat ini ditemukan. Ketuk satu di daftar “Konfirmasi landmark” untuk mengonfirmasi.',
   candListFoot: 'Tidak menemukan tempat Anda? Ketuk baris alamat di paling atas — itu alamat terverifikasi untuk titik ini, dan semua peta akan terbuka di sana.',
-  candNearbyRule: '(Tempat: hanya dalam 30 m, maks. 5)',
+  candNearbyRule: '(Tempat: hanya dalam 30 m, maks. 5)', candWidened: '(Tidak ada tempat dalam 30 m, jadi diperluas ke yang terdekat dalam 100 m; jarak tertulis di setiap baris — pilih yang terdekat)',
   stOffline: 'Tidak dapat terhubung ke layanan pencarian tempat sekitar. Periksa koneksi Anda lalu coba lagi.',
   stConfirmed: 'Tempat dikonfirmasi: {title}. Semua tombol peta sekarang memakai koordinat terverifikasi (sekitar {d} m dari koordinat asal).',
   candRefLine: 'Anda mencari: {name}',
@@ -1636,7 +1638,7 @@ function renderCandidateList(){
   const first = naverCandidates[0];
   let head = (srcName && first && srcName !== first.title) ? T('candRefLine',{name:srcName}) + '\n' : '';
   head += T('candListHead',{n:naverCandidates.length});
-  if(candidateSource === 'address') head += '\n' + T('candNearbyRule');
+  if(candidateSource === 'address') head += '\n' + T('candNearbyRule') + (candWidened ? '\n' + T('candWidened') : '');
   els.candidateHead.textContent = head;
   const addr = naverCandidates.find(x => x.kind !== 'place') || null;
   let places = naverCandidates.filter(x => x.kind === 'place');
@@ -1722,7 +1724,14 @@ async function findNearestNaver(){
     // 店名模式是查特定店家，套 30 公尺會誤濾遠處目標。地址候選是該點門牌、不受限；店名取最近 10 家。
     if(!byName){
       const addrC = naverCandidates.filter(x => x.kind !== 'place');
-      const placeC = naverCandidates.filter(x => x.kind === 'place' && isFinite(x.distanceM) && x.distanceM <= 30).slice(0, 5);
+      let placeC = naverCandidates.filter(x => x.kind === 'place' && isFinite(x.distanceM) && x.distanceM <= 30).slice(0, 5);
+      candWidened = false;
+      // FIX fix95（使用者實例 naver.me/x4lws2zw）：30m 內一家都沒有時放寬到 100m——大型園區的分享圖釘與 Kakao 圖釘常差 30–50m
+      // （金海樂天實測 50.3m、樂天超市濟州店 42.9m），嚴守 30m 會變成「沒有列表供選擇」。距離標在每列上可自行判斷；30m 內有候選時不放寬。
+      if(!placeC.length){
+        placeC = naverCandidates.filter(x => x.kind === 'place' && isFinite(x.distanceM) && x.distanceM <= 100).slice(0, 5);
+        candWidened = placeC.length > 0;
+      }
       naverCandidates = addrC.concat(placeC);
     }
     // FIX fix90: 使用者定「都改為 5 家 提高效能」——店名模式也只取前 5 家；Worker /local 同步改 size=5 從源頭少傳少解析。

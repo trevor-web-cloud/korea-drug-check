@@ -147,3 +147,8 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 ### fix94（2026-10-25）— 有座標＋pinId 也要能確認地標（使用者實例 naver.me/x4lws2zw）
 - 實例：展開含 lat/lng＋pinId＋中文店名（樂天酒店&度假村Gimhae），舊 canFind 以 !currentPinId 排除 → 第 3 步永遠無清單；與 Google（ftid 不擋）不一致。改：有主座標且未確認即可搜尋。
 - 新增 K22（NAVER_FULL_RESOLVED→自動出候選）。迴歸：S1 的 Plus Code 落差警告被完成訊息覆蓋 → 比照 Yahoo 備註作法，完成訊息後重附 mismatch 警告（readySpec 偵測）。本地 76/76 PASS。
+
+### fix95（2026-10-25）— 空白列根治 + 30m 空集時放寬 100m（使用者截圖回報）
+- 空白列根因（jsdom 真實資料重現）：candRow 是預置固定按鈕池，未用列靠 hidden 屬性藏，但 .candrow 的作者 CSS display 蓋過 UA 的 [hidden] 隱藏 → 真實瀏覽器顯示 8 個空框。CSS 補 `[hidden]{display:none!important}` 全站根治。
+- 放寬：座標模式 30m 內店家為空集時，改取 100m 內最近 5 家並於清單頭註明（candWidened 三語）。實例：金海樂天錨點→Kakao 圖釘 50.3m（分享座標 35.1809933,128.8250727 vs 飯店 35.1810612,128.8256188）；同型前例 樂天超市濟州 42.9m。有 30m 內候選時不放寬、精度不變。
+- 新增 K23（金海幾何 fixture：飯店 ~50m 入列、~250m 遠店排除、放寬註明、無可見空白列、CSS 守門字串）。本地 77/77 PASS；真實 /nearby 資料 jsdom 重演：5 候選（地址＋飯店 50m 等）。

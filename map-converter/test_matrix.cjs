@@ -80,6 +80,11 @@ global.fetch = async (url) => {
       { title: '공항카페', address: '인천 연수구 운서동 2851', roadAddress: '인천 연수구 공항로 272', kind: 'place', mapx: '1264525000', mapy: '374497000', link: '', category: '음식점 > 카페', telephone: '' },
       { title: '공항역', address: '인천 연수구 운서동 2850', roadAddress: '인천 연수구 공항로 지하 271', kind: 'place', mapx: '1264526500', mapy: '374497300', link: '', category: '교통,수송 > 지하철 > 지하철역', telephone: '' },
       { title: '공항서점', address: '인천 연수구 운서동 2852', roadAddress: '인천 연수구 공항로 280', kind: 'place', mapx: '1264526800', mapy: '374497100', link: '', category: '음식점 > 카페', telephone: '' }] };
+  } else if (u.includes('/nearby') && u.includes('35.1809933')) {
+    body = { provider: 'kakao-address', total: 3, items: [
+      { title: '경상남도 김해시 장유로 505', address: '경남 김해시 신문동 1411', roadAddress: '경상남도 김해시 장유로 505', kind: 'address', mapx: '1288256231', mapy: '351810692', link: '', category: '', telephone: '' },
+      { title: '롯데호텔앤리조트 김해', address: '경남 김해시 신문동 1411', roadAddress: '경남 김해시 장유로 505', kind: 'place', mapx: '1288256188', mapy: '351810612', link: 'http://place.map.kakao.com/945755656', category: '여행 > 숙박 > 호텔', telephone: '055-725-1000' },
+      { title: '먼곳가게', address: '경남 김해시 신문동 999', roadAddress: '', kind: 'place', mapx: '1288256200', mapy: '351833000', link: '', category: '음식점 > 한식', telephone: '' }] };
   } else if (u.includes('/nearby')) {
     body = { provider: 'kakao-address', total: 3, items: [
       { title: '부산 중구 구덕로 34번길 5', address: '부산 중구 남포동2가 24-1', roadAddress: '부산 중구 구덕로 34번길 5', kind: 'address', mapx: '1290310500', mapy: '350987000', link: '', category: '', telephone: '' },

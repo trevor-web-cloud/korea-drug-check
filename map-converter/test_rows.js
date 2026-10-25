@@ -549,3 +549,13 @@ rows.push(row('K22', 'Naver 完整分享（座標＋pinId＋中文名）也要�
   check(c, 'auto candidates despite pinId', E('candidateBox').hidden === false && candRows().length >= 1, 'hidden=' + E('candidateBox').hidden + ' rows=' + candRows().length);
   check(c, 'find btn visible', E('findBtn').style.display !== 'none', E('findBtn').style.display);
 }));
+
+rows.push(row('K23', '30m 內無店家→放寬 100m（fix95，金海樂天 50m 實例）＋無可見空白列', async (c) => {
+  await pasteAndParse('35.1809933, 128.8250727'); await flush();
+  const rows = candRows();
+  check(c, 'hotel appears via widening', rows.some(x => x.textContent.includes('롯데호텔앤리조트 김해')), rows.map(x => x.textContent.slice(0, 20)).join('|'));
+  check(c, 'widened note in head', E('candidateHead').textContent.includes('放寬'), E('candidateHead').textContent.slice(-60));
+  check(c, 'far place excluded', !rows.some(x => x.textContent.includes('먼곳가게')), 'far present');
+  check(c, 'no visible blank row', rows.every(x => x.hidden || x.textContent.trim().length > 0), 'blank visible row');
+  check(c, 'css hidden guard', PAGE_HTML.includes('[hidden]{display:none!important}'), 'css guard missing');
+}));
