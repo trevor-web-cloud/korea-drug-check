@@ -535,3 +535,11 @@ rows.push(row('K20', '解析完成自動啟動第 3 步搜尋（fix92）；有 p
   await pasteAndParse('https://map.naver.com/p/entry/place/1943436990'); await flush();
   check(c, 'pinId link: no auto search', E('candidateBox').hidden === true, 'hidden=' + E('candidateBox').hidden);
 }));
+
+rows.push(row('K21', '只有 ID 時輸入韓文名→自動啟動搜尋免點按鈕（fix93）', async (c) => {
+  await pasteAndParse('https://naver.me/52R5JVa5'); await flush();
+  check(c, 'no auto before name', E('candidateBox').hidden === true, 'hidden=' + E('candidateBox').hidden);
+  E('name').value = '롯데호텔 김해'; E('name').dispatch('input');
+  await new Promise(r2 => setTimeout(r2, 950));
+  check(c, 'auto after name typed', E('candidateBox').hidden === false && candRows().length >= 1, 'hidden=' + E('candidateBox').hidden + ' rows=' + candRows().length);
+}));

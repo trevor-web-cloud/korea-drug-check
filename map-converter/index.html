@@ -235,7 +235,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-25-fix92</p>
+  <p class="note" style="text-align:center">v2026-10-25-fix93</p>
 </div>
 
 <script>
@@ -264,7 +264,8 @@ let currentKakaoId = '';
 let naverCandidates = [];
 let naverOverride = null;
 let autoFindArmed = false; let autoFindKey = ''; // fix92: 解析完成自動啟動第 3 步的武裝旗標與防重複鍵
-let inputWasYahoo = false; // fix92: Yahoo 輸入旗標——自動搜尋換狀態時把偏差提醒補回（fix68 的提醒不可被蓋掉） // {title,address,lat,lng,distanceM} 已確認的 Naver 候選座標
+let inputWasYahoo = false;
+let nameAutoTimer = null; // fix93: 名稱輸入自動搜尋的防抖計時器 // fix92: Yahoo 輸入旗標——自動搜尋換狀態時把偏差提醒補回（fix68 的提醒不可被蓋掉） // {title,address,lat,lng,distanceM} 已確認的 Naver 候選座標
 let candidateSource = 'name'; // fix47: 'name'（韓文店名查詢）或 'address'（無店名→座標反查地址）
 const LOCAL_WORKER = 'https://map-resolve.tsai0215.workers.dev/local';
 const NEARBY_WORKER = 'https://map-resolve.tsai0215.workers.dev/nearby';
@@ -359,7 +360,7 @@ zh: {
   stPlusSrc: '已解析 Plus Code {code}。',
   stIdOnlyBase: '已解析：只有地點 ID，沒有座標。',
   stIdNaver: ' Naver ID {id}。', stIdGoogle: ' Google ID 已取出。', stIdKakao: ' Kakao ID {id}。',
-  stIdGuide: '若要讓 Google、Kakao 也能開啟，請在名稱欄輸入這家店的韓文原名，再到第 3 步找地標。',
+  stIdGuide: '若要讓 Google、Kakao 也能開啟，請在名稱欄輸入這家店的韓文原名——輸入後會自動開始找地標。',
   stNamePlain: '已取出店名「{name}」：沒有座標，請用備援店名搜尋，或改貼店家的分享連結。',
   stUnknown: '看不懂這段內容。請確認貼的是地圖的分享連結，或改貼經緯度、Plus Code。',
   stEmpty: '還沒有貼上內容。請先點白色大框框，把連結貼進去。',
@@ -621,7 +622,7 @@ id: {
   stPlusSrc: 'Plus Code {code} berhasil dibaca.',
   stIdOnlyBase: 'Dibaca: hanya ID tempat, tanpa koordinat.',
   stIdNaver: ' ID Naver {id}.', stIdGoogle: ' ID Google didapat.', stIdKakao: ' ID Kakao {id}.',
-  stIdGuide: 'Agar Google dan Kakao juga bisa membukanya, ketik nama asli Korea tempat ini di kolom nama, lalu cari landmark di Langkah 3.',
+  stIdGuide: 'Agar Google dan Kakao juga bisa membukanya, ketik nama asli Korea tempat ini di kolom nama — pencarian landmark akan dimulai otomatis.',
   stNamePlain: 'Nama diambil: “{name}”. Tidak ada koordinat — gunakan cadangan pencarian nama, atau tempel tautan bagikan tempat tersebut.',
   stUnknown: 'Konten ini tidak bisa dibaca. Periksa bahwa ini tautan bagikan peta, atau tempel lintang/bujur atau Plus Code.',
   stEmpty: 'Belum ada yang ditempel. Ketuk kotak putih besar dulu dan tempel tautannya.',
@@ -1519,7 +1520,18 @@ els.lat.addEventListener('change',()=>{ const la=parseFloat(els.lat.value), ln=p
 els.lng.addEventListener('change',()=>{ const la=parseFloat(els.lat.value), ln=parseFloat(els.lng.value); if(isFinite(la)&&isFinite(ln)&&Math.abs(la)<=90&&Math.abs(ln)<=180) updateFromLatLng(la,ln); });
 els.mx.addEventListener('change',()=>{ const x=parseFloat(els.mx.value), y=parseFloat(els.my.value); if(isFinite(x)&&isFinite(y)&&Math.abs(x)<=R&&Math.abs(y)<=R) updateFromXY(x,y); });
 els.my.addEventListener('change',()=>{ const x=parseFloat(els.mx.value), y=parseFloat(els.my.value); if(isFinite(x)&&isFinite(y)&&Math.abs(x)<=R&&Math.abs(y)<=R) updateFromXY(x,y); });
-els.name.addEventListener('input',()=>{ coordsValidForName=false; hasReadyResult=false; readySpec=null; updateLinks(); });
+els.name.addEventListener('input',()=>{ coordsValidForName=false; hasReadyResult=false; readySpec=null; updateLinks();
+  // FIX fix93: 實測（2026-10-25 四家連結）唯一沒自動啟動的是「只有 ID、無座標無店名」——沒東西可搜。
+  // 使用者按引導輸入韓文原名後，停頓 800ms 自動啟動第 3 步（不必再點按鈕）；有座標/已確認/清單已開時不觸發。
+  clearTimeout(nameAutoTimer);
+  nameAutoTimer = setTimeout(()=>{
+    const nm = els.name.value || '';
+    if(!isFinite(parseFloat(els.lat.value)) && currentPinId && /[\uAC00-\uD7A3]/.test(nm) && els.candidateBox && els.candidateBox.hidden){
+      const key = 'name|' + nm + '|' + currentPinId;
+      if(key !== autoFindKey){ autoFindKey = key; findNearestNaver(); }
+    }
+  }, 800);
+});
 // FIX fix36: 長輩模式 — 使用者把內容貼進框框後自動開始，不必再找第二顆按鈕；剪貼簿按鈕則在同一個手勢內讀取並轉換。
 els.paste.addEventListener('paste',()=>{ window.setTimeout(parseInput,80); });
 // FIX fix40: 找最近的 Naver 地點（官方地區搜尋 API via Worker；無 place ID，只能取候選座標）
