@@ -32,6 +32,8 @@ button,.btn{appearance:none;border:0;border-radius:999px;padding:14px 20px;min-h
 .btn-naver{background:var(--naver);color:#fff}
 .btn-yahoo{background:var(--yahoo);color:#fff}
 .btn-uber{background:#000;color:#fff}
+.btn-kakaot{background:#fee500;color:#191919}
+.btn-kride{background:#111;color:#fff}
 .btn-kakao{background:#fee500;color:#191919}
 .btn-landmark{background:#344054;color:#fff}
 .panel-head.yahoo{background:var(--yahoo)}
@@ -43,7 +45,7 @@ button,.btn{appearance:none;border:0;border-radius:999px;padding:14px 20px;min-h
 .panel-head{padding:16px;color:#fff;font-size:20px;font-weight:800;display:flex;justify-content:space-between;align-items:center}
 .panel-head.google{background:var(--google)}
 .panel-head.naver{background:var(--naver)}
-.panel-head.uber{background:#000}
+.panel-head.ride{background:#191919}
 .panel-body{padding:10px 16px 18px}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;font-size:15px;background:#f6f7f9;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .linkrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
@@ -238,17 +240,31 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <section class="panel">
-    <div class="panel-head uber"><span data-i18n="uberHead">Uber（叫車）</span><span class="badge" id="uberBadge" data-i18n="needCoords">需經緯度</span></div>
+    <div class="panel-head ride"><span data-i18n="rideHead">叫車（Uber · Kakao T · k.ride）</span><span class="badge" id="rideBadge" data-i18n="needCoords">需經緯度</span></div>
     <div class="panel-body">
       <div class="mono" id="uberLink">—</div>
       <div class="linkrow">
+        <span class="note">Uber</span>
         <a class="btn btn-uber btn-small" id="uberOpen" href="#" rel="noopener" data-i18n="uberOpenBtn">🚕 用 Uber 叫車到這裡</a>
       </div>
       <p class="note" data-i18n="uberNote">開啟 Uber 並把這個地點設為下車目的地，上車點用你的目前位置。Android 要先點「設定上車點」，目的地才會顯示。</p>
+      <div class="mono" id="rideDest">—</div>
+      <div class="linkrow">
+        <span class="note">Kakao T</span>
+        <a class="btn btn-kakaot btn-small" id="kakaoTIOS" href="https://apps.apple.com/app/id981110422" target="_blank" rel="noopener" data-i18n="appIOS">iPhone App</a>
+        <a class="btn btn-kakaot btn-small" id="kakaoTAndroid" href="intent://t.kakao.com/#Intent;scheme=https;package=com.kakao.taxi;S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.kakao.taxi;end" target="_blank" rel="noopener" data-i18n="appAndroid">Android App</a>
+      </div>
+      <div class="linkrow">
+        <span class="note">k.ride</span>
+        <a class="btn btn-kride btn-small" id="krideIOS" href="https://kride.kakaomobility.com/link" target="_blank" rel="noopener" data-i18n="appIOS">iPhone App</a>
+        <a class="btn btn-kride btn-small" id="krideAndroid" href="intent://kride.kakaomobility.com/link#Intent;scheme=https;package=com.kakaomobility.kride;S.browser_fallback_url=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dcom.kakaomobility.kride;end" target="_blank" rel="noopener" data-i18n="appAndroid">Android App</a>
+      </div>
+      <p class="note" id="rideCopyStatus"></p>
+      <p class="note" data-i18n="rideNote">Kakao T 與 k.ride 沒有公開「預填目的地」的連結：按它們的按鈕會先把上方韓文目的地複製好再開啟 App，到 App 的目的地欄貼上搜尋即可。Kakao T 的 iPhone 按鈕會先到 App Store 頁面（已安裝會顯示「開啟」）。</p>
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-25-fix100</p>
+  <p class="note" style="text-align:center">v2026-10-25-fix101</p>
 </div>
 
 <script>
@@ -263,7 +279,7 @@ const els = {paste:$('paste'),name:$('name'),lat:$('lat'),lng:$('lng'),mx:$('mx'
   candRows:Array.from({length:13},(_,i)=>$('candRow'+i)),
   naverAppAndroid:$('naverAppAndroid'),naverAppAndroidText:$('naverAppAndroidText'),naverNameFallback:$('naverNameFallback'),
   yahooLink:$('yahooLink'),yahooOpen:$('yahooOpen'),yahooNameFallback:$('yahooNameFallback'),
-  kakaoLink:$('kakaoLink'),kakaoOpen:$('kakaoOpen'),kakaoAppOpen:$('kakaoAppOpen'),kakaoAppAndroid:$('kakaoAppAndroid'),kakaoBadge:$('kakaoBadge'),yahooBadge:$('yahooBadge'),uberLink:$('uberLink'),uberOpen:$('uberOpen'),uberBadge:$('uberBadge'),status:$('parseStatus'),
+  kakaoLink:$('kakaoLink'),kakaoOpen:$('kakaoOpen'),kakaoAppOpen:$('kakaoAppOpen'),kakaoAppAndroid:$('kakaoAppAndroid'),kakaoBadge:$('kakaoBadge'),yahooBadge:$('yahooBadge'),uberLink:$('uberLink'),uberOpen:$('uberOpen'),rideBadge:$('rideBadge'),rideDest:$('rideDest'),rideCopyStatus:$('rideCopyStatus'),status:$('parseStatus'),
   readyBox:$('readyBox'),readyText:$('readyText')};
 let syncing = false;
 let currentPinId = '';
@@ -331,7 +347,7 @@ zh: {
   appIOSMiss: 'iPhone App（ID 未找到）', appAndroidMiss: 'Android App（ID 未找到）',
   kOpen: '在 Kakao 開啟', kOpenConfirmed: '在 Kakao 開啟 (已確認地點)', kOpenCoord: '在 Kakao 開啟（座標）',
   kAppPinIOS: 'iPhone App (座標標記)', kAppPinAndroid: 'Android App (座標標記)',
-  yOpen: '在 Yahoo! MAP 開啟', yOpenCoord: '在 Yahoo! MAP 開啟 (座標)', yahooHead: 'Yahoo! MAP（日本）', uberHead: 'Uber（叫車）', uberOpenBtn: '🚕 用 Uber 叫車到這裡', uberNote: '開啟 Uber 並把這個地點設為下車目的地，上車點用你的目前位置。Android 要先點「設定上車點」，目的地才會顯示。',
+  yOpen: '在 Yahoo! MAP 開啟', yOpenCoord: '在 Yahoo! MAP 開啟 (座標)', yahooHead: 'Yahoo! MAP（日本）', rideHead: '叫車（Uber · Kakao T · k.ride）', rideCopied: '✅ 已複製目的地，打開 App 後在目的地欄貼上搜尋', rideNoDest: '目前沒有韓文目的地可複製：先在第 3 步確認地標，或貼上含韓文店名的連結', rideCopyFail: '自動複製失敗，請長按上方目的地文字手動複製', rideNote: 'Kakao T 與 k.ride 沒有公開「預填目的地」的連結：按它們的按鈕會先把上方韓文目的地複製好再開啟 App，到 App 的目的地欄貼上搜尋即可。Kakao T 的 iPhone 按鈕會先到 App Store 頁面（已安裝會顯示「開啟」）。', uberOpenBtn: '🚕 用 Uber 叫車到這裡', uberNote: '開啟 Uber 並把這個地點設為下車目的地，上車點用你的目前位置。Android 要先點「設定上車點」，目的地才會顯示。',
   needCoords: '需經緯度', coordOk: '座標 OK', badgeConfirmed: '已確認地點', badgeId: '地點 ID',
   idNotFound: 'ID 未找到',
   kakaoNote: '韓國地圖，候選地點就是從這裡查的。已確認店家時，網頁按鈕會直接開那家店的 Kakao 頁面。',
@@ -462,7 +478,7 @@ en: {
   appIOSMiss: 'iPhone App (ID not found)', appAndroidMiss: 'Android App (ID not found)',
   kOpen: 'Open in Kakao', kOpenConfirmed: 'Open in Kakao (confirmed place)', kOpenCoord: 'Open in Kakao (coordinates)',
   kAppPinIOS: 'iPhone App (coordinate marker)', kAppPinAndroid: 'Android App (coordinate marker)',
-  yOpen: 'Open in Yahoo! MAP', yOpenCoord: 'Open in Yahoo! MAP (coordinates)', yahooHead: 'Yahoo! MAP (Japan)', uberHead: 'Uber (ride)', uberOpenBtn: '🚕 Ride here with Uber', uberNote: 'Opens Uber with this place set as the dropoff; pickup is your current location. On Android, tap “Set pickup location” first to see the destination.',
+  yOpen: 'Open in Yahoo! MAP', yOpenCoord: 'Open in Yahoo! MAP (coordinates)', yahooHead: 'Yahoo! MAP (Japan)', rideHead: 'Ride-hailing (Uber · Kakao T · k.ride)', rideCopied: '✅ Destination copied — paste it into the app destination box', rideNoDest: 'No Korean destination to copy yet — confirm the landmark in Step 3, or paste a link with a Korean name', rideCopyFail: 'Auto-copy failed — long-press the destination text above to copy it manually', rideNote: 'Kakao T and k.ride publish no destination-prefill link format: their buttons copy the Korean destination above first, then open the app — paste it into the destination box. The Kakao T iPhone button goes to the App Store page first (shows “Open” if installed).', uberOpenBtn: '🚕 Ride here with Uber', uberNote: 'Opens Uber with this place set as the dropoff; pickup is your current location. On Android, tap “Set pickup location” first to see the destination.',
   needCoords: 'Needs coordinates', coordOk: 'Coordinates OK', badgeConfirmed: 'Confirmed place', badgeId: 'Place ID',
   idNotFound: 'ID not found',
   kakaoNote: 'Korean map — the landmark candidates are looked up here. Once a place is confirmed, the web button opens that place’s Kakao page directly.',
@@ -593,7 +609,7 @@ id: {
   appIOSMiss: 'App iPhone (ID tidak ditemukan)', appAndroidMiss: 'App Android (ID tidak ditemukan)',
   kOpen: 'Buka di Kakao', kOpenConfirmed: 'Buka di Kakao (tempat terkonfirmasi)', kOpenCoord: 'Buka di Kakao (koordinat)',
   kAppPinIOS: 'App iPhone (penanda koordinat)', kAppPinAndroid: 'App Android (penanda koordinat)',
-  yOpen: 'Buka di Yahoo! MAP', yOpenCoord: 'Buka di Yahoo! MAP (koordinat)', yahooHead: 'Yahoo! MAP (Jepang)', uberHead: 'Uber (transportasi)', uberOpenBtn: '🚕 Naik Uber ke sini', uberNote: 'Membuka Uber dengan tempat ini sebagai tujuan turun; jemput dari lokasi Anda sekarang. Di Android, ketuk “Set pickup location” dulu agar tujuan muncul.',
+  yOpen: 'Buka di Yahoo! MAP', yOpenCoord: 'Buka di Yahoo! MAP (koordinat)', yahooHead: 'Yahoo! MAP (Jepang)', rideHead: 'Panggil kendaraan (Uber · Kakao T · k.ride)', rideCopied: '✅ Tujuan tersalin — tempel di kolom tujuan aplikasi', rideNoDest: 'Belum ada tujuan Korea untuk disalin — konfirmasi landmark di Langkah 3, atau tempel tautan dengan nama Korea', rideCopyFail: 'Salin otomatis gagal — tekan lama teks tujuan di atas untuk menyalin manual', rideNote: 'Kakao T dan k.ride tidak menerbitkan format tautan pra-isi tujuan: tombolnya menyalin tujuan Korea di atas dulu, lalu membuka aplikasi — tempel di kolom tujuan. Tombol iPhone Kakao T membuka halaman App Store dulu (menampilkan “Buka” bila sudah terpasang).', uberOpenBtn: '🚕 Naik Uber ke sini', uberNote: 'Membuka Uber dengan tempat ini sebagai tujuan turun; jemput dari lokasi Anda sekarang. Di Android, ketuk “Set pickup location” dulu agar tujuan muncul.',
   needCoords: 'Perlu koordinat', coordOk: 'Koordinat OK', badgeConfirmed: 'Tempat terkonfirmasi', badgeId: 'ID tempat',
   idNotFound: 'ID tidak ditemukan',
   kakaoNote: 'Peta Korea — kandidat landmark dicari dari sini. Setelah tempat dikonfirmasi, tombol web membuka langsung halaman Kakao tempat tersebut.',
@@ -815,7 +831,9 @@ function updateLinks(){
     if(els.yahooBadge) els.yahooBadge.textContent=T('needCoords');
     if(els.uberLink) els.uberLink.textContent='—';
     if(els.uberOpen){ els.uberOpen.href='#'; els.uberOpen.textContent=T('uberOpenBtn'); }
-    if(els.uberBadge) els.uberBadge.textContent=T('needCoords');
+    if(els.rideBadge) els.rideBadge.textContent=T('needCoords');
+    if(els.rideDest) els.rideDest.textContent='—';
+    if(els.rideCopyStatus) els.rideCopyStatus.textContent='';
     if(els.yahooNameFallback) els.yahooNameFallback.style.display='none';
     // FIX fix56: 清空時也重置 Kakao 按鈕。
     if(els.kakaoLink) els.kakaoLink.textContent='—';
@@ -976,7 +994,12 @@ function updateLinks(){
     if(coordsPrimary){ els.uberOpen.href = uberWeb; els.uberOpen.textContent = T('uberOpenBtn'); }
     else { els.uberOpen.href = '#'; els.uberOpen.textContent = T('needCoords'); }
   }
-  if(els.uberBadge) els.uberBadge.textContent = coordsPrimary ? T('coordOk') : T('needCoords');
+  if(els.rideBadge) els.rideBadge.textContent = coordsPrimary ? T('coordOk') : T('needCoords');
+  // FIX fix101（使用者指定：叫車軟體同一區塊）：Kakao T / k.ride 無公開預填格式 → 目的地文字（確認地標韓文名＋道路地址優先；未確認用名稱中最長的韓文段）供按鈕點擊時複製。
+  rideDestText = '';
+  if(naverOverride){ rideDestText = naverOverride.title + ((naverOverride.roadAddress || naverOverride.address) ? ' ' + (naverOverride.roadAddress || naverOverride.address) : ''); }
+  else { const segs = (name || '').split(',').map(x => x.trim()).filter(x => /[가-힣]/.test(x)); if(segs.length) rideDestText = segs.sort((a, b) => b.length - a.length)[0]; }
+  if(els.rideDest) els.rideDest.textContent = rideDestText || '—';
   if(els.yahooNameFallback){
     if(hasName && !coordsPrimary){ els.yahooNameFallback.href = yNameWeb; els.yahooNameFallback.style.display = ''; }
     else els.yahooNameFallback.style.display = 'none';
@@ -1827,6 +1850,16 @@ async function findNearestNaver(){
   }
 }
 if(els.findBtn) els.findBtn.addEventListener('click', findNearestNaver);
+let rideDestText = '';
+function copyRideDest(){
+  const st = els.rideCopyStatus; if(!st) return;
+  if(!rideDestText){ st.textContent = T('rideNoDest'); return; }
+  let ok = false;
+  try{ if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(rideDestText); ok = true; } }catch(e){}
+  if(!ok){ try{ const ta = document.createElement('textarea'); ta.value = rideDestText; document.body.appendChild(ta); ta.select(); ok = !!(document.execCommand && document.execCommand('copy')); ta.remove(); }catch(e){} }
+  st.textContent = ok ? T('rideCopied') : T('rideCopyFail');
+}
+['kakaoTIOS','kakaoTAndroid','krideIOS','krideAndroid'].forEach(id => { const b = $(id); if(b) b.addEventListener('click', copyRideDest); });
 $('clearBtn').addEventListener('click',()=>{ els.paste.value=''; els.name.value=''; els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value=''; currentPinId=''; currentGoogleId=''; currentKakaoId=''; naverOverride=null; naverCandidates=[]; if(els.candidateBox) els.candidateBox.hidden=true; setFindBtnMode('primary'); coordsValidForName=false; hasReadyResult=false; readySpec=null; document.querySelectorAll('details.advanced').forEach(d=>{ d.open=false; }); updateLinks(); setStatus('',true); els.paste.focus(); });
 
 $('pasteBtn').addEventListener('click', async ()=>{
