@@ -10,7 +10,7 @@
 <style>
   [hidden]{display:none!important} /* fix95: .candrow 等作者 display 會蓋過 hidden 屬性 → 未用列變空白框；全站強制 hidden 生效 */
 /* FIX fix16: 簡化頁面 — 只顯示必要按鈕，隱藏連結文字、複製按鈕、座標副按鈕與範例（JS 仍更新它們，僅不顯示）。 */
-#googleLink,#googleApp,#naverLink,#naverApp,#naverAppAndroidText,#yahooLink,#kakaoLink,#googleCoordOpen,#naverCoordOpen,#exampleBtn{display:none!important}
+#googleLink,#googleApp,#naverLink,#naverApp,#naverAppAndroidText,#yahooLink,#kakaoLink,#uberLink,#googleCoordOpen,#naverCoordOpen,#exampleBtn{display:none!important}
 *{box-sizing:border-box}
 :root{--google:#1a73e8;--naver:#03c75a;--yahoo:#720e9e;--bg:#f6f7f9;--card:#fff;--line:#d0d5dd;--text:#101828;--muted:#475467}
 body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif;line-height:1.55}
@@ -31,6 +31,7 @@ button,.btn{appearance:none;border:0;border-radius:999px;padding:14px 20px;min-h
 .btn-google{background:var(--google);color:#fff}
 .btn-naver{background:var(--naver);color:#fff}
 .btn-yahoo{background:var(--yahoo);color:#fff}
+.btn-uber{background:#000;color:#fff}
 .btn-kakao{background:#fee500;color:#191919}
 .btn-landmark{background:#344054;color:#fff}
 .panel-head.yahoo{background:var(--yahoo)}
@@ -42,6 +43,7 @@ button,.btn{appearance:none;border:0;border-radius:999px;padding:14px 20px;min-h
 .panel-head{padding:16px;color:#fff;font-size:20px;font-weight:800;display:flex;justify-content:space-between;align-items:center}
 .panel-head.google{background:var(--google)}
 .panel-head.naver{background:var(--naver)}
+.panel-head.uber{background:#000}
 .panel-body{padding:10px 16px 18px}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;font-size:15px;background:#f6f7f9;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .linkrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
@@ -235,8 +237,18 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <p class="note" data-i18n="yahooNote">日本地圖。用 /place/ 連結開啟會出現紅色圖釘（2026-10-23 瀏覽器實測；舊的置中形式沒有圖釘，已停用）。注意：從 Yahoo 手機版分享回來的連結，座標是當時的「地圖中心」而非圖釘，可能差幾十公尺（實測約 82 公尺）；韓國地點貼入後，請用第 3 步「確認地標」校正。</p>
     </div>
   </section>
+  <section class="panel">
+    <div class="panel-head uber"><span data-i18n="uberHead">Uber（叫車）</span><span class="badge" id="uberBadge" data-i18n="needCoords">需經緯度</span></div>
+    <div class="panel-body">
+      <div class="mono" id="uberLink">—</div>
+      <div class="linkrow">
+        <a class="btn btn-uber btn-small" id="uberOpen" href="#" rel="noopener" data-i18n="uberOpenBtn">🚕 用 Uber 叫車到這裡</a>
+      </div>
+      <p class="note" data-i18n="uberNote">開啟 Uber 並把這個地點設為下車目的地，上車點用你的目前位置。Android 要先點「設定上車點」，目的地才會顯示。</p>
+    </div>
+  </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-25-fix99</p>
+  <p class="note" style="text-align:center">v2026-10-25-fix100</p>
 </div>
 
 <script>
@@ -251,7 +263,7 @@ const els = {paste:$('paste'),name:$('name'),lat:$('lat'),lng:$('lng'),mx:$('mx'
   candRows:Array.from({length:13},(_,i)=>$('candRow'+i)),
   naverAppAndroid:$('naverAppAndroid'),naverAppAndroidText:$('naverAppAndroidText'),naverNameFallback:$('naverNameFallback'),
   yahooLink:$('yahooLink'),yahooOpen:$('yahooOpen'),yahooNameFallback:$('yahooNameFallback'),
-  kakaoLink:$('kakaoLink'),kakaoOpen:$('kakaoOpen'),kakaoAppOpen:$('kakaoAppOpen'),kakaoAppAndroid:$('kakaoAppAndroid'),kakaoBadge:$('kakaoBadge'),yahooBadge:$('yahooBadge'),status:$('parseStatus'),
+  kakaoLink:$('kakaoLink'),kakaoOpen:$('kakaoOpen'),kakaoAppOpen:$('kakaoAppOpen'),kakaoAppAndroid:$('kakaoAppAndroid'),kakaoBadge:$('kakaoBadge'),yahooBadge:$('yahooBadge'),uberLink:$('uberLink'),uberOpen:$('uberOpen'),uberBadge:$('uberBadge'),status:$('parseStatus'),
   readyBox:$('readyBox'),readyText:$('readyText')};
 let syncing = false;
 let currentPinId = '';
@@ -319,7 +331,7 @@ zh: {
   appIOSMiss: 'iPhone App（ID 未找到）', appAndroidMiss: 'Android App（ID 未找到）',
   kOpen: '在 Kakao 開啟', kOpenConfirmed: '在 Kakao 開啟 (已確認地點)', kOpenCoord: '在 Kakao 開啟（座標）',
   kAppPinIOS: 'iPhone App (座標標記)', kAppPinAndroid: 'Android App (座標標記)',
-  yOpen: '在 Yahoo! MAP 開啟', yOpenCoord: '在 Yahoo! MAP 開啟 (座標)', yahooHead: 'Yahoo! MAP（日本）',
+  yOpen: '在 Yahoo! MAP 開啟', yOpenCoord: '在 Yahoo! MAP 開啟 (座標)', yahooHead: 'Yahoo! MAP（日本）', uberHead: 'Uber（叫車）', uberOpenBtn: '🚕 用 Uber 叫車到這裡', uberNote: '開啟 Uber 並把這個地點設為下車目的地，上車點用你的目前位置。Android 要先點「設定上車點」，目的地才會顯示。',
   needCoords: '需經緯度', coordOk: '座標 OK', badgeConfirmed: '已確認地點', badgeId: '地點 ID',
   idNotFound: 'ID 未找到',
   kakaoNote: '韓國地圖，候選地點就是從這裡查的。已確認店家時，網頁按鈕會直接開那家店的 Kakao 頁面。',
@@ -450,7 +462,7 @@ en: {
   appIOSMiss: 'iPhone App (ID not found)', appAndroidMiss: 'Android App (ID not found)',
   kOpen: 'Open in Kakao', kOpenConfirmed: 'Open in Kakao (confirmed place)', kOpenCoord: 'Open in Kakao (coordinates)',
   kAppPinIOS: 'iPhone App (coordinate marker)', kAppPinAndroid: 'Android App (coordinate marker)',
-  yOpen: 'Open in Yahoo! MAP', yOpenCoord: 'Open in Yahoo! MAP (coordinates)', yahooHead: 'Yahoo! MAP (Japan)',
+  yOpen: 'Open in Yahoo! MAP', yOpenCoord: 'Open in Yahoo! MAP (coordinates)', yahooHead: 'Yahoo! MAP (Japan)', uberHead: 'Uber (ride)', uberOpenBtn: '🚕 Ride here with Uber', uberNote: 'Opens Uber with this place set as the dropoff; pickup is your current location. On Android, tap “Set pickup location” first to see the destination.',
   needCoords: 'Needs coordinates', coordOk: 'Coordinates OK', badgeConfirmed: 'Confirmed place', badgeId: 'Place ID',
   idNotFound: 'ID not found',
   kakaoNote: 'Korean map — the landmark candidates are looked up here. Once a place is confirmed, the web button opens that place’s Kakao page directly.',
@@ -581,7 +593,7 @@ id: {
   appIOSMiss: 'App iPhone (ID tidak ditemukan)', appAndroidMiss: 'App Android (ID tidak ditemukan)',
   kOpen: 'Buka di Kakao', kOpenConfirmed: 'Buka di Kakao (tempat terkonfirmasi)', kOpenCoord: 'Buka di Kakao (koordinat)',
   kAppPinIOS: 'App iPhone (penanda koordinat)', kAppPinAndroid: 'App Android (penanda koordinat)',
-  yOpen: 'Buka di Yahoo! MAP', yOpenCoord: 'Buka di Yahoo! MAP (koordinat)', yahooHead: 'Yahoo! MAP (Jepang)',
+  yOpen: 'Buka di Yahoo! MAP', yOpenCoord: 'Buka di Yahoo! MAP (koordinat)', yahooHead: 'Yahoo! MAP (Jepang)', uberHead: 'Uber (transportasi)', uberOpenBtn: '🚕 Naik Uber ke sini', uberNote: 'Membuka Uber dengan tempat ini sebagai tujuan turun; jemput dari lokasi Anda sekarang. Di Android, ketuk “Set pickup location” dulu agar tujuan muncul.',
   needCoords: 'Perlu koordinat', coordOk: 'Koordinat OK', badgeConfirmed: 'Tempat terkonfirmasi', badgeId: 'ID tempat',
   idNotFound: 'ID tidak ditemukan',
   kakaoNote: 'Peta Korea — kandidat landmark dicari dari sini. Setelah tempat dikonfirmasi, tombol web membuka langsung halaman Kakao tempat tersebut.',
@@ -801,6 +813,9 @@ function updateLinks(){
     if(els.yahooOpen){ els.yahooOpen.href='#'; els.yahooOpen.textContent=T('yOpen'); }
     if(els.kakaoBadge) els.kakaoBadge.textContent=T('needCoords');
     if(els.yahooBadge) els.yahooBadge.textContent=T('needCoords');
+    if(els.uberLink) els.uberLink.textContent='—';
+    if(els.uberOpen){ els.uberOpen.href='#'; els.uberOpen.textContent=T('uberOpenBtn'); }
+    if(els.uberBadge) els.uberBadge.textContent=T('needCoords');
     if(els.yahooNameFallback) els.yahooNameFallback.style.display='none';
     // FIX fix56: 清空時也重置 Kakao 按鈕。
     if(els.kakaoLink) els.kakaoLink.textContent='—';
@@ -940,6 +955,15 @@ function updateLinks(){
   // 舊形式 /?lat=&lon= 只有置中、沒有圖釘（使用者實機回報後查證），停用。
   // 有有效座標 → 座標切換；無座標但有店名 → 店名搜尋備援（Yahoo 地圖搜尋）；兩者皆無 → 需經緯度。
   const yWeb = coordsPrimary ? 'https://map.yahoo.co.jp/place/?lat='+latS+'&lon='+lngS+'&z=17' : '';
+  // FIX fix100（使用者核准）：Uber 面板——universal link 預填下車點（座標＋店名＋確認後地址），上車點用目前位置。無座標不給連結（不捏造）。
+  let uberWeb = '';
+  if(coordsPrimary){
+    const uNick = naverOverride ? naverOverride.title : (name || '').split(',')[0].trim();
+    const uAddr = naverOverride ? (naverOverride.roadAddress || naverOverride.address || '') : '';
+    uberWeb = 'https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[latitude]=' + latS + '&dropoff[longitude]=' + lngS
+      + (uNick ? '&dropoff[nickname]=' + encodeURIComponent(uNick) : '')
+      + (uAddr ? '&dropoff[formatted_address]=' + encodeURIComponent(uAddr) : '');
+  }
   const yNameWeb = hasName ? 'https://map.yahoo.co.jp/search?q='+encodeURIComponent(name) : '';
   if(els.yahooLink) els.yahooLink.textContent = yWeb || (hasName ? T('monoNameSearch',{u:yNameWeb}) : '—');
   if(els.yahooOpen){
@@ -947,6 +971,12 @@ function updateLinks(){
     else { els.yahooOpen.href = '#'; els.yahooOpen.textContent = T('needCoords'); }
   }
   if(els.yahooBadge) els.yahooBadge.textContent = coordsPrimary ? T('coordOk') : T('needCoords');
+  if(els.uberLink) els.uberLink.textContent = uberWeb || '—';
+  if(els.uberOpen){
+    if(coordsPrimary){ els.uberOpen.href = uberWeb; els.uberOpen.textContent = T('uberOpenBtn'); }
+    else { els.uberOpen.href = '#'; els.uberOpen.textContent = T('needCoords'); }
+  }
+  if(els.uberBadge) els.uberBadge.textContent = coordsPrimary ? T('coordOk') : T('needCoords');
   if(els.yahooNameFallback){
     if(hasName && !coordsPrimary){ els.yahooNameFallback.href = yNameWeb; els.yahooNameFallback.style.display = ''; }
     else els.yahooNameFallback.style.display = 'none';
