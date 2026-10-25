@@ -133,6 +133,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     <div class="panel-body">
       <p class="note" style="margin-top:2px" data-i18n="landmarkNote">座標只是大概位置（例如 Plus Code）時，在這裡找一次、確認一次就好。確認後，Naver、Kakao、Google、Yahoo 都會改用這個查證過的地標。</p>
       <button class="btn btn-landmark" id="findBtn" type="button" style="display:none;width:100%;margin:6px 0" data-i18n="findBtn">🔍 找地標並確認</button>
+      <p class="note" id="findWaitNote" style="display:none" data-i18n="findWaitNote">⏳ 地標搜尋約需 2–5 秒，請稍等，不要重複點按。</p>
       <div class="candidate" id="candidateBox" hidden>
         <div id="candidateHead" style="white-space:pre-line">—</div>
         <p class="candsec" id="candSecAddr" data-i18n="candSecAddr" hidden>📍 地址</p>
@@ -234,7 +235,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-25-fix90</p>
+  <p class="note" style="text-align:center">v2026-10-25-fix92</p>
 </div>
 
 <script>
@@ -261,7 +262,9 @@ let currentKakaoId = '';
 // FIX fix40: Naver 官方地區搜尋 API 只能回傳候選店名/地址/座標，沒有 place ID。
 // 流程：以韓文店名查詢 → 以距離排序 → 使用者一鍵確認 → Naver 按鈕改用該候選在 Naver 資料中的座標。
 let naverCandidates = [];
-let naverOverride = null; // {title,address,lat,lng,distanceM} 已確認的 Naver 候選座標
+let naverOverride = null;
+let autoFindArmed = false; let autoFindKey = ''; // fix92: 解析完成自動啟動第 3 步的武裝旗標與防重複鍵
+let inputWasYahoo = false; // fix92: Yahoo 輸入旗標——自動搜尋換狀態時把偏差提醒補回（fix68 的提醒不可被蓋掉） // {title,address,lat,lng,distanceM} 已確認的 Naver 候選座標
 let candidateSource = 'name'; // fix47: 'name'（韓文店名查詢）或 'address'（無店名→座標反查地址）
 const LOCAL_WORKER = 'https://map-resolve.tsai0215.workers.dev/local';
 const NEARBY_WORKER = 'https://map-resolve.tsai0215.workers.dev/nearby';
@@ -297,7 +300,7 @@ zh: {
   nameLabel: '地點名稱（不用填也可以）', namePh: '例如：飯店或景點名稱',
   step3Title: '第 3 步：確認地標', landmarkHead: '✅ 確認地標', landmarkBadge: 'Naver・Kakao 共用',
   landmarkNote: '座標只是大概位置（例如 Plus Code）時，在這裡找一次、確認一次就好。確認後，Naver、Kakao、Google、Yahoo 都會改用這個查證過的地標。',
-  findBtn: '🔍 找地標並確認', candClose: '關閉', candListHead: '找到 {n} 個候選，點一個就是確認——所有地圖按鈕會改用你點的那個地點：', candSecAddr: '📍 地址', candSecPlaces: '🏠 店名', candCat: '分類：{cat}',
+  findBtn: '🔍 找地標並確認', findWaitNote: '⏳ 地標搜尋約需 2–5 秒，請稍等，不要重複點按。', candClose: '關閉', candListHead: '找到 {n} 個候選，點一個就是確認——所有地圖按鈕會改用你點的那個地點：', candSecAddr: '📍 地址', candSecPlaces: '🏠 店名', candCat: '分類：{cat}',
   step4Title: '第 4 步：點一個地圖打開',
   advGoogle: '進階：查看或更改經緯度（一般不用點）', advNaver: '進階：查看或更改座標（一般不用點）',
   latPh: '緯度', lngPh: '經度', latAria: 'Google 緯度', lngAria: 'Google 經度', mxPh: 'X', myPh: 'Y', mxAria: 'Naver X 座標', myAria: 'Naver Y 座標',
@@ -428,7 +431,7 @@ en: {
   nameLabel: 'Place name (optional)', namePh: 'e.g. a hotel or attraction name',
   step3Title: 'Step 3: Confirm the landmark', landmarkHead: '✅ Confirm landmark', landmarkBadge: 'Shared by Naver · Kakao',
   landmarkNote: 'When the coordinates are only approximate (e.g. from a Plus Code), find and confirm the place here once. After that, Naver, Kakao, Google and Yahoo will all use the verified landmark.',
-  findBtn: '🔍 Find & confirm landmark', candClose: 'Close', candListHead: 'Found {n} candidates — tap one to confirm it; all map buttons will use the place you tap:', candSecAddr: '📍 Address', candSecPlaces: '🏠 Places', candCat: 'Category: {cat}',
+  findBtn: '🔍 Find & confirm landmark', findWaitNote: '⏳ The landmark search takes about 2–5 seconds. Please wait — do not tap again.', candClose: 'Close', candListHead: 'Found {n} candidates — tap one to confirm it; all map buttons will use the place you tap:', candSecAddr: '📍 Address', candSecPlaces: '🏠 Places', candCat: 'Category: {cat}',
   step4Title: 'Step 4: Tap a map to open it',
   advGoogle: 'Advanced: view or edit latitude/longitude (usually not needed)', advNaver: 'Advanced: view or edit X/Y (usually not needed)',
   latPh: 'Latitude', lngPh: 'Longitude', latAria: 'Google latitude', lngAria: 'Google longitude', mxPh: 'X', myPh: 'Y', mxAria: 'Naver X coordinate', myAria: 'Naver Y coordinate',
@@ -559,7 +562,7 @@ id: {
   nameLabel: 'Nama tempat (boleh kosong)', namePh: 'mis. nama hotel atau tempat wisata',
   step3Title: 'Langkah 3: Konfirmasi landmark', landmarkHead: '✅ Konfirmasi landmark', landmarkBadge: 'Dipakai bersama Naver · Kakao',
   landmarkNote: 'Jika koordinat hanya perkiraan (mis. dari Plus Code), cari dan konfirmasi tempatnya di sini satu kali. Setelah itu, Naver, Kakao, Google, dan Yahoo semuanya memakai landmark terverifikasi ini.',
-  findBtn: '🔍 Cari & konfirmasi landmark', candClose: 'Tutup', candListHead: 'Ditemukan {n} kandidat — ketuk satu untuk mengonfirmasi; semua tombol peta akan memakai tempat yang Anda ketuk:', candSecAddr: '📍 Alamat', candSecPlaces: '🏠 Nama tempat', candCat: 'Kategori: {cat}',
+  findBtn: '🔍 Cari & konfirmasi landmark', findWaitNote: '⏳ Pencarian landmark memerlukan sekitar 2–5 detik. Mohon tunggu — jangan mengetuk lagi.', candClose: 'Tutup', candListHead: 'Ditemukan {n} kandidat — ketuk satu untuk mengonfirmasi; semua tombol peta akan memakai tempat yang Anda ketuk:', candSecAddr: '📍 Alamat', candSecPlaces: '🏠 Nama tempat', candCat: 'Kategori: {cat}',
   step4Title: 'Langkah 4: Ketuk peta untuk membuka',
   advGoogle: 'Lanjutan: lihat atau ubah lintang/bujur (biasanya tidak perlu)', advNaver: 'Lanjutan: lihat atau ubah X/Y (biasanya tidak perlu)',
   latPh: 'Lintang', lngPh: 'Bujur', latAria: 'Lintang Google', lngAria: 'Bujur Google', mxPh: 'X', myPh: 'Y', mxAria: 'Koordinat X Naver', myAria: 'Koordinat Y Naver',
@@ -785,6 +788,8 @@ function updateLinks(){
     if(els.googleNameFallback) els.googleNameFallback.style.display='none';
     if(els.naverNameFallback) els.naverNameFallback.style.display='none';
     if(els.findBtn) els.findBtn.style.display='none';
+    { const wn = $('findWaitNote'); if(wn) wn.style.display='none'; }
+    autoFindArmed = false; autoFindKey = '';
     if(els.candidateBox) els.candidateBox.hidden=true;
     // FIX fix30: 清空時也重置 Yahoo 按鈕。
     if(els.yahooLink) els.yahooLink.textContent='—';
@@ -881,6 +886,13 @@ function updateLinks(){
     // FIX fix64: 無座標但有韓文店名也可找地標（店名查不需要座標）— Google ftid 分享、Naver 只有 ID 時靠它補座標，讓三家都能開。
     const canFind = !naverOverride && ((hasCoords && coordsPrimary && !currentPinId) || (!hasCoords && /[\uAC00-\uD7A3]/.test(name)));
     els.findBtn.style.display = canFind ? '' : 'none';
+    { const wn = $('findWaitNote'); if(wn) wn.style.display = canFind ? '' : 'none'; }
+    // FIX fix92: 使用者定「第一步完成就自動啟動第三步」——解析完成（autoFindArmed）且可找地標時自動搜尋一次；
+    // 以輸入內容為鍵防重複（同一輸入只自動搜尋一次）；手動打字/切語系不武裝、不觸發；失敗後按鈕保留供重試。
+    if (autoFindArmed && canFind) {
+      const key = [els.name.value || '', els.lat.value || '', els.lng.value || '', currentPinId || ''].join('|');
+      if (key !== autoFindKey) { autoFindKey = key; autoFindArmed = false; findNearestNaver(); }
+    }
   }
   els.naverApp.textContent = (hasName ? T('monoNameSearch',{u:nAppName}) : '') + (hasCoords ? (hasName ? '\n' : '') + T('coordPinLine',{u:nAppCoord}) : '');
   if(els.naverAppAndroidText) els.naverAppAndroidText.textContent = (hasName ? T('monoNameSearch',{u:nAppAndroidName}) : '') + (hasCoords ? (hasName ? '\n' : '') + T('coordPinLine',{u:nAppAndroidCoord}) : '');
@@ -1220,6 +1232,8 @@ function parseInput(){
   currentPinId = ''; currentGoogleId = ''; currentKakaoId = '';
   // FIX fix40: 新輸入也要清掉上一個地點已確認的 Naver 候選，避免誤用到新地點。
   naverOverride = null; naverCandidates = [];
+  autoFindArmed = true; // fix92: 本次解析完成後若可找地標，自動搜尋一次（updateLinks 內觸發）
+  inputWasYahoo = /yahoo\.(?:co\.jp|jp)/i.test(raw);
   if(els.candidateBox) els.candidateBox.hidden = true;
   const expandBtn = $('expandBtn');
   // FIX fix6: 貼上整段分享文字（[NAVER Maps]\n店名\n地址\n短連結）時，必須先取出乾淨的 URL，
@@ -1701,9 +1715,9 @@ async function findNearestNaver(){
     if(byName){ naverCandidates = naverCandidates.slice(0, 5); }
     if(!naverCandidates.length){ setStatus(byName ? T('stNoCandName',{name}) : T('stNoCandAddr'),false); return; }
     renderCandidateList();
-    setStatus(byName
+    setStatus((byName
       ? ((isFinite(lat) && isFinite(lng)) ? T('stCandFoundNameCoord',{n:naverCandidates.length}) : T('stCandFoundNameNoCoord',{n:naverCandidates.length}))
-      : T('stCandFoundAddr'),true);
+      : T('stCandFoundAddr')) + (inputWasYahoo ? T('yahooShareNote') : ''),true);
   }catch(e){
     setStatus(T('stOffline'),false);
   }

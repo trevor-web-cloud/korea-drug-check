@@ -436,7 +436,7 @@ rows.push(row('L4', '英文模式 ID 未找到與備援（fix72）', async (c) =
   E('langEn').dispatch('click'); await flush();
   await pasteAndParse('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('명동교자'));
   check(c, 'google id not found en', E('googleOpen').textContent === 'ID not found', E('googleOpen').textContent);
-  check(c, 'status en', st().includes('No Google ID was found'), st().slice(0, 80));
+  check(c, 'status en (auto-search found, fix92)', st().includes('Found 1 candidates'), st().slice(0, 80));
   check(c, 'app fallback en', E('googleAppIOS').textContent === 'iPhone App (name search fallback)', E('googleAppIOS').textContent);
   E('langZh').dispatch('click'); await flush();
   check(c, 'restored zh', E('googleOpen').textContent.includes('ID 未找到'), E('googleOpen').textContent);
@@ -517,4 +517,21 @@ rows.push(row('K19', '店名模式上限 5 家（fix90）', async (c) => {
   E('findBtn').dispatch('click'); await flush();
   check(c, 'capped at 5', candRows().length === 5, String(candRows().length));
   check(c, 'first kept, 6th absent', candAllText().includes('많은가게01') && !candAllText().includes('많은가게06'), candAllText().slice(0, 60));
+}));
+
+rows.push(row('L7', '第 3 步等待說明（fix91/92）：原始碼三語字串＋跟找地標按鈕同顯隱', async (c) => {
+  check(c, 'source has note zh', PAGE_HTML.includes('地標搜尋約需 2–5 秒'), 'missing');
+  check(c, 'source has note en', PAGE_HTML.includes('The landmark search takes about 2–5 seconds'), 'missing');
+  await pasteAndParse('8Q7F32XJ+C9');
+  check(c, 'note visible with findBtn', E('findWaitNote').style.display !== 'none', String(E('findWaitNote').style.display));
+  await clearAll();
+  check(c, 'note hidden after clear', E('findWaitNote').style.display === 'none', String(E('findWaitNote').style.display));
+}));
+
+rows.push(row('K20', '解析完成自動啟動第 3 步搜尋（fix92）；有 pinId 不觸發', async (c) => {
+  await pasteAndParse('8Q7F32XJ+C9'); await flush();
+  check(c, 'auto search opened candidates', E('candidateBox').hidden === false && candRows().length >= 2, 'hidden=' + E('candidateBox').hidden + ' rows=' + candRows().length);
+  await clearAll();
+  await pasteAndParse('https://map.naver.com/p/entry/place/1943436990'); await flush();
+  check(c, 'pinId link: no auto search', E('candidateBox').hidden === true, 'hidden=' + E('candidateBox').hidden);
 }));
