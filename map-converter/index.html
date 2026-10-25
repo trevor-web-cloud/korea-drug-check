@@ -234,7 +234,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-25-fix89</p>
+  <p class="note" style="text-align:center">v2026-10-25-fix90</p>
 </div>
 
 <script>
@@ -1697,6 +1697,8 @@ async function findNearestNaver(){
       const placeC = naverCandidates.filter(x => x.kind === 'place' && isFinite(x.distanceM) && x.distanceM <= 30).slice(0, 5);
       naverCandidates = addrC.concat(placeC);
     }
+    // FIX fix90: 使用者定「都改為 5 家 提高效能」——店名模式也只取前 5 家；Worker /local 同步改 size=5 從源頭少傳少解析。
+    if(byName){ naverCandidates = naverCandidates.slice(0, 5); }
     if(!naverCandidates.length){ setStatus(byName ? T('stNoCandName',{name}) : T('stNoCandAddr'),false); return; }
     renderCandidateList();
     setStatus(byName

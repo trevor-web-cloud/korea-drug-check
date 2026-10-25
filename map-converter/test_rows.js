@@ -511,3 +511,10 @@ rows.push(row('K18', '店名候選規則：30 公尺內＋最多 5 家（fix79/8
   check(c, 'capped at 5 places + address', candRows().length === 6, String(candRows().length));
   check(c, '5th present, 6th absent', candAllText().includes('시청가게05') && !candAllText().includes('시청가게06') && !candAllText().includes('시청가게10'), candAllText().slice(-60));
 }));
+
+rows.push(row('K19', '店名模式上限 5 家（fix90）', async (c) => {
+  await pasteAndParse('https://www.google.com/maps?q=' + encodeURIComponent('많은가게'));
+  E('findBtn').dispatch('click'); await flush();
+  check(c, 'capped at 5', candRows().length === 5, String(candRows().length));
+  check(c, 'first kept, 6th absent', candAllText().includes('많은가게01') && !candAllText().includes('많은가게06'), candAllText().slice(0, 60));
+}));

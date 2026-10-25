@@ -147,8 +147,9 @@ export default {
         return new Response(JSON.stringify({ error: 'not_configured' }), { status: 503, headers: cors });
       }
       try {
+        // fix90: 使用者定「都改為 5 家 提高效能」——關鍵字搜尋只向 Kakao 要 5 筆（原 15），少傳少解析；頁面端也裁 5 家。
         bumpBg('kakao_keyword');
-        const kRes = await fetch('https://dapi.kakao.com/v2/local/search/keyword.json?size=15&page=1&query=' + encodeURIComponent(q), {
+        const kRes = await fetch('https://dapi.kakao.com/v2/local/search/keyword.json?size=5&page=1&query=' + encodeURIComponent(q), {
           headers: { 'Authorization': 'KakaoAK ' + env.KAKAO_REST_KEY },
         });
         if (!kRes.ok) {
