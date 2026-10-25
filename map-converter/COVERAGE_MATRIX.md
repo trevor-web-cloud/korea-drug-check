@@ -172,3 +172,15 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 ### fix99（2026-10-25）— 英文名備援（使用者核准）
 - 缺口：英文介面 Google 分享 q=英文名＋羅馬拼音地址（無韓文/中文/座標）→ 無從查起。實測 Kakao 對部分英文店名有索引（/local?q=Brosis Hotel 第一筆即本店）。
 - 修法（純頁面）：無座標＋純拉丁字母名 → canFind 成立、findNearestNaver 以第一段英文名直接查 /local（enName 分流比照 cjkName）；查不到回店名版失敗訊息（stFindFail/stNoCand 改以 useLocal 選措辭）。新增 K27。本地 81/81 PASS。
+
+## 2026-10-25 fix100（Uber 面板，使用者核准）
+- 第 4 步新增 Uber 面板（黑底）：座標有效時按鈕為 universal link `m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[latitude]/[longitude]`，店名優先序：確認地標韓文名＞解析店名第一段；確認後加 `dropoff[formatted_address]`（道路地址優先）。無座標時按鈕停用（#＋需經緯度），不捏造以名稱叫車的連結。刻意不用 target=_blank（universal link 以同頁點按跳 App 最穩，官方文件亦警告 Safari 網址列貼上無效、點按才行）。
+- 新列 U1（Kakao 分享→座標＋韓文 nickname 都進 dropoff；清除後停用）。本地 82/82、線上（頁尾 fix100、md5 一致）82/82。
+
+## 2026-10-25 fix100（Uber 面板，使用者核准）
+- 第 4 步新增 Uber 面板：universal link `m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[latitude]/[longitude]`＋nickname（確認韓文名優先）＋確認後 formatted_address。無座標停用。新列 U1。本地＋線上 82/82（頁尾 fix100、md5 一致）。
+
+## 2026-10-25 fix101（叫車同區塊，使用者指定＋核准「開 App＋自動複製目的地」）
+- Uber 移入單一「叫車」區塊（黑底 panel-head.ride），同區含 Kakao T 與 k.ride。查證結論：兩家皆無公開目的地預填格式——k.ride 僅認領 `kride.kakaomobility.com/link*`（AASA/assetlinks 實證）但參數未公開、裸 /link 回 API 404；Kakao T 僅 Android 認領 `t.kakao.com`（assetlinks 實證 com.kakao.taxi），iOS 無 AASA、無參數文件。故採：按鈕開啟 App＋點擊時複製目的地文字（確認地標韓文名＋道路地址＞名稱中最長韓文段）。
+- 開啟方式：Kakao T iOS→App Store id981110422（已安裝顯示「開啟」）；Kakao T Android→intent（t.kakao.com＋package＋Play 備援）；k.ride iOS→/link universal link；k.ride Android→intent（package com.kakaomobility.kride＋Play 備援）。href 為靜態 markup（JS 不改寫）；測試替身不種靜態 href，U2 對此二項改以 PAGE_HTML 靜態斷言，其餘（目的地文字確認前後、Uber 流程、清除）皆動態斷言。
+- 新列 U2。本地 83/83、線上（頁尾 fix101、md5 一致）83/83。Worker 不變（fix90）：本版與 fix100 皆純頁面。

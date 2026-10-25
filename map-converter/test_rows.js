@@ -598,3 +598,26 @@ rows.push(row('K27', '英文介面分享（英文名＋羅馬地址）→英文�
   const localCall = FETCH_LOG.find(u => u.includes('/local') && decodeURIComponent(u).includes('q=Brosis Hotel'));
   check(c, 'query is English first segment', !!localCall, localCall || 'no /local call with English name');
 }));
+
+rows.push(row('U1', 'Uber 面板：目的地預填 universal link（fix100）', async (c) => {
+  await pasteAndParse('https://kko.to/qobmRiH-bl'); await flush();
+  const h = E('uberOpen').href || '';
+  check(c, 'dropoff coords', h.includes('m.uber.com/ul/?action=setPickup') && h.includes('dropoff[latitude]=35.0985955') && h.includes('dropoff[longitude]=129.0308898'), h.slice(0, 120));
+  check(c, 'dropoff nickname Korean', decodeURIComponent(h).includes('dropoff[nickname]=브로시스호텔'), decodeURIComponent(h).slice(0, 160));
+  await clearAll();
+  check(c, 'disabled without coords', (E('uberOpen').href || '#') === '#', String(E('uberOpen').href));
+}));
+
+rows.push(row('U2', '叫車同區塊：Kakao T/k.ride 開 App＋複製目的地（fix101）', async (c) => {
+  await pasteAndParse('https://kko.to/qobmRiH-bl'); await flush();
+  check(c, 'dest = Korean name pre-confirm', (E('rideDest').textContent || '').includes('브로시스호텔'), E('rideDest').textContent);
+  check(c, 'kakaoT android intent pkg (static markup)', PAGE_HTML.includes('intent://t.kakao.com/#Intent;scheme=https;package=com.kakao.taxi'), 'markup');
+  check(c, 'kride ios universal link (static markup)', PAGE_HTML.includes('href="https://kride.kakaomobility.com/link"'), 'markup');
+  const rowEl = candRows().find(x => x.textContent.includes('브로시스호텔'));
+  check(c, 'candidate offered', !!rowEl, candRows().length + ' rows');
+  if(rowEl) rowEl.dispatch('click'); await flush();
+  check(c, 'dest upgraded with road address', (E('rideDest').textContent || '').includes('구덕로48번길 4'), E('rideDest').textContent);
+  check(c, 'uber still in same flow', (E('uberOpen').href || '').includes('m.uber.com/ul/'), (E('uberOpen').href || '').slice(0, 60));
+  await clearAll();
+  check(c, 'dest cleared', E('rideDest').textContent === '—', E('rideDest').textContent);
+}));
