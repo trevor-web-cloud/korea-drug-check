@@ -234,7 +234,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-24-fix86</p>
+  <p class="note" style="text-align:center">v2026-10-25-fix89</p>
 </div>
 
 <script>
@@ -380,7 +380,7 @@ zh: {
   stCandFoundNameNoCoord: '找到 {n} 家候選，請在「確認地標」區確認是哪一家；確認後 Google、Naver、Kakao 都能開啟。',
   stCandFoundAddr: '已用座標查到韓國地址與附近地點，請在「確認地標」區的清單點一個確認。',
   candListFoot: '找不到你要找的地點？可以點最上面的地址那一列——那是這個位置查證過的門牌地址，所有地圖會開在那個地址。',
-  candNearbyRule: '（店名只列 30 公尺內、最多 10 家）',
+  candNearbyRule: '（店名只列 30 公尺內、最多 5 家）',
   stOffline: '連不上附近地點搜尋服務，請檢查網路後再試。',
   stConfirmed: '已確認地點：{title}。所有地圖按鈕已改用查證過的座標（與原座標相距約 {d} 公尺）。',
   candRefLine: '你原本查的是：{name}',
@@ -511,7 +511,7 @@ en: {
   stCandFoundNameNoCoord: 'Found {n} candidates. Please confirm which one it is in the “Confirm landmark” section; after that, Google, Naver and Kakao can all open it.',
   stCandFoundAddr: 'Found the Korean address and nearby places for these coordinates. Please tap one in the “Confirm landmark” list to confirm it.',
   candListFoot: 'Can’t find your place? Tap the address row at the top — it is the verified street address of this spot, and all maps will open there.',
-  candNearbyRule: '(Places: within 30 m only, up to 10)',
+  candNearbyRule: '(Places: within 30 m only, up to 5)',
   stOffline: 'Could not reach the nearby-place search service. Please check your connection and try again.',
   stConfirmed: 'Place confirmed: {title}. All map buttons now use the verified coordinates (about {d} m from the original ones).',
   candRefLine: 'You searched for: {name}',
@@ -642,7 +642,7 @@ id: {
   stCandFoundNameNoCoord: 'Ditemukan {n} kandidat. Konfirmasi yang mana di bagian “Konfirmasi landmark”; setelah itu Google, Naver, dan Kakao bisa membukanya.',
   stCandFoundAddr: 'Alamat Korea dan tempat sekitar untuk koordinat ini ditemukan. Ketuk satu di daftar “Konfirmasi landmark” untuk mengonfirmasi.',
   candListFoot: 'Tidak menemukan tempat Anda? Ketuk baris alamat di paling atas — itu alamat terverifikasi untuk titik ini, dan semua peta akan terbuka di sana.',
-  candNearbyRule: '(Tempat: hanya dalam 30 m, maks. 10)',
+  candNearbyRule: '(Tempat: hanya dalam 30 m, maks. 5)',
   stOffline: 'Tidak dapat terhubung ke layanan pencarian tempat sekitar. Periksa koneksi Anda lalu coba lagi.',
   stConfirmed: 'Tempat dikonfirmasi: {title}. Semua tombol peta sekarang memakai koordinat terverifikasi (sekitar {d} m dari koordinat asal).',
   candRefLine: 'Anda mencari: {name}',
@@ -1690,11 +1690,11 @@ async function findNearestNaver(){
     })).filter(c=>isFinite(c.lat) && isFinite(c.lng))
       .map(c=>({...c, distanceM: (isFinite(lat) && isFinite(lng)) ? distanceMeters(lat,lng,c.lat,c.lng) : NaN}))
       .sort((a,b)=> (isFinite(a.distanceM) && isFinite(b.distanceM)) ? a.distanceM-b.distanceM : 0);
-    // FIX fix79: 使用者定「店名候選名單只提供 30 公尺內、數量控制 10 個內」——只套座標模式（/nearby）：
+    // FIX fix79: 使用者定「店名候選名單只提供 30 公尺內、數量控制 10 個內；fix89 使用者改定「地標搜尋改為 5 家即可」→ 上限改 5」——只套座標模式（/nearby）：
     // 店名模式是查特定店家，套 30 公尺會誤濾遠處目標。地址候選是該點門牌、不受限；店名取最近 10 家。
     if(!byName){
       const addrC = naverCandidates.filter(x => x.kind !== 'place');
-      const placeC = naverCandidates.filter(x => x.kind === 'place' && isFinite(x.distanceM) && x.distanceM <= 30).slice(0, 10);
+      const placeC = naverCandidates.filter(x => x.kind === 'place' && isFinite(x.distanceM) && x.distanceM <= 30).slice(0, 5);
       naverCandidates = addrC.concat(placeC);
     }
     if(!naverCandidates.length){ setStatus(byName ? T('stNoCandName',{name}) : T('stNoCandAddr'),false); return; }

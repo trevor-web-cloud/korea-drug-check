@@ -499,15 +499,15 @@ rows.push(row('X10', '互通：Kakao 分享（濟州 Parkside 實例）→補座
   check(c, 'google opens', E('googleOpen').href.includes('33.4924'), E('googleOpen').href.slice(0, 80));
   check(c, 'naver opens', E('naverOpen').href.includes('lat=33.4924'), E('naverOpen').href.slice(0, 90));
 }));
-rows.push(row('K18', '店名候選規則：30 公尺內＋最多 10 家（fix79）', async (c) => {
+rows.push(row('K18', '店名候選規則：30 公尺內＋最多 5 家（fix79/89）', async (c) => {
   await pasteAndParse('32XJ+C9 釜山 南韓');
   E('findBtn').dispatch('click'); await flush();
   check(c, 'far place filtered (>30m)', !candAllText().includes('먼곳식당'), candAllText().slice(0, 80));
-  check(c, 'rule note in head', E('candidateHead').textContent.includes('30 公尺內、最多 10 家'), E('candidateHead').textContent.slice(0, 80));
+  check(c, 'rule note in head', E('candidateHead').textContent.includes('30 公尺內、最多 5 家'), E('candidateHead').textContent.slice(0, 80));
   check(c, 'near places kept (addr+2)', candRows().length === 3, String(candRows().length));
   await clearAll();
   await pasteAndParse('37.5666103, 126.9783882');
   E('findBtn').dispatch('click'); await flush();
-  check(c, 'capped at 10 places + address', candRows().length === 11, String(candRows().length));
-  check(c, '10th present, 11th/12th absent', candAllText().includes('시청가게10') && !candAllText().includes('시청가게11') && !candAllText().includes('시청가게12'), candAllText().slice(-60));
+  check(c, 'capped at 5 places + address', candRows().length === 6, String(candRows().length));
+  check(c, '5th present, 6th absent', candAllText().includes('시청가게05') && !candAllText().includes('시청가게06') && !candAllText().includes('시청가게10'), candAllText().slice(-60));
 }));
