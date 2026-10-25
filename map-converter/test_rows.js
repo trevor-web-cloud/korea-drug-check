@@ -580,3 +580,12 @@ rows.push(row('K25', '清單開著時找地標鈕退為小「重新搜尋」＋�
   E('clearBtn').dispatch('click'); await flush();
   check(c, 'primary restored after clear', E('findBtn').textContent.includes('找地標並確認'), E('findBtn').textContent);
 }));
+
+rows.push(row('K26', 'Google 分享中文名＋羅馬拼音地址→機翻韓文自動搜到店（fix98，海東龍宮寺實例）', async (c) => {
+  await pasteAndParse('https://maps.google.com/?q=%E6%B5%B7%E6%9D%B1%E9%BE%8D%E5%AE%AE%E5%AF%BA86+Yonggung-gil%2C+Gijang-gun%2C+Busan%2C+%E5%8D%97%E9%9F%93&ftid=0x35688c1bbbdea6c1:0xa141406d6f112e5c');
+  await flush();
+  const rows = candRows();
+  check(c, 'auto candidates via MT', E('candidateBox').hidden === false && rows.some(x => x.textContent.includes('해동용궁사')), rows.map(x => x.textContent.slice(0, 16)).join('|'));
+  const localCall = FETCH_LOG.find(u => u.includes('/local') && decodeURIComponent(u).includes('해동용궁사'));
+  check(c, 'query is translated Korean name', !!localCall, localCall || 'no /local call with Korean name');
+}));

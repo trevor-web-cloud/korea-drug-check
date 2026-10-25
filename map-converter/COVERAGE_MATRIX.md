@@ -162,3 +162,9 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 - 結論：按鈕保留（失敗重試＋手動改名/座標後重搜），但清單已開時退為低調小按鈕「🔄 重新搜尋」＋等候提示隱藏；未搜尋/清除後回大顆「找地標並確認」。setFindBtnMode 單一入口（render 成功→retry；hideCandidateBoxes/clear→primary；applyLang 後重套型態；updateLinks 的提示顯隱尊重 retry 模式）。
 - 教訓：`//` 註解不可插進單行函數鏈中段（clearBtn 一度被註解吞掉右括號、整頁 SyntaxError，矩陣即時抓到）；L7 中段改走「未解析先手打名」路徑——解析後打名會被 fix92 在同一次 updateLinks 直接觸發搜尋，無「未搜尋」中間態。
 - 新增 K25、L7 改版。本地 79/79 PASS。
+
+### fix98（2026-10-25）— 中文名分享機翻韓文搜尋（使用者實例 goo.gl/iCPRoNYK48GGh7316 海東龍宮寺）
+- 實例：Google 分享依分享者語系給名——中文名＋羅馬拼音地址（海東龍宮寺86 Yonggung-gil…）＋ftid、無座標無韓文 → 舊版 canFind 不成立、第 3 步無入口（使用者問「未啟動是正常的嗎」：是舊設計的已知死路、非故障）。
+- 修法（純頁面）：無座標＋中文名 → 取第一段非英數前綴（店名本體）→ gtx zh-CN→ko 機翻 → Kakao /local 查。有座標＋中文名維持 fix47 /nearby 地址備援不搶路（K3）。mtZhToKo 對 AbortSignal.timeout 做 feature-check（舊 Safari 相容）。
+- 實測：海東龍宮寺→해동용궁사 機翻正確；/local 第一筆即本廟（place 8606230、용궁길 86）。新增 K26。本地 80/80 PASS。
+- 風險界定：翻譯只當搜尋關鍵字、不定座標；座標來自使用者點選的 Kakao 查證候選（原名對照行＋地址＋距離可核對）；翻錯多半 0 結果回到失敗提示。漢字正式名可靠，中文自創暱稱需多看一眼地址。
