@@ -264,7 +264,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-26-fix102</p>
+  <p class="note" style="text-align:center">v2026-10-26-fix103</p>
 </div>
 
 <script>
@@ -1831,7 +1831,9 @@ async function findNearestNaver(){
       if(ko && /[\uAC00-\uD7A3]/.test(ko)) query = ko;
     }
     // FIX fix102: 座標模式只有 kr（Kakao）與 tt（TomTom 優勢區）有查證來源；jp/other 直接給誠實訊息，不再打 Kakao 拿「只支援韓國」回覆。
-    if(!useLocal && isFinite(lat) && region !== 'kr' && region !== 'tt'){ setStatus(T('stNoSource'),false); return; }
+    // FIX fix103: 先 await 一個 microtask 再寫狀態——自動搜尋由 updateLinks 在 updateFromLatLng 寫解析狀態「之前」同步觸發，
+    // 同步寫入會被解析狀態覆蓋（矩陣 W3 在慢速環境下抓到：狀態停在「已解析」）；其他結果路徑都經過 fetch await、天然在解析狀態之後落地，本路徑比照辦理。
+    if(!useLocal && isFinite(lat) && region !== 'kr' && region !== 'tt'){ await Promise.resolve(); setStatus(T('stNoSource'),false); return; }
     const res = await fetch(useLocal ? LOCAL_WORKER+'?q='+encodeURIComponent(query)+'&display=5' : (region === 'tt' ? TT_NEARBY_WORKER : NEARBY_WORKER)+'?lat='+lat+'&lng='+lng, {signal: ctrl.signal});
     clearTimeout(timer);
     let data = await res.json();

@@ -196,3 +196,9 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 - 連帶修正（皆經等價性檢查）：候選 30m 分層門檻由 `!byName` 改以 candidateSource 判定、名稱模式截 5 筆改以 source='name' 判定（TomTom 名稱候選 kind 為正式 place，舊門檻會以 distanceM=NaN 全濾）；成功訊息改以 candidateSource 選句（順帶修正 fix98 成功時誤顯示「已用座標查到韓國地址」的舊措辭）；Naver 確認店名頁（fix50）加韓文門檻——非韓文標題退座標連結（fix48 同課，W4 守門）。
 - 新列 W1（TW 座標→/tt-nearby、Kakao 不被打、地址列第一、確認升級）、W2（中文名 Kakao 空→TomTom 備援命中台北車站並確認）、W3（JP 座標→無來源訊息且零 API 呼叫）、W4（柏林→TomTom＋確認後 Naver 走座標連結）、W5（韓國中文名 Kakao 命中不觸發備援）。本地 88/88 PASS（原 83 列全數未改斷言續過）。
 
+## 2026-10-26 頁面 fix103（fix102 線上矩陣抓到的狀態覆蓋競態，隨 fix102 同日修正）
+- 現象：線上矩陣（對 live HTML 跑）W3 失敗——東京座標貼上後狀態停在「已解析 緯度，經度。」，stNoSource 沒顯示；本地首跑 88/88、其後慢速環境重跑穩定重現（87/88），屬時序競態非邏輯錯。
+- 根因：自動搜尋由 updateLinks 觸發，而 updateLinks 是 updateFromLatLng 在寫解析狀態「之前」呼叫的；fetch 路徑的結果狀態都經過 await、天然在解析狀態之後落地，唯獨 fix102 的無來源 gate 是同步寫入，當場被隨後的解析狀態覆蓋。按鈕手動觸發則無此問題（無解析狀態跟隨）。
+- 修法（純頁面一行）：gate 寫入前先 `await Promise.resolve()`，與其他結果路徑同一個落地順序。慢速環境本地連跑兩次 88/88 穩定通過。
+
+
