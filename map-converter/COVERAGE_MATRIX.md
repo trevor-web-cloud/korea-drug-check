@@ -157,3 +157,8 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 - 實例：Google App 分享展開為 maps.google.com?q=Brosis Hotel, 구덕로48번길 4, 남포, 부산…&ftid=（無座標）——整串原樣送 Kakao 關鍵字必 0 結果（使用者回報「搜尋失敗 未自動啟動」）。
 - 修法（純頁面）：findNearestNaver 送查前，逗號複合字串抽韓文道路地址段落（한글＋로/길/대로＋數字）當查詢詞。實測線上 /local?q=구덕로48번길 4 第一筆即 브로시스호텔（Kakao 圖釘座標）。新增 K24（候選自動出現＋FETCH_LOG 驗查詢詞為路段）。本地 78/78 PASS。
 - 同場加驗：短碼「32XJ+C9 釜山 南韓」jsdom 重演正常（還原中心 35.0985625,129.0309375＋自動啟動）——使用者端未啟動研判為手機快取舊版。
+
+### fix97（2026-10-25）— 找地標按鈕型態隨狀態切換（使用者問「都自動啟動還需要按鈕嗎」）
+- 結論：按鈕保留（失敗重試＋手動改名/座標後重搜），但清單已開時退為低調小按鈕「🔄 重新搜尋」＋等候提示隱藏；未搜尋/清除後回大顆「找地標並確認」。setFindBtnMode 單一入口（render 成功→retry；hideCandidateBoxes/clear→primary；applyLang 後重套型態；updateLinks 的提示顯隱尊重 retry 模式）。
+- 教訓：`//` 註解不可插進單行函數鏈中段（clearBtn 一度被註解吞掉右括號、整頁 SyntaxError，矩陣即時抓到）；L7 中段改走「未解析先手打名」路徑——解析後打名會被 fix92 在同一次 updateLinks 直接觸發搜尋，無「未搜尋」中間態。
+- 新增 K25、L7 改版。本地 79/79 PASS。

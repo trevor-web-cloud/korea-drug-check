@@ -519,13 +519,16 @@ rows.push(row('K19', '店名模式上限 5 家（fix90）', async (c) => {
   check(c, 'first kept, 6th absent', candAllText().includes('많은가게01') && !candAllText().includes('많은가게06'), candAllText().slice(0, 60));
 }));
 
-rows.push(row('L7', '第 3 步等待說明（fix91/92）：原始碼三語字串＋跟找地標按鈕同顯隱', async (c) => {
+rows.push(row('L7', '第 3 步等待說明（fix91/92/97）：三語字串＋未搜尋時顯示、清單開著時隱藏', async (c) => {
   check(c, 'source has note zh', PAGE_HTML.includes('地標搜尋約需 2–5 秒'), 'missing');
   check(c, 'source has note en', PAGE_HTML.includes('The landmark search takes about 2–5 seconds'), 'missing');
-  await pasteAndParse('8Q7F32XJ+C9');
-  check(c, 'note visible with findBtn', E('findWaitNote').style.display !== 'none', String(E('findWaitNote').style.display));
+  await pasteAndParse('https://naver.me/52R5JVa5'); await flush();
+  check(c, 'note hidden without findBtn', E('findWaitNote').style.display === 'none', String(E('findWaitNote').style.display));
   await clearAll();
-  check(c, 'note hidden after clear', E('findWaitNote').style.display === 'none', String(E('findWaitNote').style.display));
+  E('name').value = '롯데호텔 김해'; E('name').dispatch('input'); await flush();
+  check(c, 'note visible with findBtn (pre-search)', E('findWaitNote').style.display !== 'none', String(E('findWaitNote').style.display));
+  E('findBtn').dispatch('click'); await flush();
+  check(c, 'note hidden after results (retry mode)', E('findWaitNote').style.display === 'none', String(E('findWaitNote').style.display));
 }));
 
 rows.push(row('K20', '解析完成自動啟動第 3 步搜尋（fix92）；有 pinId 不觸發', async (c) => {
@@ -567,4 +570,13 @@ rows.push(row('K24', 'Google App 分享 ?q=英文名＋韓文地址→抽地址�
   check(c, 'auto candidates', E('candidateBox').hidden === false && rows.some(x => x.textContent.includes('브로시스호텔')), rows.map(x => x.textContent.slice(0, 16)).join('|'));
   const localCall = FETCH_LOG.find(u => u.includes('/local') && decodeURIComponent(u).includes('구덕로48번길'));
   check(c, 'query is road segment', !!localCall && decodeURIComponent(localCall).includes('q=구덕로48번길 4'), localCall || 'no road-segment /local call');
+}));
+
+rows.push(row('K25', '清單開著時找地標鈕退為小「重新搜尋」＋等候提示隱藏（fix97）', async (c) => {
+  await pasteAndParse('35.098606, 129.0309021'); await flush();
+  check(c, 'retry label', E('findBtn').textContent.includes('重新搜尋'), E('findBtn').textContent);
+  check(c, 'retry style', E('findBtn').style.background === '#eef1f4', E('findBtn').style.background);
+  check(c, 'note hidden with results', E('findWaitNote').style.display === 'none', E('findWaitNote').style.display);
+  E('clearBtn').dispatch('click'); await flush();
+  check(c, 'primary restored after clear', E('findBtn').textContent.includes('找地標並確認'), E('findBtn').textContent);
 }));

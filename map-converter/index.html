@@ -236,7 +236,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-25-fix96</p>
+  <p class="note" style="text-align:center">v2026-10-25-fix97</p>
 </div>
 
 <script>
@@ -268,7 +268,8 @@ let autoFindArmed = false; let autoFindKey = ''; // fix92: 解析完成自動啟
 let inputWasYahoo = false;
 let nameAutoTimer = null; // fix93: 名稱輸入自動搜尋的防抖計時器 // fix92: Yahoo 輸入旗標——自動搜尋換狀態時把偏差提醒補回（fix68 的提醒不可被蓋掉） // {title,address,lat,lng,distanceM} 已確認的 Naver 候選座標
 let candidateSource = 'name';
-let candWidened = false; // fix95: 30m 內無店家時放寬到 100m 的旗標（清單頭要註明） // fix47: 'name'（韓文店名查詢）或 'address'（無店名→座標反查地址）
+let candWidened = false;
+let findBtnMode = 'primary'; // fix97: 'primary' 大按鈕（尚未搜尋/失敗重試）｜'retry' 小按鈕（清單已開，只供重搜） // fix95: 30m 內無店家時放寬到 100m 的旗標（清單頭要註明） // fix47: 'name'（韓文店名查詢）或 'address'（無店名→座標反查地址）
 const LOCAL_WORKER = 'https://map-resolve.tsai0215.workers.dev/local';
 const NEARBY_WORKER = 'https://map-resolve.tsai0215.workers.dev/nearby';
 // FIX fix13: 不以店名/地名為主 — 座標/ID 優先，但必須是「這間店的」座標才優先。
@@ -303,7 +304,7 @@ zh: {
   nameLabel: '地點名稱（不用填也可以）', namePh: '例如：飯店或景點名稱',
   step3Title: '第 3 步：確認地標', landmarkHead: '✅ 確認地標', landmarkBadge: 'Naver・Kakao 共用',
   landmarkNote: '座標只是大概位置（例如 Plus Code）時，在這裡找一次、確認一次就好。確認後，Naver、Kakao、Google、Yahoo 都會改用這個查證過的地標。',
-  findBtn: '🔍 找地標並確認', findWaitNote: '⏳ 地標搜尋約需 2–5 秒，請稍等，不要重複點按。', candClose: '關閉', candListHead: '找到 {n} 個候選，點一個就是確認——所有地圖按鈕會改用你點的那個地點：', candSecAddr: '📍 地址', candSecPlaces: '🏠 店名', candCat: '分類：{cat}',
+  findBtn: '🔍 找地標並確認', findBtnRetry: '🔄 重新搜尋', findWaitNote: '⏳ 地標搜尋約需 2–5 秒，請稍等，不要重複點按。', candClose: '關閉', candListHead: '找到 {n} 個候選，點一個就是確認——所有地圖按鈕會改用你點的那個地點：', candSecAddr: '📍 地址', candSecPlaces: '🏠 店名', candCat: '分類：{cat}',
   step4Title: '第 4 步：點一個地圖打開',
   advGoogle: '進階：查看或更改經緯度（一般不用點）', advNaver: '進階：查看或更改座標（一般不用點）',
   latPh: '緯度', lngPh: '經度', latAria: 'Google 緯度', lngAria: 'Google 經度', mxPh: 'X', myPh: 'Y', mxAria: 'Naver X 座標', myAria: 'Naver Y 座標',
@@ -434,7 +435,7 @@ en: {
   nameLabel: 'Place name (optional)', namePh: 'e.g. a hotel or attraction name',
   step3Title: 'Step 3: Confirm the landmark', landmarkHead: '✅ Confirm landmark', landmarkBadge: 'Shared by Naver · Kakao',
   landmarkNote: 'When the coordinates are only approximate (e.g. from a Plus Code), find and confirm the place here once. After that, Naver, Kakao, Google and Yahoo will all use the verified landmark.',
-  findBtn: '🔍 Find & confirm landmark', findWaitNote: '⏳ The landmark search takes about 2–5 seconds. Please wait — do not tap again.', candClose: 'Close', candListHead: 'Found {n} candidates — tap one to confirm it; all map buttons will use the place you tap:', candSecAddr: '📍 Address', candSecPlaces: '🏠 Places', candCat: 'Category: {cat}',
+  findBtn: '🔍 Find & confirm landmark', findBtnRetry: '🔄 Search again', findWaitNote: '⏳ The landmark search takes about 2–5 seconds. Please wait — do not tap again.', candClose: 'Close', candListHead: 'Found {n} candidates — tap one to confirm it; all map buttons will use the place you tap:', candSecAddr: '📍 Address', candSecPlaces: '🏠 Places', candCat: 'Category: {cat}',
   step4Title: 'Step 4: Tap a map to open it',
   advGoogle: 'Advanced: view or edit latitude/longitude (usually not needed)', advNaver: 'Advanced: view or edit X/Y (usually not needed)',
   latPh: 'Latitude', lngPh: 'Longitude', latAria: 'Google latitude', lngAria: 'Google longitude', mxPh: 'X', myPh: 'Y', mxAria: 'Naver X coordinate', myAria: 'Naver Y coordinate',
@@ -565,7 +566,7 @@ id: {
   nameLabel: 'Nama tempat (boleh kosong)', namePh: 'mis. nama hotel atau tempat wisata',
   step3Title: 'Langkah 3: Konfirmasi landmark', landmarkHead: '✅ Konfirmasi landmark', landmarkBadge: 'Dipakai bersama Naver · Kakao',
   landmarkNote: 'Jika koordinat hanya perkiraan (mis. dari Plus Code), cari dan konfirmasi tempatnya di sini satu kali. Setelah itu, Naver, Kakao, Google, dan Yahoo semuanya memakai landmark terverifikasi ini.',
-  findBtn: '🔍 Cari & konfirmasi landmark', findWaitNote: '⏳ Pencarian landmark memerlukan sekitar 2–5 detik. Mohon tunggu — jangan mengetuk lagi.', candClose: 'Tutup', candListHead: 'Ditemukan {n} kandidat — ketuk satu untuk mengonfirmasi; semua tombol peta akan memakai tempat yang Anda ketuk:', candSecAddr: '📍 Alamat', candSecPlaces: '🏠 Nama tempat', candCat: 'Kategori: {cat}',
+  findBtn: '🔍 Cari & konfirmasi landmark', findBtnRetry: '🔄 Cari lagi', findWaitNote: '⏳ Pencarian landmark memerlukan sekitar 2–5 detik. Mohon tunggu — jangan mengetuk lagi.', candClose: 'Tutup', candListHead: 'Ditemukan {n} kandidat — ketuk satu untuk mengonfirmasi; semua tombol peta akan memakai tempat yang Anda ketuk:', candSecAddr: '📍 Alamat', candSecPlaces: '🏠 Nama tempat', candCat: 'Kategori: {cat}',
   step4Title: 'Langkah 4: Ketuk peta untuk membuka',
   advGoogle: 'Lanjutan: lihat atau ubah lintang/bujur (biasanya tidak perlu)', advNaver: 'Lanjutan: lihat atau ubah X/Y (biasanya tidak perlu)',
   latPh: 'Lintang', lngPh: 'Bujur', latAria: 'Lintang Google', lngAria: 'Bujur Google', mxPh: 'X', myPh: 'Y', mxAria: 'Koordinat X Naver', myAria: 'Koordinat Y Naver',
@@ -736,6 +737,7 @@ function applyLang(l) {
   if (document.documentElement) document.documentElement.lang = (LANG === 'en') ? 'en' : (LANG === 'id') ? 'id' : 'zh-Hant';
   document.title = T('docTitle');
   document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = T(el.getAttribute('data-i18n')); });
+  setFindBtnMode(findBtnMode); // fix97: 語系切換後按鈕型態（大/小）要維持
   document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = T(el.getAttribute('data-i18n-html')); });
   document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.setAttribute('placeholder', T(el.getAttribute('data-i18n-ph'))); });
   document.querySelectorAll('[data-i18n-aria]').forEach(el => { el.setAttribute('aria-label', T(el.getAttribute('data-i18n-aria'))); });
@@ -891,7 +893,7 @@ function updateLinks(){
     // 且與 Google 連結（有 ftid 照樣自動搜尋）不一致。改：只要有主座標且尚未確認地標，就能找地標（pinId 只滿足 Naver 面板，Kakao 查證對四家都有益）。
     const canFind = !naverOverride && ((hasCoords && coordsPrimary) || (!hasCoords && /[\uAC00-\uD7A3]/.test(name)));
     els.findBtn.style.display = canFind ? '' : 'none';
-    { const wn = $('findWaitNote'); if(wn) wn.style.display = canFind ? '' : 'none'; }
+    { const wn = $('findWaitNote'); if(wn) wn.style.display = (canFind && findBtnMode !== 'retry') ? '' : 'none'; }
     // FIX fix92: 使用者定「第一步完成就自動啟動第三步」——解析完成（autoFindArmed）且可找地標時自動搜尋一次；
     // 以輸入內容為鍵防重複（同一輸入只自動搜尋一次）；手動打字/切語系不武裝、不觸發；失敗後按鈕保留供重試。
     if (autoFindArmed && canFind) {
@@ -1570,7 +1572,21 @@ function translateBoth(title){
   return Promise.all([safe(gtxP), safe(mmP)]).then(([g, m]) => { const v = { gtx: g, mm: m }; translateCache[title] = v; return v; });
 }
 // FIX fix59: 確認地標獨立成一區（fix58 曾在 Naver/Kakao 兩面板各放一份，使用者改定：獨立一區共用、只找一次）。
-function hideCandidateBoxes(){ if(els.candidateBox) els.candidateBox.hidden = true; }
+
+// FIX fix97（使用者問「如果都是自動啟動 還需要按鈕嗎」）：按鈕保留給重試與手動改名後重搜，但清單已開時退為低調小按鈕，避免跟結果打架。
+function setFindBtnMode(m){
+  findBtnMode = m;
+  const b = els.findBtn; if(!b) return;
+  if(m === 'retry'){
+    b.textContent = T('findBtnRetry');
+    b.style.background = '#eef1f4'; b.style.color = '#33475b'; b.style.border = '1.5px solid #b9c6d2'; b.style.fontSize = '16px'; b.style.minHeight = '44px';
+    const wn = $('findWaitNote'); if(wn) wn.style.display = 'none';
+  } else {
+    b.textContent = T('findBtn');
+    b.style.background = ''; b.style.color = ''; b.style.border = ''; b.style.fontSize = ''; b.style.minHeight = '';
+  }
+}
+function hideCandidateBoxes(){ if(els.candidateBox) els.candidateBox.hidden = true; setFindBtnMode('primary'); }
 // FIX fix77: 候選改「清單列表」（使用者定：1.地址 2.店名 3.分類）——一次全列出、點一列即確認，
 // 不再用「不是，換一家」逐家翻。地址固定第一區、店名第二區；店名（座標模式）依 Kakao 分類分組、組內照距離。
 const CAT_GLOSS = {
@@ -1640,6 +1656,7 @@ function renderCandidateList(){
   head += T('candListHead',{n:naverCandidates.length});
   if(candidateSource === 'address') head += '\n' + T('candNearbyRule') + (candWidened ? '\n' + T('candWidened') : '');
   els.candidateHead.textContent = head;
+  setFindBtnMode('retry'); // fix97: 清單已開 → 按鈕退為小「重新搜尋」
   const addr = naverCandidates.find(x => x.kind !== 'place') || null;
   let places = naverCandidates.filter(x => x.kind === 'place');
   if(candidateSource !== 'name') places = groupPlacesByCategory(places);
@@ -1755,7 +1772,7 @@ async function findNearestNaver(){
   }
 }
 if(els.findBtn) els.findBtn.addEventListener('click', findNearestNaver);
-$('clearBtn').addEventListener('click',()=>{ els.paste.value=''; els.name.value=''; els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value=''; currentPinId=''; currentGoogleId=''; currentKakaoId=''; naverOverride=null; naverCandidates=[]; if(els.candidateBox) els.candidateBox.hidden=true; coordsValidForName=false; hasReadyResult=false; readySpec=null; document.querySelectorAll('details.advanced').forEach(d=>{ d.open=false; }); updateLinks(); setStatus('',true); els.paste.focus(); });
+$('clearBtn').addEventListener('click',()=>{ els.paste.value=''; els.name.value=''; els.lat.value=''; els.lng.value=''; els.mx.value=''; els.my.value=''; currentPinId=''; currentGoogleId=''; currentKakaoId=''; naverOverride=null; naverCandidates=[]; if(els.candidateBox) els.candidateBox.hidden=true; setFindBtnMode('primary'); coordsValidForName=false; hasReadyResult=false; readySpec=null; document.querySelectorAll('details.advanced').forEach(d=>{ d.open=false; }); updateLinks(); setStatus('',true); els.paste.focus(); });
 
 $('pasteBtn').addEventListener('click', async ()=>{
   try{
