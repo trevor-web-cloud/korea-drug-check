@@ -184,3 +184,7 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 - Uber 移入單一「叫車」區塊（黑底 panel-head.ride），同區含 Kakao T 與 k.ride。查證結論：兩家皆無公開目的地預填格式——k.ride 僅認領 `kride.kakaomobility.com/link*`（AASA/assetlinks 實證）但參數未公開、裸 /link 回 API 404；Kakao T 僅 Android 認領 `t.kakao.com`（assetlinks 實證 com.kakao.taxi），iOS 無 AASA、無參數文件。故採：按鈕開啟 App＋點擊時複製目的地文字（確認地標韓文名＋道路地址＞名稱中最長韓文段）。
 - 開啟方式：Kakao T iOS→App Store id981110422（已安裝顯示「開啟」）；Kakao T Android→intent（t.kakao.com＋package＋Play 備援）；k.ride iOS→/link universal link；k.ride Android→intent（package com.kakaomobility.kride＋Play 備援）。href 為靜態 markup（JS 不改寫）；測試替身不種靜態 href，U2 對此二項改以 PAGE_HTML 靜態斷言，其餘（目的地文字確認前後、Uber 流程、清除）皆動態斷言。
 - 新列 U2。本地 83/83、線上（頁尾 fix101、md5 一致）83/83。Worker 不變（fix90）：本版與 fix100 皆純頁面。
+
+## 2026-10-25 Worker fix91（請求彙總計數，使用者核准「每個請求寫一筆」精確加權）
+- 緣起：當晚測試馬拉松觸發 Cloudflare KV 每日操作量 50% 警示（20:40 寄達）。計數改制：bumpBg 呼叫點與時機不變，改請求內累加，結束時每桶寫 1 支 batch 鍵（e:<tz>:<date>:batch:<rand>，值為 JSON 精確增量）；/nearby 一趟 KV 寫入 12→3。readDay 同一次 list 辨認 batch 鍵 GET 加總，舊事件鍵/s: 底值/f: 定版全相容；總和與舊制逐項相同（非估算）。
+- 本地假 KV 驗證全過（3 請求=9 支 batch 鍵、新舊混合加總正確、定版不動、/stats 不寫入）。使用者部署後線上驗收：基準 kst 83/254 → 打 /local＋/nearby 各一 → 75 秒後 85/265，增量 +2/+1/+1/+1/+8/+0/+11 分毫不差，新舊格式無縫接續。退回 fix90 的注意：舊版讀不到 batch 鍵（功能無礙、報表不可見該段期間）。
