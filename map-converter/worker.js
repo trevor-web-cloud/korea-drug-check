@@ -1,4 +1,4 @@
-// Cloudflare Worker — map-resolve（fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查 + fix49 附近地點 + fix52 機翻 + fix55 附近地點距離排序 + fix61 短連結 GET 重試 + fix63 Kakao ID 撈座標 + fix69 用量計數）
+// Cloudflare Worker — map-resolve（fix91 請求彙總計數 + fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查 + fix49 附近地點 + fix52 機翻 + fix55 附近地點距離排序 + fix61 短連結 GET 重試 + fix63 Kakao ID 撈座標 + fix69 用量計數）
 // 部署：貼到 Cloudflare Dashboard → Workers → map-resolve → Edit code 全文取代；
 //       另需在 Settings → Variables and Secrets 新增一個 Secret：
 //       KAKAO_REST_KEY（Kakao Local API 的 REST API 金鑰；金鑰只放 Worker Secret，不進前端）
@@ -30,23 +30,26 @@ export default {
     // fix71: 計數改「事件鍵」制——fix70 的 get-modify-put 在連續呼叫下被實測到少計
     // （KV 最終一致性＋讀改寫競態；utc worker_requests 3 次只記到 1）。事件鍵每次寫獨立鍵、
     // 次數編在鍵名（e:<tz>:<date>:<metric>:<n>:<rand>），讀取時 list 加總，無競態；100 天 TTL 自動清理。
-    async function bump(metric, n) {
+    // fix91（使用者核准「每個請求寫一筆」精確加權制）：計數改為請求內累加、請求結束彙總寫入。
+    // 原 fix71 事件鍵制每個 bump 寫 3 支鍵（三桶各一），/nearby 一趟 4 個 bump = 12 次 KV 寫入；
+    // 2026-10-25 測試馬拉松日因此觸發 KV 每日寫入上限 50% 警示。改制後 bumpBg 只在記憶體累加（呼叫點不變、
+    // 時機與原本完全一致，含 /nearby 失敗路徑不計 category 的既有行為），flush 時每桶只寫 1 支
+    // batch 鍵（e:<tz>:<date>:batch:<rand>，值為 JSON 精確增量），每請求固定 3 次寫入。
+    // 精確性：總和與事件鍵制逐項相同（加總權重 = 數鍵），非抽樣、非估算；定版 f: 凍結邏輯不受影響。
+    // 相容性：新版 readDay 在同一次 list 內辨認 batch 鍵並 GET 加總，舊事件鍵照常計入；
+    // 若退回 fix90，其 readDay 以 metrics.includes 過濾、會跳過 batch 鍵（fix91 期間的計數在舊版報表不可見）。
+    const batch = {};
+    const bumpBg = (metric, n) => { batch[metric] = (batch[metric] || 0) + (n || 1); };
+    async function flushBatch() {
       if (!env || !env.STATS) return;
-      const cnt = n || 1;
-      for (const [tz, off] of TZ_DAYS) {
-        try {
-          const ek = 'e:' + tz + ':' + dayIn(off) + ':' + metric + ':' + cnt + ':' +
-            Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-          await env.STATS.put(ek, '1', { expirationTtl: 86400 * 100 });
-        } catch (e) {}
-      }
+      if (!Object.keys(batch).length) return;
+      const v = JSON.stringify(batch);
+      const rand = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      await Promise.all(TZ_DAYS.map(async ([tz, off]) => {
+        try { await env.STATS.put('e:' + tz + ':' + dayIn(off) + ':batch:' + rand, v, { expirationTtl: 86400 * 100 }); } catch (e) {}
+      }));
     }
-    // fix88: 計數改背景執行（ctx.waitUntil）不擋回應——原本每個 bump 串行等 3 次 KV 寫入（約 0.1–0.25 秒），
-    // /nearby 一趟含全域計數共 4 個 bump，光計數就吃掉近 1 秒。第 3 步實機回報「點擊後需等待幾秒」的修復之一。
-    const bumpBg = (metric, n) => {
-      const p = bump(metric, n);
-      if (ctx && ctx.waitUntil) ctx.waitUntil(p);
-    };
+    const main = async () => {
     // fix69b/c: 連接頁驗證主機時會打根路徑（可能不帶金鑰）；根路徑無條件回 200 服務資訊
     // （轉換器只用 /resolve /local /nearby /place /stats，根路徑原本只是落入 /resolve 回 400，無人依賴）。
     if (u.pathname === '/') {
@@ -81,14 +84,25 @@ export default {
         }
         try {
           let cursor;
+          const batchKeys = [];
           do {
             const page = await env.STATS.list({ prefix: 'e:' + tz + ':' + d + ':', cursor });
             for (const k of page.keys) {
               const parts = k.name.split(':');
+              if (parts.length >= 5 && parts[3] === 'batch') { batchKeys.push(k.name); continue; }
               if (parts.length >= 6 && metrics.includes(parts[3])) o[parts[3]] += parseInt(parts[4], 10) || 0;
             }
             cursor = page.list_complete ? null : page.cursor;
           } while (cursor);
+          // fix91: batch 鍵的值為該請求的精確增量 JSON，逐鍵 GET 加總（與事件鍵加總結果等價）。
+          await Promise.all(batchKeys.map(async (name) => {
+            try {
+              const bv = await env.STATS.get(name);
+              if (!bv) return;
+              const bj = JSON.parse(bv);
+              for (const m of metrics) if (bj[m]) o[m] += bj[m];
+            } catch (e) {}
+          }));
         } catch (e) {}
         o.kakao_total = o.kakao_keyword + o.kakao_coord2address + o.kakao_address + o.kakao_category;
         if (isPast) {
@@ -327,5 +341,10 @@ export default {
     } catch (e) {
       return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: cors });
     }
+    };
+    const resp = await main();
+    // fix91: 請求結束彙總寫入，背景執行不擋回應（fix88 原則不變）；batch 為空（/、/stats、OPTIONS）不寫。
+    if (ctx && ctx.waitUntil) ctx.waitUntil(flushBatch()); else flushBatch();
+    return resp;
   },
 };
