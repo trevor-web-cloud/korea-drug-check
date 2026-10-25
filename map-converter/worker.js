@@ -12,7 +12,7 @@
 //        再以 address 搜尋取該地址的官方座標，回傳單一候選（title=道路地址）
 //   GET /translate?text={韓文} → {"en":"..."}（fix52：Google 免費翻譯端點轉發，韓→英，只供辨認參考）
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const cors = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
@@ -41,6 +41,12 @@ export default {
         } catch (e) {}
       }
     }
+    // fix88: 計數改背景執行（ctx.waitUntil）不擋回應——原本每個 bump 串行等 3 次 KV 寫入（約 0.1–0.25 秒），
+    // /nearby 一趟含全域計數共 4 個 bump，光計數就吃掉近 1 秒。第 3 步實機回報「點擊後需等待幾秒」的修復之一。
+    const bumpBg = (metric, n) => {
+      const p = bump(metric, n);
+      if (ctx && ctx.waitUntil) ctx.waitUntil(p);
+    };
     // fix69b/c: 連接頁驗證主機時會打根路徑（可能不帶金鑰）；根路徑無條件回 200 服務資訊
     // （轉換器只用 /resolve /local /nearby /place /stats，根路徑原本只是落入 /resolve 回 400，無人依賴）。
     if (u.pathname === '/') {
@@ -109,13 +115,13 @@ export default {
       const out = { date, tz, ...(await readDay(date)) };
       return new Response(JSON.stringify(out), { headers: cors });
     }
-    await bump('worker_requests');
+    bumpBg('worker_requests');
 
     // fix63: 用 Kakao 地點 ID 撈官方 place 頁的公開資料（og:title 店名 + OG 靜態地圖網址裡的 WGS84 座標），
     // 讓「只有 Kakao ID」的分享連結也能補出座標 → Google/Naver 一起開啟（Kakao Local API 本身沒有用 ID 查座標的端點）。
     async function scrapeKakaoPlace(id) {
       try {
-        await bump('place_fetch');
+        bumpBg('place_fetch');
         const r = await fetch('https://place.map.kakao.com/' + id, { headers: { 'User-Agent': 'Mozilla/5.0' } });
         if (!r.ok) return null;
         const html = await r.text();
@@ -141,7 +147,7 @@ export default {
         return new Response(JSON.stringify({ error: 'not_configured' }), { status: 503, headers: cors });
       }
       try {
-        await bump('kakao_keyword');
+        bumpBg('kakao_keyword');
         const kRes = await fetch('https://dapi.kakao.com/v2/local/search/keyword.json?size=15&page=1&query=' + encodeURIComponent(q), {
           headers: { 'Authorization': 'KakaoAK ' + env.KAKAO_REST_KEY },
         });
@@ -178,7 +184,32 @@ export default {
       }
       const h = { 'Authorization': 'KakaoAK ' + env.KAKAO_REST_KEY };
       try {
-        await bump('kakao_coord2address');
+        // fix88: 類別搜尋只需要經緯度，改在進 handler 第一時間就起跑，與下面的地址鏈平行（fix49 的類別補候選邏輯不變，
+        // 只是起跑點提前——原本排在地址搜尋之後，整整多等一輪 Kakao 往返）。
+        // fix49: 只有地址一個候選時「換一家」沒得換 — 再用 Kakao 類別搜尋補上附近的實際地點
+        // （餐廳/咖啡廳/住宿/景點/超市/便利店/地鐵站/停車場，半徑 300m），讓使用者能挑到對的地標。
+        const CATS = ['FD6', 'CE7', 'AD5', 'AT4', 'MT1', 'CS2', 'SW8', 'PK6'];
+        const catPromise = Promise.all(CATS.map(async (code) => {
+          try {
+            const r = await fetch('https://dapi.kakao.com/v2/local/search/category.json?category_group_code=' + code + '&x=' + lng + '&y=' + lat + '&radius=300&sort=distance&size=5', { headers: h });
+            if (!r.ok) return [];
+            const d = await r.json();
+            return (d.documents || []).map(p => ({
+              title: p.place_name || '',
+              link: p.place_url || '',
+              category: p.category_name || '',
+              description: '',
+              telephone: p.phone || '',
+              address: p.address_name || '',
+              roadAddress: p.road_address_name || '',
+              kind: 'place',
+              _d: parseFloat(p.distance),
+              mapx: String(Math.round(parseFloat(p.x) * 1e7)),
+              mapy: String(Math.round(parseFloat(p.y) * 1e7)),
+            }));
+          } catch (e) { return []; }
+        }));
+        bumpBg('kakao_coord2address');
         const aRes = await fetch('https://dapi.kakao.com/v2/local/geo/coord2address.json?x=' + lng + '&y=' + lat, { headers: h });
         if (!aRes.ok) {
           return new Response(JSON.stringify({ error: 'kakao_api_status_' + aRes.status }), { status: 502, headers: cors });
@@ -189,7 +220,7 @@ export default {
         const jibun = doc && doc.address ? (doc.address.address_name || '') : '';
         const query = road || jibun;
         if (!query) return new Response(JSON.stringify({ error: 'no_address' }), { headers: cors });
-        await bump('kakao_address');
+        bumpBg('kakao_address');
         const sRes = await fetch('https://dapi.kakao.com/v2/local/search/address.json?query=' + encodeURIComponent(query), { headers: h });
         if (!sRes.ok) {
           return new Response(JSON.stringify({ error: 'kakao_api_status_' + sRes.status }), { status: 502, headers: cors });
@@ -211,31 +242,9 @@ export default {
           mapx: String(Math.round(parseFloat(sd.x) * 1e7)),
           mapy: String(Math.round(parseFloat(sd.y) * 1e7)),
         };
-        // fix49: 只有地址一個候選時「換一家」沒得換 — 再用 Kakao 類別搜尋補上附近的實際地點
-        // （餐廳/咖啡廳/住宿/景點/超市/便利店/地鐵站/停車場，半徑 300m），讓使用者能挑到對的地標。
-        const CATS = ['FD6', 'CE7', 'AD5', 'AT4', 'MT1', 'CS2', 'SW8', 'PK6'];
-        const catLists = await Promise.all(CATS.map(async (code) => {
-          try {
-            const r = await fetch('https://dapi.kakao.com/v2/local/search/category.json?category_group_code=' + code + '&x=' + lng + '&y=' + lat + '&radius=300&sort=distance&size=5', { headers: h });
-            if (!r.ok) return [];
-            const d = await r.json();
-            return (d.documents || []).map(p => ({
-              title: p.place_name || '',
-              link: p.place_url || '',
-              category: p.category_name || '',
-              description: '',
-              telephone: p.phone || '',
-              address: p.address_name || '',
-              roadAddress: p.road_address_name || '',
-              kind: 'place',
-              _d: parseFloat(p.distance),
-              mapx: String(Math.round(parseFloat(p.x) * 1e7)),
-              mapy: String(Math.round(parseFloat(p.y) * 1e7)),
-            }));
-          } catch (e) { return []; }
-        }));
+        const catLists = await catPromise;
         // fix69d: 類別呼叫計數改為平行完成後一次彙總計入（逐次在平行迴圈內 get-modify-put 會互相覆蓋少計）
-        await bump('kakao_category', CATS.length);
+        bumpBg('kakao_category', CATS.length);
         const seen = new Set([item.title + '|' + item.mapx + '|' + item.mapy]);
         const places = [];
         for (const list of catLists) for (const p of list) {
