@@ -266,7 +266,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-26-fix105</p>
+  <p class="note" style="text-align:center">v2026-10-26-fix106</p>
 </div>
 
 <script>
@@ -1818,7 +1818,7 @@ async function findNearestNaver(){
   const cjkName = !byName && /[\u4E00-\u9FFF]/.test(name);
   const enName = !byName && !cjkName && /[A-Za-z]/.test(name); // fix99: 純英文名（英文介面分享）備援
   const region = (isFinite(lat) && isFinite(lng)) ? regionOf(lat, lng) : ''; // fix102: 座標分流（kr/tt/jp/other）
-  const ttQuery = (((name.split(',')[0] || '').match(/^[^0-9A-Za-z]+/) || [''])[0] || '').trim() || (name.split(',')[0] || '').trim(); // fix102: TomTom 備援查詢詞＝原始名稱第一段（去數字/英文前綴）
+  const ttQuery = (name.split(',')[0] || '').trim(); // fix106: TomTom 備援查詢詞＝原始名稱第一段完整字串（fix102 原以 /^[^0-9A-Za-z]+/ 去數字截斷，會把地址的門牌號與行政區切掉——「大連街49號 平鎮區 桃園市」只剩「大連街」→查到高雄同名街；實測完整字串送 TomTom 模糊搜尋排序正確、精確命中）
   // FIX fix96（使用者實例 maps.app.goo.gl/rcjYcLtRMDYfDdRVA）：Google App 分享展開為 ?q=Brosis Hotel, 구덕로48번길 4, 남포, 부산…&ftid=
   // ——整串是「英文名＋韓文地址」的郵遞式字串，原樣送 Kakao 關鍵字必 0 結果（回報：搜尋失敗、未自動啟動）。
   // 送查前若為逗號複合字串，抽出韓文道路地址段落（한글＋로/길/대로＋數字）當查詢詞——實測 /local?q=구덕로48번길 4 第一筆即該店。

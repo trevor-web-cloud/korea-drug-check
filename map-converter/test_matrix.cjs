@@ -93,7 +93,12 @@ global.fetch = async (url) => {
     body = { provider: 'tomtom', total: 0, items: [] };
   } else if (u.includes('/tt-search')) {
     const q = decodeURIComponent((u.match(/[?&]q=([^&]*)/) || [])[1] || '');
-    if (q.includes('台北車站')) body = { provider: 'tomtom', total: 1, items: [
+    if (q.includes('大連街') && q.includes('平鎮')) body = { provider: 'tomtom', total: 2, items: [
+      { title: '49, 大連街, 平鎮區, 桃園市 324618', address: '49, 大連街, 平鎮區, 桃園市 324618', roadAddress: '', kind: 'address', mapx: '1212069230', mapy: '249146390', link: '', category: '', telephone: '' },
+      { title: '大連街12巷, 平鎮區, 桃園市 324018', address: '大連街12巷, 平鎮區, 桃園市 324018', roadAddress: '', kind: 'address', mapx: '1212079310', mapy: '249125530', link: '', category: '', telephone: '' }] };
+    else if (q.includes('大連街')) body = { provider: 'tomtom', total: 1, items: [
+      { title: '大連街, 三民區, 高雄市', address: '大連街, 三民區, 高雄市 807022', roadAddress: '', kind: 'address', mapx: '1203047650', mapy: '226414080', link: '', category: '', telephone: '' }] };
+    else if (q.includes('台北車站')) body = { provider: 'tomtom', total: 1, items: [
       { title: '台北車站', address: '100009台北市中正區北平西路3號', roadAddress: '', kind: 'place', mapx: '1215170290', mapy: '250472450', link: '', category: 'Rail Station', telephone: '' }] };
     else body = { provider: 'tomtom', total: 0, items: [] };
   } else if (u.includes('/nearby') && u.includes('37.5666103')) {

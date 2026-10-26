@@ -697,3 +697,15 @@ rows.push(row('W7', 'TomTom 地區→Google 查 Plus Code 輔助鈕也顯示（f
   candYes(); await flush();
   check(c, 'hidden after confirm', E('plusHelpBtn').style.display === 'none', String(E('plusHelpBtn').style.display));
 }));
+
+rows.push(row('W8', '貼上純地址（中文）→TomTom 備援須送完整地址字串（fix106，大連街49號平鎮）', async (c) => {
+  const log0 = FETCH_LOG.length;
+  await pasteAndParse('大連街49號 平鎮區 桃園市'); await flush();
+  const log = FETCH_LOG.slice(log0);
+  const tt = log.find(u => u.includes('/tt-search'));
+  check(c, 'tt-search fired with FULL address', !!tt && decodeURIComponent(tt).includes('大連街49號') && decodeURIComponent(tt).includes('平鎮區'), tt ? decodeURIComponent(tt).slice(0, 90) : 'no tt call');
+  const rowEl = candRows().find(x => x.textContent.includes('平鎮區'));
+  check(c, 'pingzhen candidate listed', !!rowEl, candAllText().slice(0, 80));
+  if(rowEl) rowEl.dispatch('click'); await flush();
+  check(c, 'confirmed coords = pingzhen address', near(latV(), 24.914639, 1e-6) && near(lngV(), 121.206923, 1e-6), E('lat').value + ',' + E('lng').value);
+}));
