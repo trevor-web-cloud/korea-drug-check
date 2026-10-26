@@ -1,10 +1,11 @@
-// Cloudflare Worker — map-resolve（fix94 三組 TomTom 金鑰接力備援 + fix92 TomTom 國際地標查證 + fix91 請求彙總計數 + fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查 + fix49 附近地點 + fix52 機翻 + fix55 附近地點距離排序 + fix61 短連結 GET 重試 + fix63 Kakao ID 撈座標 + fix69 用量計數）
+// Cloudflare Worker — map-resolve（fix95 四組 TomTom 金鑰接力備援 + fix92 TomTom 國際地標查證 + fix91 請求彙總計數 + fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查 + fix49 附近地點 + fix52 機翻 + fix55 附近地點距離排序 + fix61 短連結 GET 重試 + fix63 Kakao ID 撈座標 + fix69 用量計數）
 // 部署：貼到 Cloudflare Dashboard → Workers → map-resolve → Edit code 全文取代；
 //       另需在 Settings → Variables and Secrets 新增一個 Secret：
 //       KAKAO_REST_KEY（Kakao Local API 的 REST API 金鑰；金鑰只放 Worker Secret，不進前端）
 //       TOMTOM_API_KEY（fix92：TomTom Search API 金鑰；同樣只放 Worker Secret，不進前端）
 //       TOMTOM_API_KEY_2（fix93：第二組 TomTom 金鑰，選填；主金鑰被拒 429/403 時自動切換備援）
 //       TOMTOM_API_KEY_3（fix94：第三組 TomTom 金鑰，選填；前兩組都被拒時自動接力）
+//       TOMTOM_API_KEY_4（fix95：第四組 TomTom 金鑰，選填；前三組都被拒時自動接力）
 //       fix69 用量報表另需：Settings → Bindings 新增 KV Namespace 綁定，變數名 STATS；
 //       並新增一個 Secret：STATS_KEY（自訂一串密碼，讀 /stats 報表時用）。
 // 端點：
@@ -311,13 +312,14 @@ export default {
         mapy: String(Math.round(pos.lat * 1e7)),
       };
     }
-    // fix94: 三金鑰接力備援（使用者三組 TomTom 帳號各一組 key）——TOMTOM_API_KEY 為主、_2 為第二順位、_3 為第三順位。
+    // fix95: 四金鑰接力備援（使用者四組 TomTom 帳號各一組 key）——TOMTOM_API_KEY 為主、_2／_3／_4 依序接力。
     // 前一順位被拒（429 額度用盡／403）或連線失敗才換下一順位重試同一個請求；400 等請求本身的錯誤不重試（換 key 結果相同）。
     function ttKeys() {
       const ks = [];
       if (env && env.TOMTOM_API_KEY) ks.push(env.TOMTOM_API_KEY);
       if (env && env.TOMTOM_API_KEY_2) ks.push(env.TOMTOM_API_KEY_2);
       if (env && env.TOMTOM_API_KEY_3) ks.push(env.TOMTOM_API_KEY_3);
+      if (env && env.TOMTOM_API_KEY_4) ks.push(env.TOMTOM_API_KEY_4);
       return ks;
     }
     async function ttJson(urlForKey) {

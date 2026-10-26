@@ -220,6 +220,11 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 - 待使用者：Cloudflare 新增 Secret TOMTOM_API_KEY_3（eolab 組）＋部署本版 Worker；部署後做線上 /tt-* 冒煙測試。
 - 線上驗收（2026-10-26 使用者部署後）：/tt-search 台北車站 5 筆座標精確、/tt-nearby 平鎮地址候選＋11 筆正常、Kakao /local 回歸正常；計數基線 search 12/reverse 8/total 20/worker 17 → 測試後 14/9/23/20，增量 +2/+1/+3/+3 與呼叫組合逐項吻合。三組接力正式上線（線上無法在不作廢金鑰下強制觸發接力，接力邏輯以本地 9/9 為憑）。
 
+## 2026-10-26 Worker fix95（四組 TomTom 金鑰接力，使用者申請第四組帳號 2014.take.kt@gmail.com 後核准接入）
+- 第四組帳號：2014.take.kt@gmail.com，key「Search API Key」遮罩 GlTv…5EAm（ID 1d71073e-…，類別同前三組）。改法：ttKeys() 加第四順位 TOMTOM_API_KEY_4，其餘接力語意不變。
+- 本地假 fetch 驗證 11/11：fix93 原 6 案＋fix94 3 案回歸全過＋新 2 案（K1–K3 連續 429→K4 接手且順序正確、只設 K4 可用）。頁面不需改版。合計上限：Search 10,000/月、Reverse 80,000/月；每日用量報表對照基準已同步改為 10,000／80,000。
+- 待使用者：Cloudflare 新增 Secret TOMTOM_API_KEY_4（2014 組）＋部署本版 Worker；部署後做線上 /tt-* 冒煙測試。
+
 ## 2026-10-26 頁面 fix105（Google 查碼鈕擴及 TomTom 地區，使用者 iPhone 實測瑞麟美而美後核准）
 - 緣起：使用者以 Google 上查到的 Plus Code（W674+GG）實測瑞麟美而美平鎮上海路店，地址候選正確（169號、6m）但店家不在 TomTom 候選——查證為 TomTom 未收錄該分店（名稱搜尋只回其他分店、300m 周邊鄰居皆在唯獨它缺席），屬台灣 POI 長尾缺口。
 - 改法：plusHelpBtn 顯示條件由 jp/other 擴及 tt（有座標、座標為主、尚未確認）；韓國維持不顯示。新增矩陣 W7（平鎮 Plus Code→鈕顯示＋href 帶座標、候選清單仍開、確認後鈕隱藏）。
