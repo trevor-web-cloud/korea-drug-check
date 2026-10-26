@@ -1,4 +1,4 @@
-// Cloudflare Worker — map-resolve（fix95 四組 TomTom 金鑰接力備援 + fix92 TomTom 國際地標查證 + fix91 請求彙總計數 + fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查 + fix49 附近地點 + fix52 機翻 + fix55 附近地點距離排序 + fix61 短連結 GET 重試 + fix63 Kakao ID 撈座標 + fix69 用量計數）
+// Cloudflare Worker — map-resolve（fix96 五組 TomTom 金鑰接力備援 + fix92 TomTom 國際地標查證 + fix91 請求彙總計數 + fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查 + fix49 附近地點 + fix52 機翻 + fix55 附近地點距離排序 + fix61 短連結 GET 重試 + fix63 Kakao ID 撈座標 + fix69 用量計數）
 // 部署：貼到 Cloudflare Dashboard → Workers → map-resolve → Edit code 全文取代；
 //       另需在 Settings → Variables and Secrets 新增一個 Secret：
 //       KAKAO_REST_KEY（Kakao Local API 的 REST API 金鑰；金鑰只放 Worker Secret，不進前端）
@@ -6,6 +6,7 @@
 //       TOMTOM_API_KEY_2（fix93：第二組 TomTom 金鑰，選填；主金鑰被拒 429/403 時自動切換備援）
 //       TOMTOM_API_KEY_3（fix94：第三組 TomTom 金鑰，選填；前兩組都被拒時自動接力）
 //       TOMTOM_API_KEY_4（fix95：第四組 TomTom 金鑰，選填；前三組都被拒時自動接力）
+//       TOMTOM_API_KEY_5（fix96：第五組 TomTom 金鑰，選填；前四組都被拒時自動接力）
 //       fix69 用量報表另需：Settings → Bindings 新增 KV Namespace 綁定，變數名 STATS；
 //       並新增一個 Secret：STATS_KEY（自訂一串密碼，讀 /stats 報表時用）。
 // 端點：
@@ -19,6 +20,9 @@
 //   GET /tt-nearby?lat={緯度}&lng={經度} → fix92 TomTom 座標查證：逆編碼地址候選＋周邊地點
 //        （回傳形狀與 /nearby 相同）
 //   GET /translate?text={韓文} → {"en":"..."}（fix52：Google 免費翻譯端點轉發，韓→英，只供辨認參考）
+// fix96 黏性起點：模組層級記住上一筆成功的 TomTom 金鑰順位（執行個體記憶、盡力而為；
+// 實例重啟即歸 0、無副作用）。某組額度用罄後，下一筆直接從可用順位開始，不再每筆重付失敗往返。
+let TT_LAST_GOOD = 0;
 export default {
   async fetch(request, env, ctx) {
     const cors = {
@@ -312,7 +316,7 @@ export default {
         mapy: String(Math.round(pos.lat * 1e7)),
       };
     }
-    // fix95: 四金鑰接力備援（使用者四組 TomTom 帳號各一組 key）——TOMTOM_API_KEY 為主、_2／_3／_4 依序接力。
+    // fix96: 五金鑰接力備援（使用者五組 TomTom 帳號各一組 key）——TOMTOM_API_KEY 為主、_2／_3／_4／_5 依序接力。
     // 前一順位被拒（429 額度用盡／403）或連線失敗才換下一順位重試同一個請求；400 等請求本身的錯誤不重試（換 key 結果相同）。
     function ttKeys() {
       const ks = [];
@@ -320,13 +324,18 @@ export default {
       if (env && env.TOMTOM_API_KEY_2) ks.push(env.TOMTOM_API_KEY_2);
       if (env && env.TOMTOM_API_KEY_3) ks.push(env.TOMTOM_API_KEY_3);
       if (env && env.TOMTOM_API_KEY_4) ks.push(env.TOMTOM_API_KEY_4);
+      if (env && env.TOMTOM_API_KEY_5) ks.push(env.TOMTOM_API_KEY_5);
       return ks;
     }
     async function ttJson(urlForKey) {
-      for (const k of ttKeys()) {
+      const ks = ttKeys();
+      if (!ks.length) return null;
+      const start = TT_LAST_GOOD < ks.length ? TT_LAST_GOOD : 0;
+      for (let n = 0; n < ks.length; n++) {
+        const i = (start + n) % ks.length;
         let r = null;
-        try { r = await fetch(urlForKey(encodeURIComponent(k)), { headers: { 'User-Agent': 'map-resolve-worker' } }); } catch (e) { r = null; }
-        if (r && r.ok) return r.json().catch(() => null);
+        try { r = await fetch(urlForKey(encodeURIComponent(ks[i])), { headers: { 'User-Agent': 'map-resolve-worker' } }); } catch (e) { r = null; }
+        if (r && r.ok) { TT_LAST_GOOD = i; return r.json().catch(() => null); }
         if (r && r.status !== 429 && r.status !== 403) return null;
       }
       return null;

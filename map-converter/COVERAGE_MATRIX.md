@@ -232,3 +232,7 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 
 
 
+## 2026-10-26 Worker fix96（五組 TomTom 金鑰接力＋黏性起點最佳化，使用者申請第五組帳號 iuywcnh2014@gmail.com 後核准接入、並核准「把黏性起點併入 fix96」）
+- 第五組帳號：iuywcnh2014@gmail.com，key「Search API Key」遮罩 k9Fg…faW0（ID 9c9903c4-…，類別同前四組）。改法：ttKeys() 加第五順位 TOMTOM_API_KEY_5；ttJson() 改為黏性起點——模組層級 TT_LAST_GOOD 記住上一筆成功的金鑰順位，下一筆直接從該順位開始、依序繞回全表；成功更新順位，429/403/連線失敗才換下一順位，400 等請求錯誤立即回 null 且不動黏性（語意與 fix93–95 相同）。黏性為執行個體記憶、盡力而為（實例重啟歸 0、無副作用）。緣起：使用者問「備援 KEY 語法是否已最佳化」——原無狀態接力在主金鑰月額度用罄後，每筆查詢都要先付一輪失敗往返（/tt-nearby 兩線各一次）直到月底；黏性起點後只有第一筆付、後續直達可用金鑰。
+- 本地假 fetch 驗證 16/16：fix93–95 原 11 案回歸全過（五組接力順序、只設任一組可用、400 不接力、未設定 503、Kakao /local 回歸）＋新 5 案（五組接力 /tt-nearby、只設 K5、黏性起點直達、黏性繞回全表、400 後黏性不重置）。驗證中一度 case3 順序不符（K1,K2,K1,K2）：查明為假 fetch 同步丟出例外的假象（真實 fetch 的網路錯誤為非同步拒絕），將 stub 改為 async 後順序與真實語意一致、全過——非 Worker 缺陷，未放寬斷言。頁面不需改版。合計上限：Search 12,500/月、Reverse 100,000/月；每日用量報表對照基準同步改為 12,500／100,000。
+- 待使用者：Cloudflare 新增 Secret TOMTOM_API_KEY_4（2014 組）與 TOMTOM_API_KEY_5（iuywcnh 組）兩個＋部署本版 Worker（fix95 未部署者直接部署 fix96 即可，毋需先部署 fix95）；部署後做線上 /tt-* 冒煙測試。
