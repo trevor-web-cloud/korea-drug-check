@@ -18,7 +18,7 @@ function makeEl(id) {
 }
 const registry = new Map();
 const detailsAdv = [makeEl('d1'), makeEl('d2')];
-const exBtns = ['pluscode', 'google', 'naver', 'kakao', 'yahoo', 'address'].map(k => { const e = makeEl('ex-' + k); e.dataset = { ex: k }; return e; });
+const exBtns = ['pluscode', 'shortcode', 'google', 'naver', 'kakao', 'yahoo', 'address'].map(k => { const e = makeEl('ex-' + k); e.dataset = { ex: k }; return e; });
 global.document = {
   getElementById(id) { if (!registry.has(id)) registry.set(id, makeEl(id)); return registry.get(id); },
   querySelectorAll(sel) { if (sel === 'details.advanced') return detailsAdv; if (sel === '.ex-btn') return exBtns; return []; },

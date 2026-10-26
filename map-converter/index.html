@@ -108,13 +108,14 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     <p class="note" data-i18n="step1Note">可以把 Google、Naver、Kakao 或 Yahoo 的整段分享文字貼上來，不用自己挑出連結。</p>
     <details class="mini-help">
       <summary data-i18n="helpSummary">不知道可以貼什麼？點這裡看</summary>
-      <p class="note" data-i18n="helpNote1">地圖分享連結、短連結、經緯度，或 Plus Code 都可以。Plus Code 如果只有短碼，請在後面加上城市名，例如「5RJG+F6 金海市」。</p>
-      <p class="note" data-i18n-html="helpNote2">各家可以貼的連結長這樣（以仁川機場第 1 航站樓為例，<b>點一下範例就會自動帶入並轉換</b>）：</p>
+      <p class="note" data-i18n="helpNote1">地圖分享連結、短連結、經緯度，或 Plus Code 都可以。Plus Code 有兩種寫法（以台北101為例）：完整碼「7QQ32HM7+CR」自己就能定位、最準確；短碼「2HM7+CR」要加上城市名，像「2HM7+CR 台北市」。沒有 Plus Code 時，直接貼地址也可以。</p>
+      <p class="note" data-i18n-html="helpNote2">各家可以貼的連結長這樣（<b>點一下範例就會自動帶入並轉換</b>）：</p>
       <button type="button" class="ex-btn" data-ex="pluscode" data-i18n="exPlus">Plus Code（首選）：7QQ32HM7+CR（台北101）</button>
-      <button type="button" class="ex-btn" data-ex="google" data-i18n="exGoogle">Google：google.com/maps/place/…@37.4496,126.4524</button>
-      <button type="button" class="ex-btn" data-ex="naver" data-i18n="exNaver">Naver：naver.me 短網址，或 map.naver.com/?lat=…&amp;lng=…</button>
-      <button type="button" class="ex-btn" data-ex="kakao" data-i18n="exKakao">Kakao：kko.to 短網址，或 map.kakao.com/link/map/…</button>
-      <button type="button" class="ex-btn" data-ex="yahoo" data-i18n="exYahoo">Yahoo：map.yahoo.co.jp/place/?lat=…&amp;lon=…</button>
+      <button type="button" class="ex-btn" data-ex="shortcode" data-i18n="exShort">Plus Code 短碼：2HM7+CR 台北市（台北101）</button>
+      <button type="button" class="ex-btn" data-ex="google" data-i18n="exGoogle">Google：google.com/maps/place/…@37.4496,126.4524（仁川機場第1航站樓）</button>
+      <button type="button" class="ex-btn" data-ex="naver" data-i18n="exNaver">Naver：naver.me 短網址，或 map.naver.com/?lat=…&amp;lng=…（仁川機場第1航站樓）</button>
+      <button type="button" class="ex-btn" data-ex="kakao" data-i18n="exKakao">Kakao：kko.to 短網址，或 map.kakao.com/link/map/…（仁川機場第1航站樓）</button>
+      <button type="button" class="ex-btn" data-ex="yahoo" data-i18n="exYahoo">Yahoo：map.yahoo.co.jp/place/?lat=…&amp;lon=…（東京 Big Sight）</button>
       <button type="button" class="ex-btn" data-ex="address" data-i18n="exAddress">地址：台北市信義區信義路五段7號（台北101）</button>
       <p class="note" data-i18n="helpNote3">實際收到的分享多半是短網址（naver.me、kko.to、maps.app.goo.gl）加一段文字，整段貼上即可，不用自己挑出連結。</p>
     </details>
@@ -268,7 +269,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-26-fix107</p>
+  <p class="note" style="text-align:center">v2026-10-26-fix108</p>
 </div>
 
 <script>
@@ -337,13 +338,14 @@ zh: {
   pastePh: '在這裡貼上連結', pasteAria: '貼上地圖連結',
   step1Note: '可以把 Google、Naver、Kakao 或 Yahoo 的整段分享文字貼上來，不用自己挑出連結。',
   helpSummary: '不知道可以貼什麼？點這裡看',
-  helpNote1: '地圖分享連結、短連結、經緯度，或 Plus Code 都可以。Plus Code 如果只有短碼，請在後面加上城市名，例如「5RJG+F6 金海市」。',
-  helpNote2: '各家可以貼的連結長這樣（以仁川機場第 1 航站樓為例，<b>點一下範例就會自動帶入並轉換</b>）：',
-  exGoogle: 'Google：google.com/maps/place/…@37.4496,126.4524',
-  exNaver: 'Naver：naver.me 短網址，或 map.naver.com/?lat=…&lng=…',
-  exKakao: 'Kakao：kko.to 短網址，或 map.kakao.com/link/map/…',
-  exYahoo: 'Yahoo：map.yahoo.co.jp/place/?lat=…&lon=…',
+  helpNote1: '地圖分享連結、短連結、經緯度，或 Plus Code 都可以。Plus Code 有兩種寫法（以台北101為例）：完整碼「7QQ32HM7+CR」自己就能定位、最準確；短碼「2HM7+CR」要加上城市名，像「2HM7+CR 台北市」。沒有 Plus Code 時，直接貼地址也可以。',
+  helpNote2: '各家可以貼的連結長這樣（<b>點一下範例就會自動帶入並轉換</b>）：',
+  exGoogle: 'Google：google.com/maps/place/…@37.4496,126.4524（仁川機場第1航站樓）',
+  exNaver: 'Naver：naver.me 短網址，或 map.naver.com/?lat=…&lng=…（仁川機場第1航站樓）',
+  exKakao: 'Kakao：kko.to 短網址，或 map.kakao.com/link/map/…（仁川機場第1航站樓）',
+  exYahoo: 'Yahoo：map.yahoo.co.jp/place/?lat=…&lon=…（東京 Big Sight）',
   exPlus: 'Plus Code（首選）：7QQ32HM7+CR（台北101）',
+  exShort: 'Plus Code 短碼：2HM7+CR 台北市（台北101）',
   exAddress: '地址：台北市信義區信義路五段7號（台北101）',
   helpNote3: '實際收到的分享多半是短網址（naver.me、kko.to、maps.app.goo.gl）加一段文字，整段貼上即可，不用自己挑出連結。',
   step2Title: '第 2 步：按大按鈕',
@@ -477,13 +479,14 @@ en: {
   pastePh: 'Paste the link here', pasteAria: 'Paste a map link',
   step1Note: 'You can paste the whole share text from Google, Naver, Kakao or Yahoo — no need to pick out the link yourself.',
   helpSummary: 'Not sure what to paste? Tap here',
-  helpNote1: 'A map share link, a short link, latitude/longitude, or a Plus Code all work. For a short Plus Code, add the city name after it, e.g. “5RJG+F6 Gimhae”.',
-  helpNote2: 'Links you can paste look like this (using Incheon Airport Terminal 1 as an example — <b>tap an example to fill it in and convert</b>):',
-  exGoogle: 'Google: google.com/maps/place/…@37.4496,126.4524',
-  exNaver: 'Naver: a naver.me short link, or map.naver.com/?lat=…&lng=…',
-  exKakao: 'Kakao: a kko.to short link, or map.kakao.com/link/map/…',
-  exYahoo: 'Yahoo: map.yahoo.co.jp/place/?lat=…&lon=…',
+  helpNote1: 'A map share link, a short link, latitude/longitude, or a Plus Code all work. Plus Codes come in two forms (Taipei 101 as an example): a full code like “7QQ32HM7+CR” locates the place by itself and is the most accurate; a short code like “2HM7+CR” needs the city name added, e.g. “2HM7+CR Taipei”. If you don’t have a Plus Code, pasting the plain address works too.',
+  helpNote2: 'Links you can paste look like this (<b>tap an example to fill it in and convert</b>):',
+  exGoogle: 'Google: google.com/maps/place/…@37.4496,126.4524 (Incheon Airport Terminal 1)',
+  exNaver: 'Naver: a naver.me short link, or map.naver.com/?lat=…&lng=… (Incheon Airport Terminal 1)',
+  exKakao: 'Kakao: a kko.to short link, or map.kakao.com/link/map/… (Incheon Airport Terminal 1)',
+  exYahoo: 'Yahoo: map.yahoo.co.jp/place/?lat=…&lon=… (Tokyo Big Sight)',
   exPlus: 'Plus Code (best choice): 7QQ32HM7+CR (Taipei 101)',
+  exShort: 'Plus Code (short): 2HM7+CR Taipei (Taipei 101)',
   exAddress: 'Address: No. 7, Sec. 5, Xinyi Rd., Xinyi Dist., Taipei (Taipei 101)',
   helpNote3: 'Shares you receive are usually a short link (naver.me, kko.to, maps.app.goo.gl) plus some text — just paste the whole thing.',
   step2Title: 'Step 2: Press the big button',
@@ -617,13 +620,14 @@ id: {
   pastePh: 'Tempel tautan di sini', pasteAria: 'Tempel tautan peta',
   step1Note: 'Anda bisa menempel seluruh teks bagikan dari Google, Naver, Kakao, atau Yahoo — tidak perlu memilih tautannya sendiri.',
   helpSummary: 'Tidak tahu harus menempel apa? Ketuk di sini',
-  helpNote1: 'Tautan bagikan peta, tautan pendek, garis lintang/bujur, atau Plus Code semuanya bisa. Untuk Plus Code pendek, tambahkan nama kota setelahnya, misalnya “5RJG+F6 Gimhae”.',
-  helpNote2: 'Tautan yang bisa ditempel tampak seperti ini (contoh: Terminal 1 Bandara Incheon — <b>ketuk contoh untuk mengisi dan mengonversi otomatis</b>):',
-  exGoogle: 'Google: google.com/maps/place/…@37.4496,126.4524',
-  exNaver: 'Naver: tautan pendek naver.me, atau map.naver.com/?lat=…&lng=…',
-  exKakao: 'Kakao: tautan pendek kko.to, atau map.kakao.com/link/map/…',
-  exYahoo: 'Yahoo: map.yahoo.co.jp/place/?lat=…&lon=…',
+  helpNote1: 'Tautan bagikan peta, tautan pendek, garis lintang/bujur, atau Plus Code semuanya bisa. Plus Code ada dua bentuk (contoh: Taipei 101): kode lengkap seperti “7QQ32HM7+CR” dapat menemukan lokasi dengan sendirinya dan paling akurat; kode pendek seperti “2HM7+CR” perlu ditambah nama kota, misalnya “2HM7+CR Taipei”. Jika tidak ada Plus Code, tempel alamat biasa juga bisa.',
+  helpNote2: 'Tautan yang bisa ditempel tampak seperti ini (<b>ketuk contoh untuk mengisi dan mengonversi otomatis</b>):',
+  exGoogle: 'Google: google.com/maps/place/…@37.4496,126.4524 (Terminal 1 Bandara Incheon)',
+  exNaver: 'Naver: tautan pendek naver.me, atau map.naver.com/?lat=…&lng=… (Terminal 1 Bandara Incheon)',
+  exKakao: 'Kakao: tautan pendek kko.to, atau map.kakao.com/link/map/… (Terminal 1 Bandara Incheon)',
+  exYahoo: 'Yahoo: map.yahoo.co.jp/place/?lat=…&lon=… (Tokyo Big Sight)',
   exPlus: 'Plus Code (pilihan utama): 7QQ32HM7+CR (Taipei 101)',
+  exShort: 'Plus Code (pendek): 2HM7+CR Taipei (Taipei 101)',
   exAddress: 'Alamat: No. 7, Sec. 5, Xinyi Rd., Xinyi Dist., Taipei (Taipei 101)',
   helpNote3: 'Bagikan yang Anda terima biasanya berupa tautan pendek (naver.me, kko.to, maps.app.goo.gl) plus teks — tempel saja semuanya.',
   step2Title: 'Langkah 2: Tekan tombol besar',
@@ -1961,11 +1965,12 @@ $('parseBtn').addEventListener('click',parseInput);
 // FIX fix65: 第 1 步範例連結（仁川機場第 1 航站樓；座標為 Kakao 官方值，格式皆為各家已驗證可解析的原生格式）。點按即帶入並轉換。
 const EXAMPLES = {
   pluscode: '7QQ32HM7+CR',
+  shortcode: '2HM7+CR 台北市',
   address: '台北市信義區信義路五段7號',
   google: 'https://www.google.com/maps/place/%EC%9D%B8%EC%B2%9C%EA%B5%AD%EC%A0%9C%EA%B3%B5%ED%95%AD/@37.4496919,126.4524038,17z',
   naver: 'https://map.naver.com/?lat=37.4496919&lng=126.4524038&title=%EC%9D%B8%EC%B2%9C%EA%B5%AD%EC%A0%9C%EA%B3%B5%ED%95%AD',
   kakao: 'https://map.kakao.com/link/map/%EC%9D%B8%EC%B2%9C%EA%B5%AD%EC%A0%9C%EA%B3%B5%ED%95%AD%20%EC%A0%9C1%EC%97%AC%EA%B0%9D%ED%84%B0%EB%AF%B8%EB%84%90,37.4496919,126.4524038',
-  yahoo: 'https://map.yahoo.co.jp/place/?lat=37.4496919&lon=126.4524038&z=17'
+  yahoo: 'https://map.yahoo.co.jp/place/?lat=35.62972&lon=139.79417&z=17'
 };
 document.querySelectorAll('.ex-btn').forEach(b=>b.addEventListener('click',()=>{ els.paste.value = EXAMPLES[b.dataset.ex] || ''; parseInput(); }));
 $('exampleBtn').addEventListener('click',()=>{ els.name.value='남포역'; updateFromLatLng(35.097883,129.034663,T('stExample')); });

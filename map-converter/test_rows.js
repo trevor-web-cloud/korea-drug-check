@@ -344,8 +344,8 @@ rows.push(row('X8', '互通：naver.me 只有 ID（實例形狀）→Naver 可�
   check(c, 'guidance shown', E('parseStatus').textContent.includes('韓文原名'), E('parseStatus').textContent.slice(0, 80));
   check(c, 'find hidden without name', E('findBtn').style.display === 'none', E('findBtn').style.display);
 }));
-rows.push(row('E1', '第 1 步範例連結（fix65）：四家範例點按→帶入解析→四面板可開', async (c) => {
-  for(const sys of ['google','naver','kakao','yahoo']){
+rows.push(row('E1', '第 1 步範例連結（fix65＋fix108）：Google/Naver/Kakao＝仁川機場第1航站樓、Yahoo＝東京 Big Sight', async (c) => {
+  for(const sys of ['google','naver','kakao']){
     await clearAll();
     [...document.querySelectorAll('.ex-btn')].find(b => b.dataset.ex === sys).dispatch('click'); await flush();
     check(c, sys + ' coords full precision', E('lat').value === '37.4496919' && E('lng').value === '126.4524038', sys + ' lat=' + E('lat').value + ' lng=' + E('lng').value);
@@ -354,6 +354,13 @@ rows.push(row('E1', '第 1 步範例連結（fix65）：四家範例點按→帶
     check(c, sys + ' kakao opens', E('kakaoOpen').href.includes('37.4496919'), E('kakaoOpen').href.slice(0, 80));
     check(c, sys + ' yahoo opens', E('yahooOpen').href.includes('37.4496919'), E('yahooOpen').href.slice(0, 80));
   }
+  await clearAll();
+  [...document.querySelectorAll('.ex-btn')].find(b => b.dataset.ex === 'yahoo').dispatch('click'); await flush();
+  check(c, 'yahoo coords = tokyo big sight', E('lat').value === '35.62972' && E('lng').value === '139.79417', 'lat=' + E('lat').value + ' lng=' + E('lng').value);
+  check(c, 'yahoo google opens', E('googleOpen').href.includes('35.62972'), E('googleOpen').href.slice(0, 70));
+  check(c, 'yahoo naver opens', E('naverOpen').href.includes('35.62972'), E('naverOpen').href.slice(0, 80));
+  check(c, 'yahoo kakao opens', E('kakaoOpen').href.includes('35.62972'), E('kakaoOpen').href.slice(0, 80));
+  check(c, 'yahoo yahoo opens', E('yahooOpen').href.includes('35.62972'), E('yahooOpen').href.slice(0, 80));
 }));
 rows.push(row('X9', '實機回報：Naver 完整形分享（座標＋pinId）→Kakao 須帶經緯度（fix66）', async (c) => {
   await pasteAndParse('[NAVER Maps]\nBeurosiseu HOTEL\n釜山广域市 中区 南浦洞四街 5-3\nhttps://naver.me/GcAsfvpu');
@@ -712,7 +719,7 @@ rows.push(row('W8', '貼上純地址（中文）→TomTom 備援須送完整地�
 
 rows.push(row('W9', '範例鈕：Plus Code 首選＋地址範例（fix107，台北101）', async (c) => {
   const btns = [...document.querySelectorAll('.ex-btn')];
-  check(c, 'pluscode example is first', btns.length === 6 && btns[0].dataset.ex === 'pluscode', btns.map(b => b.dataset.ex).join(','));
+  check(c, 'pluscode example is first', btns.length === 7 && btns[0].dataset.ex === 'pluscode', btns.map(b => b.dataset.ex).join(','));
   btns[0].dispatch('click'); await flush();
   check(c, 'pluscode decodes to 101 cell centre', near(latV(), 25.0335625, 1e-6) && near(lngV(), 121.5645625, 1e-6), E('lat').value + ',' + E('lng').value);
   await clearAll();
@@ -727,4 +734,12 @@ rows.push(row('W9', '範例鈕：Plus Code 首選＋地址範例（fix107，台�
   check(c, '101 address candidate listed', !!rowEl, candAllText().slice(0, 60));
   if(rowEl) rowEl.dispatch('click'); await flush();
   check(c, 'confirmed = 101 address point', near(latV(), 25.033524, 1e-6) && near(lngV(), 121.564604, 1e-6), E('lat').value + ',' + E('lng').value);
+}));
+
+rows.push(row('W10', '短碼範例鈕：2HM7+CR 台北市→還原完整碼格心（fix108，台北101）', async (c) => {
+  const btns = [...document.querySelectorAll('.ex-btn')];
+  const btnS = btns.find(b => b.dataset.ex === 'shortcode');
+  check(c, 'shortcode example exists (2nd)', !!btnS && btns[1] === btnS, btns.map(b => b.dataset.ex).join(','));
+  if(btnS) btnS.dispatch('click'); await flush();
+  check(c, 'short code recovered to full-code cell centre', near(latV(), 25.0335625, 1e-6) && near(lngV(), 121.5645625, 1e-6), E('lat').value + ',' + E('lng').value);
 }));
