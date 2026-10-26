@@ -110,10 +110,12 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
       <summary data-i18n="helpSummary">不知道可以貼什麼？點這裡看</summary>
       <p class="note" data-i18n="helpNote1">地圖分享連結、短連結、經緯度，或 Plus Code 都可以。Plus Code 如果只有短碼，請在後面加上城市名，例如「5RJG+F6 金海市」。</p>
       <p class="note" data-i18n-html="helpNote2">各家可以貼的連結長這樣（以仁川機場第 1 航站樓為例，<b>點一下範例就會自動帶入並轉換</b>）：</p>
+      <button type="button" class="ex-btn" data-ex="pluscode" data-i18n="exPlus">Plus Code（首選）：7QQ32HM7+CR（台北101）</button>
       <button type="button" class="ex-btn" data-ex="google" data-i18n="exGoogle">Google：google.com/maps/place/…@37.4496,126.4524</button>
       <button type="button" class="ex-btn" data-ex="naver" data-i18n="exNaver">Naver：naver.me 短網址，或 map.naver.com/?lat=…&amp;lng=…</button>
       <button type="button" class="ex-btn" data-ex="kakao" data-i18n="exKakao">Kakao：kko.to 短網址，或 map.kakao.com/link/map/…</button>
       <button type="button" class="ex-btn" data-ex="yahoo" data-i18n="exYahoo">Yahoo：map.yahoo.co.jp/place/?lat=…&amp;lon=…</button>
+      <button type="button" class="ex-btn" data-ex="address" data-i18n="exAddress">地址：台北市信義區信義路五段7號（台北101）</button>
       <p class="note" data-i18n="helpNote3">實際收到的分享多半是短網址（naver.me、kko.to、maps.app.goo.gl）加一段文字，整段貼上即可，不用自己挑出連結。</p>
     </details>
     <h2 class="step-title" style="margin-top:16px" data-i18n="step2Title">第 2 步：按大按鈕</h2>
@@ -266,7 +268,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-26-fix106</p>
+  <p class="note" style="text-align:center">v2026-10-26-fix107</p>
 </div>
 
 <script>
@@ -341,6 +343,8 @@ zh: {
   exNaver: 'Naver：naver.me 短網址，或 map.naver.com/?lat=…&lng=…',
   exKakao: 'Kakao：kko.to 短網址，或 map.kakao.com/link/map/…',
   exYahoo: 'Yahoo：map.yahoo.co.jp/place/?lat=…&lon=…',
+  exPlus: 'Plus Code（首選）：7QQ32HM7+CR（台北101）',
+  exAddress: '地址：台北市信義區信義路五段7號（台北101）',
   helpNote3: '實際收到的分享多半是短網址（naver.me、kko.to、maps.app.goo.gl）加一段文字，整段貼上即可，不用自己挑出連結。',
   step2Title: '第 2 步：按大按鈕',
   pasteBtn: '📋 貼上並開始轉換', parseBtn: '已經貼好了，開始轉換', exampleBtn: '填入範例',
@@ -479,6 +483,8 @@ en: {
   exNaver: 'Naver: a naver.me short link, or map.naver.com/?lat=…&lng=…',
   exKakao: 'Kakao: a kko.to short link, or map.kakao.com/link/map/…',
   exYahoo: 'Yahoo: map.yahoo.co.jp/place/?lat=…&lon=…',
+  exPlus: 'Plus Code (best choice): 7QQ32HM7+CR (Taipei 101)',
+  exAddress: 'Address: No. 7, Sec. 5, Xinyi Rd., Xinyi Dist., Taipei (Taipei 101)',
   helpNote3: 'Shares you receive are usually a short link (naver.me, kko.to, maps.app.goo.gl) plus some text — just paste the whole thing.',
   step2Title: 'Step 2: Press the big button',
   pasteBtn: '📋 Paste & Convert', parseBtn: 'Already pasted — Convert', exampleBtn: 'Fill in an example',
@@ -617,6 +623,8 @@ id: {
   exNaver: 'Naver: tautan pendek naver.me, atau map.naver.com/?lat=…&lng=…',
   exKakao: 'Kakao: tautan pendek kko.to, atau map.kakao.com/link/map/…',
   exYahoo: 'Yahoo: map.yahoo.co.jp/place/?lat=…&lon=…',
+  exPlus: 'Plus Code (pilihan utama): 7QQ32HM7+CR (Taipei 101)',
+  exAddress: 'Alamat: No. 7, Sec. 5, Xinyi Rd., Xinyi Dist., Taipei (Taipei 101)',
   helpNote3: 'Bagikan yang Anda terima biasanya berupa tautan pendek (naver.me, kko.to, maps.app.goo.gl) plus teks — tempel saja semuanya.',
   step2Title: 'Langkah 2: Tekan tombol besar',
   pasteBtn: '📋 Tempel & Konversi', parseBtn: 'Sudah ditempel — Konversi', exampleBtn: 'Isi contoh',
@@ -1952,6 +1960,8 @@ $('pasteBtn').addEventListener('click', async ()=>{
 $('parseBtn').addEventListener('click',parseInput);
 // FIX fix65: 第 1 步範例連結（仁川機場第 1 航站樓；座標為 Kakao 官方值，格式皆為各家已驗證可解析的原生格式）。點按即帶入並轉換。
 const EXAMPLES = {
+  pluscode: '7QQ32HM7+CR',
+  address: '台北市信義區信義路五段7號',
   google: 'https://www.google.com/maps/place/%EC%9D%B8%EC%B2%9C%EA%B5%AD%EC%A0%9C%EA%B3%B5%ED%95%AD/@37.4496919,126.4524038,17z',
   naver: 'https://map.naver.com/?lat=37.4496919&lng=126.4524038&title=%EC%9D%B8%EC%B2%9C%EA%B5%AD%EC%A0%9C%EA%B3%B5%ED%95%AD',
   kakao: 'https://map.kakao.com/link/map/%EC%9D%B8%EC%B2%9C%EA%B5%AD%EC%A0%9C%EA%B3%B5%ED%95%AD%20%EC%A0%9C1%EC%97%AC%EA%B0%9D%ED%84%B0%EB%AF%B8%EB%84%90,37.4496919,126.4524038',

@@ -18,7 +18,7 @@ function makeEl(id) {
 }
 const registry = new Map();
 const detailsAdv = [makeEl('d1'), makeEl('d2')];
-const exBtns = ['google', 'naver', 'kakao', 'yahoo'].map(k => { const e = makeEl('ex-' + k); e.dataset = { ex: k }; return e; });
+const exBtns = ['pluscode', 'google', 'naver', 'kakao', 'yahoo', 'address'].map(k => { const e = makeEl('ex-' + k); e.dataset = { ex: k }; return e; });
 global.document = {
   getElementById(id) { if (!registry.has(id)) registry.set(id, makeEl(id)); return registry.get(id); },
   querySelectorAll(sel) { if (sel === 'details.advanced') return detailsAdv; if (sel === '.ex-btn') return exBtns; return []; },
@@ -93,7 +93,9 @@ global.fetch = async (url) => {
     body = { provider: 'tomtom', total: 0, items: [] };
   } else if (u.includes('/tt-search')) {
     const q = decodeURIComponent((u.match(/[?&]q=([^&]*)/) || [])[1] || '');
-    if (q.includes('大連街') && q.includes('平鎮')) body = { provider: 'tomtom', total: 2, items: [
+    if (q.includes('信義路五段')) body = { provider: 'tomtom', total: 1, items: [
+      { title: '7, 信義路五段, 信義區, 台北市 110615', address: '7, 信義路五段, 信義區, 台北市 110615', roadAddress: '', kind: 'address', mapx: '1215646040', mapy: '250335240', link: '', category: '', telephone: '' }] };
+    else if (q.includes('大連街') && q.includes('平鎮')) body = { provider: 'tomtom', total: 2, items: [
       { title: '49, 大連街, 平鎮區, 桃園市 324618', address: '49, 大連街, 平鎮區, 桃園市 324618', roadAddress: '', kind: 'address', mapx: '1212069230', mapy: '249146390', link: '', category: '', telephone: '' },
       { title: '大連街12巷, 平鎮區, 桃園市 324018', address: '大連街12巷, 平鎮區, 桃園市 324018', roadAddress: '', kind: 'address', mapx: '1212079310', mapy: '249125530', link: '', category: '', telephone: '' }] };
     else if (q.includes('大連街')) body = { provider: 'tomtom', total: 1, items: [

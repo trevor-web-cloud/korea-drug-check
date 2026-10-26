@@ -709,3 +709,22 @@ rows.push(row('W8', '貼上純地址（中文）→TomTom 備援須送完整地�
   if(rowEl) rowEl.dispatch('click'); await flush();
   check(c, 'confirmed coords = pingzhen address', near(latV(), 24.914639, 1e-6) && near(lngV(), 121.206923, 1e-6), E('lat').value + ',' + E('lng').value);
 }));
+
+rows.push(row('W9', '範例鈕：Plus Code 首選＋地址範例（fix107，台北101）', async (c) => {
+  const btns = [...document.querySelectorAll('.ex-btn')];
+  check(c, 'pluscode example is first', btns.length === 6 && btns[0].dataset.ex === 'pluscode', btns.map(b => b.dataset.ex).join(','));
+  btns[0].dispatch('click'); await flush();
+  check(c, 'pluscode decodes to 101 cell centre', near(latV(), 25.0335625, 1e-6) && near(lngV(), 121.5645625, 1e-6), E('lat').value + ',' + E('lng').value);
+  await clearAll();
+  const log0 = FETCH_LOG.length;
+  const btnA = btns.find(b => b.dataset.ex === 'address');
+  check(c, 'address example exists', !!btnA, btns.map(b => b.dataset.ex).join(','));
+  if(btnA) btnA.dispatch('click'); await flush();
+  const log = FETCH_LOG.slice(log0);
+  const tt = log.find(u => u.includes('/tt-search'));
+  check(c, 'address example → tt-search full string', !!tt && decodeURIComponent(tt).includes('信義路五段7號'), tt ? decodeURIComponent(tt).slice(0, 80) : 'no tt call');
+  const rowEl = candRows().find(x => x.textContent.includes('信義路五段'));
+  check(c, '101 address candidate listed', !!rowEl, candAllText().slice(0, 60));
+  if(rowEl) rowEl.dispatch('click'); await flush();
+  check(c, 'confirmed = 101 address point', near(latV(), 25.033524, 1e-6) && near(lngV(), 121.564604, 1e-6), E('lat').value + ',' + E('lng').value);
+}));
