@@ -6,6 +6,7 @@ const htmlPath = process.argv[2] || 'index.html';
 const html = fs.readFileSync(htmlPath, 'utf8');
 global.PAGE_HTML = html;
 global.FETCH_LOG = [];
+global.FETCH_OPTS = [];
 const js = html.match(/<script>([\s\S]*?)<\/script>/)[1];
 const footer = (html.match(/v\d{4}-\d{2}-\d{2}-fix\d+/) || ['?'])[0];
 
@@ -55,9 +56,10 @@ const LOCAL_FIXTURES = [
   ['없는가게', { provider: 'kakao', total: 0, items: [] }],
   ['설정안됨', { error: 'not_configured' }],
 ];
-global.fetch = async (url) => {
+global.fetch = async (url, opts) => {
   const u = String(url);
   global.FETCH_LOG.push(u);
+  global.FETCH_OPTS.push(opts && opts.signal ? 'sig' : 'nosig');
   let body = { error: 'no fixture' };
   if (u.includes('/stats')) {
     if (u.includes('sum=month')) body = { date: '2026-10-24', tz: 'kst', month: '2026-10', worker_requests: 900, kakao_keyword: 300, kakao_coord2address: 600, kakao_address: 600, kakao_category: 1500, place_fetch: 200, kakao_total: 30000 };

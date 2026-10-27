@@ -252,3 +252,10 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 - 改法：helpNote1 三語改寫——以台北101 對照完整碼「7QQ32HM7+CR」（自己就能定位、最準確）、短碼「2HM7+CR 台北市」（短碼須加城市名）、無碼可貼地址；原金海市短碼例（5RJG+F6）退場。範例清單新增短碼鈕（第 2 顆，緊接完整碼首選鈕）；四家連結範例標籤三語加上地點名（Google/Naver/Kakao＝仁川機場第1航站樓、Yahoo＝東京 Big Sight），helpNote2 拿掉「以仁川機場為例」框架（地點改由各鈕標籤自明）。EXAMPLES.yahoo 改 Big Sight 連結（map.yahoo.co.jp/place/?lat=35.62972&lon=139.79417&z=17）。
 - Big Sight 座標查證：Wikipedia 35.62972, 139.79417 與第二來源（35.62971878, 139.79409790）一致（差約 6m）採用之；TomTom 名稱搜尋對日本仍不可用（實測全落空，符合既有「日本弱」結論），故不以 TomTom 為據。
 - 矩陣：新增 W10（短碼鈕→還原格心 25.0335625, 121.5645625）；E1 改寫（google/naver/kakao 仍斷言仁川座標、yahoo 改斷言 Big Sight 座標＋四面板開啟）；W9 範例鈕總數改 7。驗證：本地 93/93、線上 93/93；頁尾 fix108、md5 本地↔線上一致（e232c2dc…）。
+
+## 2026-10-27 內部自我檢查＋優化（頁面 fix109＋Worker fix97，使用者指示「內部自我檢查與優化」）
+- 自我檢查（修復前基線）：線上頁尾 v2026-10-26-fix108、md5 本地↔線上一致（e232c2dc…）；覆蓋矩陣本地 93/93、線上 93/93；Worker 冒煙六端點全通（/stats 形狀正確、/local 브로시스호텔 ID 338712143、/nearby 13 筆地址居首、/tt-search 台北車站 1215170290／250472450、/tt-nearby 平鎮 11 筆地址居首、/resolve naver.me 展開含 title+座標+pinId）。
+- 審查發現（優化點）：①頁面 /stats 抓取（頁尾額度）無逾時保護，Worker 卡住時該請求懸置（雖有 localStorage 快取先顯示、影響小）。②頁面 4 處直接呼叫 AbortSignal.timeout（/resolve、/place、候選機翻 gtx/mm）——舊 Safari（iOS 16.4 以前）無此 API 會丟 TypeError 使該次 fetch 整個失敗；本頁使用者含長輩、舊機不可忽略（mtZhToKo 早有防護、其餘 4 處沒有）。③Worker 全部上游 fetch（Kakao×4 路徑、TomTom、place 頁、短連結、翻譯）皆無逾時，任一上游卡住會拖住整個請求。其餘審查乾淨：無 console/TODO 殘留、無重複函式定義、GitHub Pages gzip 與 Cache-Control 正常、Worker 平行化（fix88）與計數彙總（fix91）無回歸空間。
+- 頁面 fix109：新增共用 helper toSig(ms)（有 AbortSignal.timeout 才用、否則回 undefined 讓 fetch 照常送出）；/stats 補上 8 秒逾時；/resolve、/place、gtx、mm 四處改走 helper；mtZhToKo 內嵌防護改用 helper 統一。新增矩陣 W11（harness fetch stub 加 FETCH_OPTS 記錄每筆呼叫是否帶 signal；斷言 /stats 與 /resolve 皆帶逾時 signal）。修復前證據：對 fix108 跑新矩陣 93/94、僅 W11 失敗；修復後本地 94/94。
+- Worker fix97：新增 toSig(ms)，所有上游 fetch 各自取「新的」signal（Kakao 8s、TomTom 每順位 8s、place 8s、短連結 HEAD/GET 各 8s、翻譯 6s）；接力不可共用 signal——若共用，第一順位逾時中止後其餘順位會立即被拒、接力失效。本地假 fetch harness 15/15：正常路徑回歸（tt-search/local/nearby 10 呼叫/place/resolve）、429 接力且兩順位 signal 為不同物件、K1 真卡死情境（stub 只在 signal abort 時拒絕）實測約 8 秒逾時後 K2 以未中止的 signal 成功接手、無金鑰 503 回歸。頁面不需配合改版（fix109 已先行）。
+- 待使用者：部署 Worker fix97（貼上交付檔全文取代＋無需新增 Secret）；部署後做線上冒煙驗收。

@@ -269,7 +269,7 @@ code{background:#eef2f6;padding:2px 6px;border-radius:6px;font-size:15px}
     </div>
   </section>
   <p class="note" id="quotaLine" style="text-align:center" hidden></p>
-  <p class="note" style="text-align:center">v2026-10-26-fix108</p>
+  <p class="note" style="text-align:center">v2026-10-27-fix109</p>
 </div>
 
 <script>
@@ -782,6 +782,10 @@ function renderQuota() {
   el.textContent = T('quotaLine', quotaVals);
   el.hidden = false;
 }
+// FIX fix109: 逾時 signal 共用 helper——舊 Safari（iOS 16.4 以前）無 AbortSignal.timeout，
+// 直接呼叫會丟 TypeError 使該次 fetch 整個失敗（/resolve、/place、機翻皆中）；改走 helper：
+// 有 timeout 就用、沒有就回 undefined（fetch 照常送出、只是無逾時保護），新舊瀏覽器行為一致。
+function toSig(ms) { try { return (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) ? AbortSignal.timeout(ms) : undefined; } catch (e) { return undefined; } }
 async function loadQuota() {
   // FIX fix81: 使用者實機回報「要等一陣子才出現」——實測每日端點 0.7 秒、每月加總端點 14 秒
   // （Worker 逐日讀 KV 彙總整月），舊版等兩者都回來才顯示。改為分段：每日先到先顯示（月欄先佔位 …），每月到齊再補上。
@@ -802,7 +806,7 @@ async function loadQuota() {
   // （fix84 曾整段移除，經使用者更正後恢復 fix83 的每日顯示。）頁面只呼叫每日端點，不呼叫每月加總端點（慢的根源直接移除；
   // 本月累計仍保留在每日 08:00 報表與月結算裡）。Worker fix82 的每月加速因此只嘉惠報表，頁面不依賴。
   try {
-    const kd = await fetch(base + '?tz=kst').then(r => r.json());
+    const kd = await fetch(base + '?tz=kst', { signal: toSig(8000) }).then(r => r.json());
     if (!kd || kd.error) return;
     const maxType = Math.max(kd.kakao_keyword || 0, kd.kakao_coord2address || 0, kd.kakao_address || 0, kd.kakao_category || 0);
     quotaVals = { d: left(maxType, 100000) };
@@ -1329,7 +1333,7 @@ const PLACE_WORKER = 'https://map-resolve.tsai0215.workers.dev/place';
 let pendingKakaoPlace = null;
 async function resolveShortLink(shortUrl){
   try{
-    const r = await fetch(RESOLVE_WORKER+'?url='+encodeURIComponent(shortUrl), {signal: AbortSignal.timeout(8000)});
+    const r = await fetch(RESOLVE_WORKER+'?url='+encodeURIComponent(shortUrl), {signal: toSig(8000)});
     if(!r.ok) return null;
     return await r.json();
   }catch(e){ return null; }
@@ -1341,7 +1345,7 @@ async function upgradeKakaoId(){
   pendingKakaoPlace = null;
   if(!p){
     try{
-      const r = await fetch(PLACE_WORKER+'?id='+encodeURIComponent(id), {signal: AbortSignal.timeout(8000)});
+      const r = await fetch(PLACE_WORKER+'?id='+encodeURIComponent(id), {signal: toSig(8000)});
       const j = await r.json();
       if(j && isFinite(j.lat) && isFinite(j.lng)) p = j;
     }catch(e){}
@@ -1682,10 +1686,10 @@ const translateCache = {};
 function translateBoth(title){
   if(Object.prototype.hasOwnProperty.call(translateCache, title)) return Promise.resolve(translateCache[title]);
   const safe = p => p.catch(() => '');
-  const gtxP = fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=ko&tl=en&dt=t&q=' + encodeURIComponent(title), { signal: AbortSignal.timeout(6000) })
+  const gtxP = fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=ko&tl=en&dt=t&q=' + encodeURIComponent(title), { signal: toSig(6000) })
     .then(r => r.ok ? r.json() : null)
     .then(gj => { const t = gj && Array.isArray(gj[0]) ? gj[0].map(s => (s && s[0]) || '').join('').trim() : ''; return t || ''; });
-  const mmP = fetch('https://api.mymemory.translated.net/get?langpair=ko%7Cen&q=' + encodeURIComponent(title), { signal: AbortSignal.timeout(6000) })
+  const mmP = fetch('https://api.mymemory.translated.net/get?langpair=ko%7Cen&q=' + encodeURIComponent(title), { signal: toSig(6000) })
     .then(r => r.ok ? r.json() : null)
     .then(mj => { const t = (mj && mj.responseData && mj.responseData.translatedText || '').trim(); return (t && !/MYMEMORY|WARNING|QUOTA|INVALID/i.test(t)) ? t : ''; });
   return Promise.all([safe(gtxP), safe(mmP)]).then(([g, m]) => { const v = { gtx: g, mm: m }; translateCache[title] = v; return v; });
@@ -1815,7 +1819,7 @@ if(els.candRows) els.candRows.forEach((rowEl, i) => rowEl.addEventListener('clic
 // FIX fix98: 中文地名機翻成韓文（gtx zh-CN→ko；漢字固有名詞準確度高，翻不出韓文就回空字串、走原失敗路徑）。
 async function mtZhToKo(text){
   try{
-    const sig = (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) ? AbortSignal.timeout(6000) : undefined; // 舊 Safari 無 AbortSignal.timeout，不可因它丟例外
+    const sig = toSig(6000); // fix109: 統一走 helper（舊 Safari 無 AbortSignal.timeout，不可因它丟例外）
     const r = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=zh-CN&tl=ko&dt=t&q=' + encodeURIComponent(text), sig ? { signal: sig } : {});
     if(!r.ok) return '';
     const gj = await r.json();

@@ -1,4 +1,4 @@
-// Cloudflare Worker — map-resolve（fix96 五組 TomTom 金鑰接力備援 + fix92 TomTom 國際地標查證 + fix91 請求彙總計數 + fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查 + fix49 附近地點 + fix52 機翻 + fix55 附近地點距離排序 + fix61 短連結 GET 重試 + fix63 Kakao ID 撈座標 + fix69 用量計數）
+// Cloudflare Worker — map-resolve（fix97 上游逾時保護 + fix96 五組 TomTom 金鑰接力備援 + fix92 TomTom 國際地標查證 + fix91 請求彙總計數 + fix14 短連結解析 + fix40 附近地點搜尋 + fix47 地址反查 + fix49 附近地點 + fix52 機翻 + fix55 附近地點距離排序 + fix61 短連結 GET 重試 + fix63 Kakao ID 撈座標 + fix69 用量計數）
 // 部署：貼到 Cloudflare Dashboard → Workers → map-resolve → Edit code 全文取代；
 //       另需在 Settings → Variables and Secrets 新增一個 Secret：
 //       KAKAO_REST_KEY（Kakao Local API 的 REST API 金鑰；金鑰只放 Worker Secret，不進前端）
@@ -23,6 +23,11 @@
 // fix96 黏性起點：模組層級記住上一筆成功的 TomTom 金鑰順位（執行個體記憶、盡力而為；
 // 實例重啟即歸 0、無副作用）。某組額度用罄後，下一筆直接從可用順位開始，不再每筆重付失敗往返。
 let TT_LAST_GOOD = 0;
+// fix97 上游逾時保護：所有對外 fetch（Kakao／TomTom／place 頁／短連結／翻譯）原本皆無逾時，
+// 任一上游卡住會把整個請求一起拖住。每次呼叫都產生新的 AbortSignal（接力重試不可共用
+// 已中止的 signal，ttJson 每個順位各自取新的）；逾時中止會被各端點既有的 try/catch
+// 當成連線失敗處理，成功路徑行為不變、只多一個時間上限。
+function toSig(ms) { try { return AbortSignal.timeout(ms); } catch (e) { return undefined; } }
 export default {
   async fetch(request, env, ctx) {
     const cors = {
@@ -150,7 +155,7 @@ export default {
     async function scrapeKakaoPlace(id) {
       try {
         bumpBg('place_fetch');
-        const r = await fetch('https://place.map.kakao.com/' + id, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        const r = await fetch('https://place.map.kakao.com/' + id, { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: toSig(8000) });
         if (!r.ok) return null;
         const html = await r.text();
         const mm = html.match(/staticmap\/og\?type=place&srs=wgs84[^"']*?[?&]m=(-?\d+(?:\.\d+)?)%2C(-?\d+(?:\.\d+)?)/i);
@@ -179,6 +184,7 @@ export default {
         bumpBg('kakao_keyword');
         const kRes = await fetch('https://dapi.kakao.com/v2/local/search/keyword.json?size=5&page=1&query=' + encodeURIComponent(q), {
           headers: { 'Authorization': 'KakaoAK ' + env.KAKAO_REST_KEY },
+          signal: toSig(8000),
         });
         if (!kRes.ok) {
           return new Response(JSON.stringify({ error: 'kakao_api_status_' + kRes.status }), { status: 502, headers: cors });
@@ -220,7 +226,7 @@ export default {
         const CATS = ['FD6', 'CE7', 'AD5', 'AT4', 'MT1', 'CS2', 'SW8', 'PK6'];
         const catPromise = Promise.all(CATS.map(async (code) => {
           try {
-            const r = await fetch('https://dapi.kakao.com/v2/local/search/category.json?category_group_code=' + code + '&x=' + lng + '&y=' + lat + '&radius=300&sort=distance&size=5', { headers: h });
+            const r = await fetch('https://dapi.kakao.com/v2/local/search/category.json?category_group_code=' + code + '&x=' + lng + '&y=' + lat + '&radius=300&sort=distance&size=5', { headers: h, signal: toSig(8000) });
             if (!r.ok) return [];
             const d = await r.json();
             return (d.documents || []).map(p => ({
@@ -239,7 +245,7 @@ export default {
           } catch (e) { return []; }
         }));
         bumpBg('kakao_coord2address');
-        const aRes = await fetch('https://dapi.kakao.com/v2/local/geo/coord2address.json?x=' + lng + '&y=' + lat, { headers: h });
+        const aRes = await fetch('https://dapi.kakao.com/v2/local/geo/coord2address.json?x=' + lng + '&y=' + lat, { headers: h, signal: toSig(8000) });
         if (!aRes.ok) {
           return new Response(JSON.stringify({ error: 'kakao_api_status_' + aRes.status }), { status: 502, headers: cors });
         }
@@ -250,7 +256,7 @@ export default {
         const query = road || jibun;
         if (!query) return new Response(JSON.stringify({ error: 'no_address' }), { headers: cors });
         bumpBg('kakao_address');
-        const sRes = await fetch('https://dapi.kakao.com/v2/local/search/address.json?query=' + encodeURIComponent(query), { headers: h });
+        const sRes = await fetch('https://dapi.kakao.com/v2/local/search/address.json?query=' + encodeURIComponent(query), { headers: h, signal: toSig(8000) });
         if (!sRes.ok) {
           return new Response(JSON.stringify({ error: 'kakao_api_status_' + sRes.status }), { status: 502, headers: cors });
         }
@@ -334,7 +340,7 @@ export default {
       for (let n = 0; n < ks.length; n++) {
         const i = (start + n) % ks.length;
         let r = null;
-        try { r = await fetch(urlForKey(encodeURIComponent(ks[i])), { headers: { 'User-Agent': 'map-resolve-worker' } }); } catch (e) { r = null; }
+        try { r = await fetch(urlForKey(encodeURIComponent(ks[i])), { headers: { 'User-Agent': 'map-resolve-worker' }, signal: toSig(8000) }); } catch (e) { r = null; }
         if (r && r.ok) { TT_LAST_GOOD = i; return r.json().catch(() => null); }
         if (r && r.status !== 429 && r.status !== 403) return null;
       }
@@ -422,7 +428,7 @@ export default {
       let en = '', via = '';
       try {
         const de = env && env.TRANSLATE_EMAIL ? '&de=' + encodeURIComponent(env.TRANSLATE_EMAIL) : '';
-        const mm = await fetch('https://api.mymemory.translated.net/get?langpair=ko%7Cen&q=' + encodeURIComponent(text) + de);
+        const mm = await fetch('https://api.mymemory.translated.net/get?langpair=ko%7Cen&q=' + encodeURIComponent(text) + de, { signal: toSig(6000) });
         dbg.mm = 'http_' + mm.status;
         if (mm.ok) {
           const mj = await mm.json().catch(() => null);
@@ -435,7 +441,7 @@ export default {
         for (const pair of [['gt1', 'translate.google.com'], ['gt2', 'translate.googleapis.com']]) {
           const tag = pair[0], host = pair[1];
           try {
-            const gt = await fetch('https://' + host + '/translate_a/single?client=gtx&sl=ko&tl=en&dt=t&q=' + encodeURIComponent(text));
+            const gt = await fetch('https://' + host + '/translate_a/single?client=gtx&sl=ko&tl=en&dt=t&q=' + encodeURIComponent(text), { signal: toSig(6000) });
             dbg[tag] = 'http_' + gt.status;
             if (gt.ok) {
               const gj = await gt.json().catch(() => null);
@@ -456,10 +462,10 @@ export default {
     }
     try {
       // fix61: Kakao 分享短連結 kko.to 拒絕 HEAD（回 405 無 Location）— HEAD 拿不到時改用 GET 重試一次。
-      let res = await fetch(target, { method: 'HEAD', redirect: 'manual' });
+      let res = await fetch(target, { method: 'HEAD', redirect: 'manual', signal: toSig(8000) });
       let loc = res.headers.get('location') || '';
       if (!loc) {
-        const res2 = await fetch(target, { method: 'GET', redirect: 'manual' });
+        const res2 = await fetch(target, { method: 'GET', redirect: 'manual', signal: toSig(8000) });
         loc = res2.headers.get('location') || '';
         if (loc) res = res2;
       }

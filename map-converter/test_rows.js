@@ -743,3 +743,14 @@ rows.push(row('W10', '短碼範例鈕：2HM7+CR 台北市→還原完整碼格�
   if(btnS) btnS.dispatch('click'); await flush();
   check(c, 'short code recovered to full-code cell centre', near(latV(), 25.0335625, 1e-6) && near(lngV(), 121.5645625, 1e-6), E('lat').value + ',' + E('lng').value);
 }));
+
+rows.push(row('W11', '網路逾時保護：/stats 與 /resolve 呼叫都帶逾時 signal（fix109）', async (c) => {
+  const idxs = FETCH_LOG.map((u, i) => i).filter(i => FETCH_LOG[i].includes('/stats'));
+  check(c, 'stats called on load', idxs.length > 0, String(idxs.length));
+  check(c, 'stats fetch has timeout signal', idxs.length > 0 && FETCH_OPTS[idxs[idxs.length - 1]] === 'sig', idxs.length ? FETCH_OPTS[idxs[idxs.length - 1]] : 'none');
+  const log0 = FETCH_LOG.length;
+  await pasteAndParse('https://naver.me/GcAsfvpu');
+  const log = FETCH_LOG.slice(log0); const olog = FETCH_OPTS.slice(log0);
+  const ri = log.findIndex(u => u.includes('/resolve'));
+  check(c, 'resolve fetch has timeout signal', ri >= 0 && olog[ri] === 'sig', ri >= 0 ? olog[ri] : 'no resolve call');
+}));
