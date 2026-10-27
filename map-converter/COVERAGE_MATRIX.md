@@ -259,3 +259,4 @@ Dimensions: 來源（Google / Naver / Yahoo / Plus Code / 純座標 / 分享文�
 - 頁面 fix109：新增共用 helper toSig(ms)（有 AbortSignal.timeout 才用、否則回 undefined 讓 fetch 照常送出）；/stats 補上 8 秒逾時；/resolve、/place、gtx、mm 四處改走 helper；mtZhToKo 內嵌防護改用 helper 統一。新增矩陣 W11（harness fetch stub 加 FETCH_OPTS 記錄每筆呼叫是否帶 signal；斷言 /stats 與 /resolve 皆帶逾時 signal）。修復前證據：對 fix108 跑新矩陣 93/94、僅 W11 失敗；修復後本地 94/94。
 - Worker fix97：新增 toSig(ms)，所有上游 fetch 各自取「新的」signal（Kakao 8s、TomTom 每順位 8s、place 8s、短連結 HEAD/GET 各 8s、翻譯 6s）；接力不可共用 signal——若共用，第一順位逾時中止後其餘順位會立即被拒、接力失效。本地假 fetch harness 15/15：正常路徑回歸（tt-search/local/nearby 10 呼叫/place/resolve）、429 接力且兩順位 signal 為不同物件、K1 真卡死情境（stub 只在 signal abort 時拒絕）實測約 8 秒逾時後 K2 以未中止的 signal 成功接手、無金鑰 503 回歸。頁面不需配合改版（fix109 已先行）。
 - 待使用者：部署 Worker fix97（貼上交付檔全文取代＋無需新增 Secret）；部署後做線上冒煙驗收。
+- 頁面 fix109 線上驗收（2026-10-27）：GitHub Pages 已部署，頁尾 v2026-10-27-fix109、md5 本地↔線上一致（918363c1…）、線上矩陣 94/94 全過。
