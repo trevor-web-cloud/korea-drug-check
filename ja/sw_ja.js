@@ -1,7 +1,7 @@
 /* 韓國入境管制藥品查詢頁 — Service Worker（離線快取）
  * 版號由 build_index.py 寫入，每次重建更新；版號變更時舊快取自動清除。
  */
-const CACHE_NAME = 'korea-drug-check-2026-11-01-017f580526';
+const CACHE_NAME = 'korea-drug-check-2026-11-01-0dde42336b';
 const ASSETS = ['./', './index.html'];
 
 self.addEventListener('install', (event) => {
